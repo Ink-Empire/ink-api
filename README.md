@@ -1,4 +1,4 @@
-#Steps to get started
+# Steps to get started
 
 1. Clone repo
 2. Composer install
