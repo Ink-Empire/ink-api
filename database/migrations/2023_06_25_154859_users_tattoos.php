@@ -13,7 +13,7 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('user_tattoos', function (Blueprint $table) {
+        Schema::create('users_tattoos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained();
             $table->foreignId('tattoo_id')->constrained();
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('user_tattoos');
+        Schema::dropIfExists('users_tattoos');
     }
 };

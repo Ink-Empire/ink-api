@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Shop;
+use App\Models\Studio;
 use Illuminate\Database\Seeder;
 
-class ShopSeeder extends Seeder
+class StudioSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -14,7 +14,7 @@ class ShopSeeder extends Seeder
      */
     public function run()
     {
-        Shop::factory()
+        Studio::factory()
             ->count(50)
             ->hasAddress(1)
             ->create();

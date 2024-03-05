@@ -12,12 +12,12 @@ class Tattoo extends Model
     protected $fillable = [
         'title',
         'description',
-        'user_id',
-        'shop_id',
-        'style_id',
-        'theme_id',
-        'image_id',
-        'tags'
+        'placement',
+        'artist_id',
+        'studio_id',
+        'primary_style_id',
+        'primary_subject_id',
+        'primary_image_id',
     ];
 
     public function artist()
@@ -25,18 +25,20 @@ class Tattoo extends Model
         return $this->hasOne(User::class);
     }
 
-    public function shop()
+    public function studio()
     {
-        return $this->belongsTo(Shop::class);
+        return $this->belongsTo(Studio::class);
     }
 
+    //todo we need all secondary tags
     public function style()
     {
         return $this->belongsTo(Style::class);
     }
+
     public function theme()
     {
-        return $this->belongsTo(Theme::class);
+        return $this->belongsTo(Subject::class);
     }
 
     public function image()

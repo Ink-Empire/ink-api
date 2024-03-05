@@ -3,10 +3,13 @@
 namespace App\Models;
 
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
+use App\Enums\UserTypes;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
 use Laravel\Sanctum\HasApiTokens;
+use Illuminate\Database\Eloquent\Builder;
+
 
 class User extends Authenticatable
 {
@@ -18,9 +21,15 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
-        'name',
+        'about',
         'email',
+        'image_id',
+        'location',
+        'name',
         'password',
+        'phone',
+        'studio_id',
+        'type_id',
     ];
 
     /**
@@ -42,6 +51,11 @@ class User extends Authenticatable
         'email_verified_at' => 'datetime',
     ];
 
+    public function scopeArtist(Builder $query): void
+    {
+        $query->where(['type_id' => UserTypes::ARTIST_TYPE]);
+    }
+
     public function type()
     {
         return $this->hasOne(Type::class);
@@ -50,5 +64,20 @@ class User extends Authenticatable
     public function image()
     {
         return $this->belongsTo(Image::class);
+    }
+
+    public function studio()
+    {
+        return $this->belongsTo(Studio::class);
+    }
+
+    public function styles()
+    {
+        return $this->hasMany(Style::class);
+    }
+
+    public function tattoos()
+    {
+        return $this->hasMany(Tattoo::class);
     }
 }

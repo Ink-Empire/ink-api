@@ -17,12 +17,12 @@ return new class extends Migration
             $table->id();
             $table->string('title');
             $table->string('description');
-            $table->foreignId('user_id')->constrained();
-            $table->foreignId('shop_id')->constrained();
-            $table->foreignId('style_id')->constrained();
-            $table->foreignId('theme_id')->constrained();
-            $table->foreignId('image_id')->constrained();
-            $table->string('tags');
+            $table->string('placement')->nullable();
+            $table->foreignId('artist_id')->constrained('users', 'id');
+            $table->foreignId('studio_id')->constrained();
+            $table->foreignId('primary_style_id')->constrained('styles', 'id');
+            $table->foreignId('primary_subject_id')->constrained('subjects', 'id');
+            $table->foreignId('primary_image_id')->constrained('images', 'id');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
         });

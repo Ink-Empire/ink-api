@@ -9,7 +9,6 @@ return new class extends Migration
     const NAMES = [
         'client',
         'artist',
-        'shop'
     ];
 
     /**
@@ -32,7 +31,7 @@ return new class extends Migration
     public function down(): void
     {
         if (Schema::hasTable('types')) {
-            DB::table('title_synonyms')->whereIn('name', self::NAMES)->delete();
+            DB::table('types')->whereIn('name', self::NAMES)->delete();
         }
     }
 };

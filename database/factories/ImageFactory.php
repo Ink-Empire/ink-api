@@ -19,7 +19,8 @@ class ImageFactory extends Factory
         return [
             'name' => fake()->word,
             'filename' => fake()->filePath(),
-            'uri' => 'https://loremflickr.com/320/240/tattoo?random=' . random_int(1,1000)
+            'uri' => 'https://loremflickr.com/320/240/tattoo?random=' . random_int(1,1000),
+            'is_primary' => 0
         ];
     }
 }

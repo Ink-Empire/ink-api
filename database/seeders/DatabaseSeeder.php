@@ -17,11 +17,20 @@ class DatabaseSeeder extends Seeder
         $this->call([
             AddressSeeder::class,
             StyleSeeder::class,
-            ThemeSeeder::class,
             ImageSeeder::class,
-            ShopSeeder::class,
+            StudioSeeder::class,
             UserSeeder::class,
-            TattooSeeder::class
+            ArtistSeeder::class,
+            SubjectSeeder::class,
+            TattooSeeder::class,
+            TattoosStylesSeeder::class,
+            UsersStylesSeeder::class,
+            ArtistsStylesSeeder::class,
+            StudiosStylesSeeder::class,
+            UsersTattoosSeeder::class,
+            UsersStudiosSeeder::class,
+            BusinessDaysSeeder::class,
+            BusinessHoursSeeder::class
         ]);
     }
 }

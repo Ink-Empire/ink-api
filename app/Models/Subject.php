@@ -5,7 +5,7 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Theme extends Model
+class Subject extends Model
 {
     use HasFactory;
 
@@ -16,6 +16,7 @@ class Theme extends Model
      */
     protected $fillable = [
         'name',
-        'parent_id'
+        'parent_id',
+//        'is_primary'
     ];
 }

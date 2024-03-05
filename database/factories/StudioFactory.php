@@ -7,7 +7,7 @@ use Illuminate\Database\Eloquent\Factories\Factory;
 /**
  * @extends \Illuminate\Database\Eloquent\Factories\Factory<\App\Models\Model>
  */
-class ShopFactory extends Factory
+class StudioFactory extends Factory
 {
     /**
      * Define the model's default state.
@@ -19,6 +19,10 @@ class ShopFactory extends Factory
         return [
             'name' => fake()->company(),
             'address_id' => 1,
+            'about' => fake()->sentence(15),
+            'location' => fake()->city() . " " . fake()->country(),
+            'email' => fake()->unique()->safeEmail(),
+
         ];
     }
 }

@@ -3,7 +3,7 @@
 namespace Database\Factories;
 
 use App\Models\Image;
-use App\Models\Shop;
+use App\Models\Studio;
 use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
@@ -23,12 +23,27 @@ class TattooFactory extends Factory
         return [
             'title' => fake()->word(),
             'description' => fake()->sentence(5),
-            'user_id' => User::factory(),
-            'shop_id' => Shop::factory(),
-            'style_id' => rand(1,10),
-            'theme_id' => rand(1,10),
-            'image_id' => Image::factory(),
-            'tags' => "",
+            'placement' => $this->getBodyPart(),
+            'artist_id' => User::factory()->asArtist(),
+            'studio_id' => Studio::factory(),
+            'primary_style_id' => rand(1,10),
+            'primary_subject_id' => rand(1,10),
+            'primary_image_id' => Image::factory(),
         ];
+    }
+
+    private function getBodyPart()
+    {
+        $array = [
+          'chest',
+          'back',
+          'elbow',
+          'backside',
+          'calf',
+          'hand',
+          'foot'
+        ];
+
+        return $array[array_rand($array)];
     }
 }
