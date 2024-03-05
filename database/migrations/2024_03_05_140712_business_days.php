@@ -8,15 +8,12 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('themes', function (Blueprint $table) {
+        Schema::create('business_days', function (Blueprint $table) {
             $table->id();
-            $table->integer('parent_id')->default(0);
-            $table->string('name');
+            $table->string('day');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
         });
@@ -24,11 +21,9 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        Schema::dropIfExists('themes');
+        Schema::dropIfExists('business_days');
     }
 };

@@ -16,6 +16,7 @@ class Style extends Model
      */
     protected $fillable = [
         'name',
-        'parent_id'
+        'parent_id',
+        'is_primary'
     ];
 }

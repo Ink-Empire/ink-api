@@ -2,10 +2,10 @@
 
 namespace Database\Seeders;
 
-use App\Models\Theme;
+use App\Models\User;
 use Illuminate\Database\Seeder;
 
-class ThemeSeeder extends Seeder
+class ArtistSeeder extends Seeder
 {
     /**
      * Run the database seeds.
@@ -14,8 +14,9 @@ class ThemeSeeder extends Seeder
      */
     public function run()
     {
-        Theme::factory()
+        User::factory()
             ->count(50)
+            ->hasImage(1)
             ->create();
     }
 }

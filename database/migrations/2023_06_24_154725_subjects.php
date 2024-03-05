@@ -13,12 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('images', function (Blueprint $table) {
+        Schema::create('subjects', function (Blueprint $table) {
             $table->id();
+            $table->integer('parent_id')->default(0);
             $table->string('name');
-            $table->string('filename');
-            $table->string('uri');
-            $table->tinyInteger('is_primary')->default(0);
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
         });
@@ -31,6 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        //
+        Schema::dropIfExists('subjects');
     }
 };

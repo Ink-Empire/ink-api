@@ -8,15 +8,16 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('tattoo_images', function (Blueprint $table) {
+        Schema::create('business_hours', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tattoo_id')->constrained();
-            $table->foreignId('image_id')->constrained();
+            $table->foreignId('day_id')->constrained('business_days');
+            $table->string('open_time');
+            $table->string('close_time');
+            $table->foreignId('studio_id')->constrained();
+            $table->unique(['day_id', 'studio_id']);
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
         });
@@ -24,11 +25,9 @@ return new class extends Migration
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        Schema::dropIfExists('tattoo_images');
+        Schema::dropIfExists('business_hours');
     }
 };

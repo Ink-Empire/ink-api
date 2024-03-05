@@ -13,10 +13,10 @@ return new class extends Migration
      */
     public function up()
     {
-        Schema::create('shops', function (Blueprint $table) {
+        Schema::create('users_studios', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->foreignId('address_id')->constrained();
+            $table->foreignId('user_id')->constrained();
+            $table->foreignId('studio_id')->constrained();
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
         });
@@ -29,6 +29,6 @@ return new class extends Migration
      */
     public function down()
     {
-        Schema::dropIfExists('shops');
+        Schema::dropIfExists('users_studios');
     }
 };

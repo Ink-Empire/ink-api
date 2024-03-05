@@ -8,29 +8,24 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
     public function up()
     {
-        Schema::create('images', function (Blueprint $table) {
+        Schema::create('users_styles', function (Blueprint $table) {
             $table->id();
-            $table->string('name');
-            $table->string('filename');
-            $table->string('uri');
-            $table->tinyInteger('is_primary')->default(0);
+            $table->foreignId('user_id')->constrained();
+            $table->foreignId('style_id')->constrained();
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
         });
     }
 
+
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        //
+        Schema::dropIfExists('users_styles');
     }
 };

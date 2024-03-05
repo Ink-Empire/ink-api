@@ -13,5 +13,6 @@ class Image extends Model
         'name',
         'filename',
         'uri',
+        'is_primary'
     ];
 }

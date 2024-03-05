@@ -5,17 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
-class Shop extends Model
+class BusinessHours extends Model
 {
     use HasFactory;
 
     protected $fillable = [
-        'name',
-        'address_id',
+        'day',
+        'open_time',
+        'close_time',
+        'studio_id'
     ];
 
-    public function address()
+    public function studio()
     {
-        return $this->belongsTo(Address::class);
+        return $this->belongsTo(Studio::class);
     }
 }
