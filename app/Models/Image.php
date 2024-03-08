@@ -15,4 +15,9 @@ class Image extends Model
         'uri',
         'is_primary'
     ];
+
+    public function setUriAttribute($filename)
+    {
+        $this->attributes['uri'] = 'https://inked-in-images.s3.amazonaws.com/' . $filename;
+    }
 }

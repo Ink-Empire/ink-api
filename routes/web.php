@@ -17,5 +17,9 @@ Route::get('/', function () {
     return view('welcome');
 });
 
+Route::group(['prefix' => 'users'], function () {
+    Route::post('/create', 'UserController@create');
+    Route::post('/uploadPhoto', 'UserController@upload');
+    Route::get('/{id}', 'UserController@get');
+});
 
-Route::get('/user/{id}', 'UserController@get');
