@@ -14,13 +14,10 @@ class UsersTattoosSeeder extends Seeder
     public function run()
     {
         if (Schema::hasTable('users_tattoos')) {
-            $count = 0;
-
-            while ($count <= 50) {
+            for ($count = 1; $count < 51; $count++) {
                 DB::table('users_tattoos')->insert(
-                    ['user_id' => rand(1, 50), 'tattoo_id' => rand(1, 10)]
+                    ['user_id' => $count, 'tattoo_id' => rand(1, 10)]
                 );
-                $count++;
             }
         }
     }

@@ -16,13 +16,10 @@ class UsersStylesSeeder extends Seeder
     public function run()
     {
         if (Schema::hasTable('users_styles')) {
-            $count = 0;
-
-            while($count <= 50) {
+            for ($count = 1; $count < 51; $count++) {
                 DB::table('users_styles')->insert(
-                    ['user_id' => rand(1,50), 'style_id' => rand(1,10)]
+                    ['user_id' => $count, 'style_id' => rand(1,10)]
                 );
-                $count++;
             }
         }
     }

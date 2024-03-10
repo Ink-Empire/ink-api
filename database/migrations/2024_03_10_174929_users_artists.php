@@ -8,29 +8,33 @@ return new class extends Migration
 {
     /**
      * Run the migrations.
-     *
-     * @return void
      */
-    public function up()
+    public function up(): void
     {
-        Schema::create('users_tattoos', function (Blueprint $table) {
+        Schema::create('users_artists', function (Blueprint $table) {
             $table->id();
             $table->foreignId('user_id')->constrained();
-            $table->foreignId('tattoo_id')->constrained();
+            $table->foreignId('artist_id')->constrained('users');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
 
-            $table->unique(['user_id', 'tattoo_id']);
+            $table->unique(['user_id', 'artist_id']);
+
         });
     }
 
     /**
      * Reverse the migrations.
-     *
-     * @return void
      */
-    public function down()
+    public function down(): void
     {
-        Schema::dropIfExists('users_tattoos');
+        Schema::dropIfExists('users_artists');
+
+
+
+
+
+
+
     }
 };
