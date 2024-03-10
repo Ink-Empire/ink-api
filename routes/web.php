@@ -19,6 +19,7 @@ Route::get('/', function () {
 
 Route::group(['prefix' => 'users'], function () {
     Route::post('/create', 'UserController@create');
+    Route::put('/user/{id}', 'UserController@update');
     Route::post('/uploadPhoto', 'UserController@upload');
     Route::get('/{id}', 'UserController@get');
 });

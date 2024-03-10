@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\CacheNames;
 use App\Exceptions\UserNotFoundException;
+use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\ImageService;
 use App\Services\UserService;
@@ -17,6 +18,11 @@ use Illuminate\Support\Facades\Cache;
  */
 class UserController
 {
+    const USER_RELATIONSHIPS = [
+        'styles',
+        'tattoos',
+        'artists'
+    ];
 
     public function __construct(
         protected UserService  $userService,
@@ -39,7 +45,8 @@ class UserController
 
             return $user;
         });
-        return response()->json(['user' => $user]);
+
+        return response()->json(['user' => new UserResource($user)]);
     }
 
     /**
@@ -67,20 +74,23 @@ class UserController
     /**
      * @param Request $request
      */
-    public function upload(Request $request) : JsonResponse|Response
+    public function upload(Request $request): JsonResponse|Response
     {
         try {
             $data = $request->all();
-            $file = $request->file('my_file');
+
+            $file = $request->get('my_file');
+
+
             $user_id = $request->get('user_id');
             $date = Date('Ymdi');
-            $filename = "profile_" . $data['user_id'] . $date;
+            $filename = "profile_" . $data['user_id'] . $date . ".jpeg";
 
             $image = $this->imageService->processImage($file, $filename);
 
             $user = $this->userService->setProfileImage($user_id, $image);
 
-            return response()->json(['image' => $image]);
+            return response()->json(['user' => new UserResource($user)]);
         } catch (UserNotFoundException $e) {
             \Log::error("Unable to find user with id of $user_id");
 
@@ -89,11 +99,31 @@ class UserController
     }
 
     /**
-     * @return void
+     * @return JsonResponse
      */
-    public function update()
+    public function update(Request $request, $id)
     {
+        $data = $request->get('payload');
+        $user = $this->userService->getById($id);
 
+        foreach ($data['payload'] as $fieldName => $fieldVal) {
+            if (in_array($fieldName, $user->getFillable())) {
+                $user->{$fieldName} = $fieldVal;
+            }
+
+            if (in_array($fieldName, self::USER_RELATIONSHIPS)) {
+
+                foreach ($fieldVal as $val) {
+                    $instance = $this->getModelInstance($fieldName);
+                    $toSave = new $instance($val);
+                    $user->{$fieldName}()->syncWithoutDetaching($toSave);
+                }
+            }
+        }
+
+        $user->save();
+
+        return response()->json(['user' => $user]);
     }
 
     /**
@@ -104,4 +134,13 @@ class UserController
 
     }
 
+    private function getModelInstance($name)
+    {
+        if ($name == 'artists') { //artist is derived from users table
+            $name = 'user';
+        } else {
+            $name = substr($name, 0, -1);
+        }
+        return app("App\Models\\" . $name);
+    }
 }

@@ -30,7 +30,7 @@ class ImageService
     {
         try {
             if ($image != null) {
-                $this->s3->put($filename, file_get_contents($image), 'public');
+                $this->s3->put($filename, $image, 'public');
                 $image = $this->saveImage($filename);
             }
 
