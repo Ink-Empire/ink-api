@@ -25,6 +25,7 @@ class DatabaseSeeder extends Seeder
             TattooSeeder::class,
             TattoosStylesSeeder::class,
             UsersStylesSeeder::class,
+            UsersArtistsSeeder::class,
             ArtistsStylesSeeder::class,
             StudiosStylesSeeder::class,
             UsersTattoosSeeder::class,

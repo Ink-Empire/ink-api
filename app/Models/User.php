@@ -21,6 +21,7 @@ class User extends Authenticatable
      * @var array<int, string>
      */
     protected $fillable = [
+        'id',
         'about',
         'email',
         'image_id',
@@ -58,7 +59,7 @@ class User extends Authenticatable
 
     public function type()
     {
-        return $this->hasOne(Type::class);
+        return $this->belongsTo(Type::class);
     }
 
     public function image()
@@ -73,11 +74,16 @@ class User extends Authenticatable
 
     public function styles()
     {
-        return $this->hasMany(Style::class);
+        return $this->belongsToMany(Style::class, 'users_styles', 'user_id', 'style_id');
     }
 
     public function tattoos()
     {
-        return $this->hasMany(Tattoo::class);
+        return $this->belongsToMany(Tattoo::class, 'users_tattoos', 'user_id', 'tattoo_id');
+    }
+
+    public function artists()
+    {
+        return $this->belongsToMany(User::class, 'users_artists', 'user_id', 'artist_id');
     }
 }

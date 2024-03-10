@@ -15,6 +15,7 @@ class Style extends Model
      * @var array
      */
     protected $fillable = [
+        'id',
         'name',
         'parent_id',
         'is_primary'

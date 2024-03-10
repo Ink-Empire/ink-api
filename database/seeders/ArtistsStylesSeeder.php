@@ -14,15 +14,10 @@ class ArtistsStylesSeeder extends Seeder
     public function run()
     {
         if (Schema::hasTable('artists_styles')) {
-            $count = 0;
-
-            while ($count <= 50) {
-                //\Log::info($count);
+            for ($count = 1; $count < 51; $count++) {
                 DB::table('artists_styles')->insert(
-                    ['artist_id' => rand(1, 50), 'style_id' => rand(1, 10)]
+                    ['artist_id' => $count, 'style_id' => rand(1, 10)]
                 );
-
-                $count++;
             }
         }
     }
