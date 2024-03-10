@@ -17,7 +17,6 @@ class ImageFactory extends Factory
     public function definition()
     {
         return [
-            'name' => fake()->word,
             'filename' => fake()->filePath(),
             'uri' => 'https://loremflickr.com/320/240/tattoo?random=' . random_int(1,1000),
             'is_primary' => 0
