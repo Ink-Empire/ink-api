@@ -2,12 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserRelationships;
 use App\Exceptions\UserNotFoundException;
+use App\Http\Resources\ArtistResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\ArtistService;
 use App\Services\ImageService;
-use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -15,11 +15,11 @@ use Illuminate\Http\Response;
 /**
  *
  */
-class UserController
+class ArtistController
 {
 
     public function __construct(
-        protected UserService  $userService,
+        protected ArtistService  $artistService,
         protected ImageService $imageService
     )
     {
@@ -29,10 +29,26 @@ class UserController
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function get($id)
+    public function get($user_id = null)
     {
-        $user = $this->userService->getById($id);
-        return $this->returnUserResponse($user);
+        session(['user_id' => $user_id]);
+
+        //eventually perhaps replaced with an ES call
+        $artists = $this->artistService->get();
+
+        return response()->json(['artists' => ArtistResource::collection($artists)]);
+    }
+
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getById($id, $user_id = null)
+    {
+        $artist = $this->artistService->getById($id);
+        $artist->user_id = $user_id;
+
+        return response()->json(['artist' => new ArtistResource($artist)]);
     }
 
     /**
@@ -54,7 +70,7 @@ class UserController
 
         $user->save();
 
-        return $this->returnUserResponse($user);
+        return response()->json(['user' => $user]);
     }
 
     /**
@@ -75,8 +91,7 @@ class UserController
 
             $user = $this->userService->setProfileImage($user_id, $image);
 
-            return $this->returnUserResponse($user);
-
+            return response()->json(['user' => new UserResource($user)]);
         } catch (UserNotFoundException $e) {
             \Log::error("Unable to find user with id of $user_id");
 
@@ -97,9 +112,10 @@ class UserController
                 $user->{$fieldName} = $fieldVal;
             }
 
-            if (in_array($fieldName, array_keys(UserRelationships::RELATIONSHIPS))) {
+            if (in_array($fieldName, self::USER_RELATIONSHIPS)) {
+
                 foreach ($fieldVal as $val) {
-                    $instance = UserRelationships::RELATIONSHIPS[$fieldName];
+                    $instance = $this->getModelInstance($fieldName);
                     $toSave = new $instance($val);
                     $user->{$fieldName}()->syncWithoutDetaching($toSave);
                 }
@@ -108,35 +124,7 @@ class UserController
 
         $user->save();
 
-        return $this->returnUserResponse($user);
-    }
-
-    /**
-     * @return JsonResponse
-     */
-    public function updateFavorite(Request $request, $id)
-    {
-        $data = $request->get('body');
-        $user = $this->userService->getById($id);
-
-        foreach (UserRelationships::RELATIONSHIPS as $relationship_name => $class) {
-            if (isset($data[$relationship_name])) {
-
-                foreach ($data[$relationship_name] as $relationship) {
-                    $instance = new $class(['id' => $relationship['id']]); //returns a new User or Artists class with attributes
-
-                    if ($data['isFavorite']) {
-                        $user->{$relationship_name}()->syncWithoutDetaching($instance);
-                    } else {
-                        $user->{$relationship_name}()->detach($instance);
-                    }
-                }
-            }
-        }
-
-        $user->save();
-
-        return $this->returnUserResponse($user);
+        return response()->json(['user' => $user]);
     }
 
     /**
@@ -147,8 +135,13 @@ class UserController
 
     }
 
-    private function returnUserResponse($user)
+    private function getModelInstance($name)
     {
-        return response()->json(['user' => new UserResource($user)]);
+        if ($name == 'artists') { //artist is derived from users table
+            $name = 'user';
+        } else {
+            $name = substr($name, 0, -1);
+        }
+        return app("App\Models\\" . $name);
     }
 }

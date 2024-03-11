@@ -4,6 +4,8 @@ namespace App\Services;
 
 use App\Exceptions\UserNotFoundException;
 use App\Models\Image;
+use App\Models\Style;
+use App\Models\Tattoo;
 use App\Models\User;
 
 /**
@@ -11,6 +13,12 @@ use App\Models\User;
  */
 class UserService
 {
+    const USER_RELATIONSHIPS = [
+        'styles' => Style::class,
+        'tattoos' => Tattoo::class,
+        'artists' => User::class
+    ];
+
     /**
      * @param int $id
      * @return void|User
