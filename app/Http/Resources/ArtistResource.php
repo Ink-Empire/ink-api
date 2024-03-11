@@ -4,8 +4,16 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class UserResource extends JsonResource
+class ArtistResource extends JsonResource
 {
+    protected $user_id;
+
+    public function user_id($value): static
+    {
+        $this->user_id = $value;
+        return $this;
+    }
+
     public function toArray($request)
     {
         return [
@@ -19,9 +27,19 @@ class UserResource extends JsonResource
             'phone' => $this->phone,
             'studio' => $this->studio,
             'type' => $this->type->name,
-            'artists' => $this->artists,
             'styles' => $this->styles,
-            'studios' => $this->studios
+            'isFavorite' => $this->getIsUserFavorite(),
         ];
+    }
+
+
+    private function getIsUserFavorite(): bool
+    {
+        if (session('user_id')) {
+            if (in_array(session('user_id'), $this->users->pluck('id')->toArray())) {
+                return true;
+            }
+        }
+        return false;
     }
 }
