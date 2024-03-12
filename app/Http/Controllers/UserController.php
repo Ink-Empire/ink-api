@@ -41,20 +41,26 @@ class UserController
      */
     public function create(Request $request)
     {
-        $data = $request->get('payload');
-
-        $user = new User([
-            'name' => $data['payload']['name'],
-            'email' => $data['payload']['email'],
-            'password' => bcrypt($data['payload']['password']),
-            'phone' => $data['payload']['phone'] ?? null,
-            'location' => $data['payload']['address'] ?? null,
-            'type_id' => $data['payload']['type'] == 'client' ? 1 : 2,
-        ]);
-
-        $user->save();
-
-        return $this->returnUserResponse($user);
+        try {
+            $data = $request->get('payload');
+            $user = new User([
+                'name' => $data['payload']['name'],
+                'email' => $data['payload']['email'],
+                'password' => bcrypt($data['payload']['password']),
+                'phone' => $data['payload']['phone'] ?? null,
+                'location' => $data['payload']['address'] ?? null,
+                'type_id' => $data['payload']['type'] == 'client' ? 1 : 2,
+            ]);
+            $user->save();
+            return $this->returnUserResponse($user);
+        } catch (\Exception $e) {
+            \Log::error("Unable to create user", [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+            return $this->returnErrorResponse($e->getMessage());
+        }
     }
 
     /**
@@ -80,7 +86,7 @@ class UserController
         } catch (UserNotFoundException $e) {
             \Log::error("Unable to find user with id of $user_id");
 
-            return response("User $user_id not found", 500);
+            return $this->returnErrorResponse($e->getMessage(), "User $user_id not found");
         }
     }
 
@@ -150,5 +156,10 @@ class UserController
     private function returnUserResponse($user)
     {
         return response()->json(['user' => new UserResource($user)]);
+    }
+
+    private function returnErrorResponse($error, $errorMessage = 'error')
+    {
+        return response()->json([$errorMessage => $error]);
     }
 }
