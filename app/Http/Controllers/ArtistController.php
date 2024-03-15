@@ -15,7 +15,7 @@ use Illuminate\Http\Response;
 /**
  *
  */
-class ArtistController
+class ArtistController extends Controller
 {
 
     public function __construct(
@@ -36,7 +36,7 @@ class ArtistController
         //eventually perhaps replaced with an ES call
         $artists = $this->artistService->get();
 
-        return response()->json(['artists' => ArtistResource::collection($artists)]);
+        return $this->returnResponse('artists', ArtistResource::collection($artists));
     }
 
     /**
@@ -48,7 +48,7 @@ class ArtistController
         $artist = $this->artistService->getById($id);
         $artist->user_id = $user_id;
 
-        return response()->json(['artist' => new ArtistResource($artist)]);
+        return $this->returnResponse('artist', new ArtistResource($artist));
     }
 
     /**
@@ -59,7 +59,7 @@ class ArtistController
     {
         $data = $request->get('payload');
 
-        $user = new User([
+        $artist = new User([
             'name' => $data['payload']['name'],
             'email' => $data['payload']['email'],
             'password' => bcrypt($data['payload']['password']),
@@ -68,35 +68,7 @@ class ArtistController
             'type_id' => $data['payload']['type'] == 'client' ? 1 : 2,
         ]);
 
-        $user->save();
-
-        return response()->json(['user' => $user]);
-    }
-
-    /**
-     * @param Request $request
-     */
-    public function upload(Request $request): JsonResponse|Response
-    {
-        try {
-            $data = $request->all();
-
-            $file = $request->get('my_file');
-
-            $user_id = $request->get('user_id');
-            $date = Date('Ymdi');
-            $filename = "profile_" . $data['user_id'] . $date . ".jpeg";
-
-            $image = $this->imageService->processImage($file, $filename);
-
-            $user = $this->userService->setProfileImage($user_id, $image);
-
-            return response()->json(['user' => new UserResource($user)]);
-        } catch (UserNotFoundException $e) {
-            \Log::error("Unable to find user with id of $user_id");
-
-            return response("User $user_id not found", 500);
-        }
+        return $this->returnResponse('artist', new ArtistResource($artist));
     }
 
     /**
@@ -105,7 +77,7 @@ class ArtistController
     public function update(Request $request, $id)
     {
         $data = $request->get('payload');
-        $user = $this->userService->getById($id);
+        $user = $this->artistService->getById($id);
 
         foreach ($data['payload'] as $fieldName => $fieldVal) {
             if (in_array($fieldName, $user->getFillable())) {
@@ -133,15 +105,5 @@ class ArtistController
     public function delete()
     {
 
-    }
-
-    private function getModelInstance($name)
-    {
-        if ($name == 'artists') { //artist is derived from users table
-            $name = 'user';
-        } else {
-            $name = substr($name, 0, -1);
-        }
-        return app("App\Models\\" . $name);
     }
 }
