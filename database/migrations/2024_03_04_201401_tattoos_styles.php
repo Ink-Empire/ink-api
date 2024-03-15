@@ -13,8 +13,8 @@ return new class extends Migration
     {
         Schema::create('tattoos_styles', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('tattoo_id')->constrained();
-            $table->foreignId('style_id')->constrained();
+            $table->foreignId('tattoo_id')->constrained()->onDelete('cascade')->onUpdate('cascade');
+            $table->foreignId('style_id')->constrained()->onDelete('cascade')->onUpdate('cascade');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
             $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
 

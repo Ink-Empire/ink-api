@@ -67,11 +67,6 @@ class User extends Authenticatable
         return $this->belongsTo(Image::class);
     }
 
-    public function studio()
-    {
-        return $this->belongsTo(Studio::class);
-    }
-
     public function styles()
     {
         return $this->belongsToMany(Style::class, 'users_styles', 'user_id', 'style_id');
