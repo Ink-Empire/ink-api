@@ -3,8 +3,8 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\StudioResource;
-use App\Http\Resources\UserResource;
 use App\Models\Studio;
+use App\Services\AddressService;
 use App\Services\StudioService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -12,8 +12,9 @@ use Illuminate\Http\Request;
 class StudioController extends Controller
 {
     public function __construct(
-        protected StudioService $studioService,
-        protected UserService   $userService
+        protected AddressService $addressService,
+        protected StudioService  $studioService,
+        protected UserService    $userService,
     )
     {
     }
@@ -39,20 +40,31 @@ class StudioController extends Controller
         return $this->returnResponse('studio', new StudioResource($studio));
     }
 
-    public function create(Request $request)
+    //TODO create custom request
+    public function create(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
             $data = $request->get('payload');
-            $studio = new Studio([
-                'name' => $data['payload']['name'],
-                'email' => $data['payload']['email'],
-                'phone' => $data['payload']['phone'] ?? null,
-                'location' => $data['payload']['location'] ?? null,
-            ]);
 
-            $studio->save();
+            $studioData = $data['studioData'];
+            $addressData = $data['address'];
+            $user_id = $data['user_id'];
 
-            $user = $this->userService->getById($data['id']);
+            $studioAddress = $this->addressService->create($addressData);
+
+            if ($studioAddress) {
+                $studio = new Studio([
+                    'name' => $studioData['name'],
+                    'email' => $studioData['email'],
+                    'phone' => $studioData['phone'] ?? null,
+                ]);
+
+                //attach address to studio
+                $studio->address_id = $studioAddress->id;
+                $studio->save();
+            }
+
+            $user = $this->userService->getById($user_id);
 
             if ($user) {
                 //primary studio id -- TODO possibilities on attaching user to many if its relevant
