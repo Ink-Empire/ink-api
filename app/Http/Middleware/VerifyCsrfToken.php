@@ -14,5 +14,8 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         '/users/*',
         '/artists/*',
+        '/images/*',
+        '/studios/*',
+        '/styles/*',
     ];
 }
