@@ -17,16 +17,30 @@ class AddressFactory extends Factory
     public function definition()
     {
         return [
-            'first_name' => fake()->firstName,
-            'last_name' => fake()->lastName,
-            'address1' => fake()->streetAddress,
-            'address2' => fake()->secondaryAddress,
-            'city' => fake()->city,
-            'state' => fake()->state,
-            'postal_code' => fake()->postcode,
-            'country_code' => 'US',
-            'phone' => '000-000-0000',
+            'address1' => "",
+            'address2' => "",
+            'city' => "",
+            'state' => "",
+            'postal_code' => "",
+            'country_code' => "",
+            'phone' => "",
             'is_active' => 1
         ];
+    }
+
+    public function generated(): Factory
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'address1' => fake()->streetAddress,
+                'address2' => fake()->secondaryAddress,
+                'city' => fake()->city,
+                'state' => fake()->state,
+                'postal_code' => fake()->postcode,
+                'country_code' => 'US',
+                'phone' => '000-000-0000',
+                'is_active' => 1
+            ];
+        });
     }
 }

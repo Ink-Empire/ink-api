@@ -25,11 +25,28 @@ Route::group(['prefix' => 'users'], function () {
     Route::get('/{id}', 'UserController@get');
 });
 
-
 Route::group(['prefix' => 'artists'], function () {
     Route::get('/{user_id?}', 'ArtistController@get');
     Route::post('/create', 'ArtistController@create');
     Route::put('/artist/{id}', 'ArtistController@update');
     Route::post('/uploadPhoto', 'ArtistController@upload');
     Route::get('/{id}/{user_id?}', 'ArtistController@getById');
+});
+
+Route::group(['prefix' => 'studios'], function () {
+    Route::get('/{user_id?}', 'StudioController@get');
+    Route::post('/create', 'StudioController@create');
+    Route::put('/studio/{id}', 'StudioController@update');
+    Route::get('/{id}/{user_id?}', 'StudioController@getById');
+});
+
+Route::group(['prefix' => 'styles'], function () {
+    Route::get('/', 'StyleController@get');
+    Route::post('/create', 'StyleController@create');
+    Route::put('/styles/{id}', 'StyleController@update');
+    Route::get('/{id}', 'StyleController@getById');
+});
+
+Route::group(['prefix' => 'images'], function () {
+    Route::post('/uploadPhoto', 'ImageController@upload');
 });
