@@ -46,19 +46,19 @@ class UserController extends Controller
         try {
             $data = $request->get('payload');
 
-            if ($data['payload']['address']) {
+            if ($data['address']) {
                 $address = $this->addressService->create(
-                    $this->addressService->mapFields($data['payload']['address'])
+                    $this->addressService->mapFields($data['address'])
                 );
             }
 
             $user = new User([
-                'name' => $data['payload']['name'],
-                'email' => $data['payload']['email'],
-                'password' => bcrypt($data['payload']['password']),
-                'phone' => $data['payload']['phone'] ?? null,
-                'location' => $data['payload']['location'] ?? null,
-                'type_id' => $data['payload']['type'] == 'client' ? 1 : 2,
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => bcrypt($data['password']),
+                'phone' => $data['phone'] ?? null,
+                'location' => $data['location'] ?? null,
+                'type_id' => $data['type'] == 'client' ? 1 : 2,
                 'address_id' => $address->id ?? null
             ]);
             $user->save();
