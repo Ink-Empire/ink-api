@@ -36,4 +36,15 @@ class AddressService
             return null;
         }
     }
+
+    public function mapFields(array $data): array
+    {
+        return [
+            'address1' => $data['houseNumber'] . ' ' . $data['street'],
+            'city' => $data['city'],
+            'state' => $data['stateCode'],
+            'postal_code' => $data['postalCode'],
+            'country_code' => $data['countryCode']
+        ];
+    }
 }

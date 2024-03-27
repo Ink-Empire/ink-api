@@ -35,7 +35,8 @@ class ImageController extends Controller
             $type = $request->get('type'); //user, studio
 
             $date = Date('Ymdi');
-            $filename = "profile_" . $id ."_" . $date . ".jpeg";
+
+            $filename = "profile_" . $id . "_" . $date . ".jpeg";
 
             $image = $this->imageService->processImage($file, $filename);
 
@@ -45,7 +46,11 @@ class ImageController extends Controller
 
         } catch (\Exception $e) {
             $error = "Error: Unable to set profile image for type $type";
-            \Log::error($error);
+            \Log::error($error, [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
 
             return $this->returnErrorResponse($e->getMessage(), $error);
         }

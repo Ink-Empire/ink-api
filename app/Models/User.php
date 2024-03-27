@@ -31,6 +31,7 @@ class User extends Authenticatable
         'phone',
         'studio_id',
         'type_id',
+        'address_id'
     ];
 
     /**
@@ -80,5 +81,10 @@ class User extends Authenticatable
     public function artists()
     {
         return $this->belongsToMany(User::class, 'users_artists', 'user_id', 'artist_id');
+    }
+
+    public function address()
+    {
+        return $this->belongsTo(Address::class);
     }
 }

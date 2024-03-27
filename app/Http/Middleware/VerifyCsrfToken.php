@@ -16,5 +16,6 @@ class VerifyCsrfToken extends Middleware
         '/artists/*',
         '/images/*',
         '/studios/*',
+        '/styles/*',
     ];
 }

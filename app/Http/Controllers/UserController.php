@@ -6,6 +6,7 @@ use App\Enums\UserRelationships;
 use App\Exceptions\UserNotFoundException;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Services\AddressService;
 use App\Services\ImageService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -19,8 +20,9 @@ class UserController extends Controller
 {
 
     public function __construct(
-        protected UserService  $userService,
-        protected ImageService $imageService
+        protected UserService    $userService,
+        protected ImageService   $imageService,
+        protected AddressService $addressService
     )
     {
     }
@@ -43,6 +45,13 @@ class UserController extends Controller
     {
         try {
             $data = $request->get('payload');
+
+            if ($data['payload']['address']) {
+                $address = $this->addressService->create(
+                    $this->addressService->mapFields($data['payload']['address'])
+                );
+            }
+
             $user = new User([
                 'name' => $data['payload']['name'],
                 'email' => $data['payload']['email'],
@@ -50,6 +59,7 @@ class UserController extends Controller
                 'phone' => $data['payload']['phone'] ?? null,
                 'location' => $data['payload']['location'] ?? null,
                 'type_id' => $data['payload']['type'] == 'client' ? 1 : 2,
+                'address_id' => $address->id ?? null
             ]);
             $user->save();
 
@@ -98,21 +108,27 @@ class UserController extends Controller
      */
     public function update(Request $request, $id)
     {
-        $data = $request->get('payload');
-        $user = $this->userService->getById($id);
+        try {
+            $data = $request->all();
+            $user = $this->userService->getById($id);
+            foreach ($data as $fieldName => $fieldVal) {
+                if (in_array($fieldName, $user->getFillable())) {
+                    $user->{$fieldName} = $fieldVal;
+                }
 
-        foreach ($data['payload'] as $fieldName => $fieldVal) {
-            if (in_array($fieldName, $user->getFillable())) {
-                $user->{$fieldName} = $fieldVal;
-            }
+                if (in_array($fieldName, array_keys(UserRelationships::RELATIONSHIPS))) {
+                    foreach ($fieldVal as $val) {
 
-            if (in_array($fieldName, array_keys(UserRelationships::RELATIONSHIPS))) {
-                foreach ($fieldVal as $val) {
-                    $instance = UserRelationships::RELATIONSHIPS[$fieldName];
-                    $toSave = new $instance($val);
-                    $user->{$fieldName}()->syncWithoutDetaching($toSave);
+                        $instance = UserRelationships::RELATIONSHIPS[$fieldName];
+                        $toSave = new $instance($val);
+                        $user->{$fieldName}()->syncWithoutDetaching($toSave);
+                    }
                 }
             }
+            $user->save();
+            return $this->returnUserResponse('user', new UserResource($user));
+        } catch (\Exception $e) {
+            return $this->returnErrorResponse($e->getMessage());
         }
 
         $user->save();
