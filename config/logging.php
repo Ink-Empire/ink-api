@@ -18,7 +18,7 @@ return [
     |
     */
 
-    'default' => env('LOG_CHANNEL', 'stack'),
+    'default' => 'stack',
 
     /*
     |--------------------------------------------------------------------------
@@ -54,8 +54,7 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => ['single'],
-            'ignore_exceptions' => false,
+            'channels' => filter_var(env('LOG_STDOUT_STDERR'), FILTER_VALIDATE_BOOLEAN) ? ['stdout', 'stderr'] : ['daily', 'debug'],
         ],
 
         'single' => [
@@ -127,5 +126,4 @@ return [
             'path' => storage_path('logs/laravel.log'),
         ],
     ],
-
 ];
