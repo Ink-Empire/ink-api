@@ -21,15 +21,13 @@ Route::group(['prefix' => 'users'], function () {
     Route::post('/create', 'UserController@create');
     Route::put('/user/{id}', 'UserController@update');
     Route::post('/user/{id}/favorites', 'UserController@updateFavorite');
-    Route::post('/uploadPhoto', 'UserController@upload');
-    Route::get('/{id}', 'UserController@get');
+    Route::get('/{id}', 'UserController@getById');
 });
 
 Route::group(['prefix' => 'artists'], function () {
     Route::get('/{user_id?}', 'ArtistController@get');
     Route::post('/create', 'ArtistController@create');
     Route::put('/artist/{id}', 'ArtistController@update');
-    Route::post('/uploadPhoto', 'ArtistController@upload');
     Route::get('/{id}/{user_id?}', 'ArtistController@getById');
 });
 

@@ -8,6 +8,7 @@ use Illuminate\Database\Eloquent\Model;
 class Tattoo extends Model
 {
     use HasFactory;
+    public $with = ['image'];
 
     protected $fillable = [
         'id',
@@ -44,6 +45,6 @@ class Tattoo extends Model
 
     public function image()
     {
-        return $this->belongsTo(Image::class);
+        return $this->belongsTo(Image::class, 'primary_image_id', 'id');
     }
 }

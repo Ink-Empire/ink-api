@@ -35,6 +35,7 @@ class ImageController extends Controller
             $type = $request->get('type'); //user, studio
 
             $date = Date('Ymdi');
+
             $filename = "profile_" . $id . "_" . $date . ".jpeg";
 
             $image = $this->imageService->processImage($file, $filename);

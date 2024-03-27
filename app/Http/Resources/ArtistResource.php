@@ -28,6 +28,7 @@ class ArtistResource extends JsonResource
             'studio' => $this->studio,
             'type' => $this->type->name,
             'styles' => $this->styles,
+            'tattoos' => $this->tattoos,
             'isFavorite' => $this->getIsUserFavorite(),
         ];
     }
