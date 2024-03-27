@@ -20,10 +20,10 @@ class UserService
     ];
 
     /**
-     * @param int $id
+     * @param $id
      * @return void|User
      */
-    public function getById(int $id)
+    public function getById($id)
     {
         if ($id) {
             return User::where('id', $id)->first();

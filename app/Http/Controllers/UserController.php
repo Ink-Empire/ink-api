@@ -16,7 +16,7 @@ use Illuminate\Http\Response;
 /**
  *
  */
-class UserController
+class UserController extends Controller
 {
 
     public function __construct(
@@ -31,10 +31,10 @@ class UserController
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function get($id)
+    public function getById($id)
     {
         $user = $this->userService->getById($id);
-        return $this->returnUserResponse($user);
+        return $this->returnResponse('user', new UserResource($user));
     }
 
     /**
@@ -57,18 +57,21 @@ class UserController
                 'email' => $data['payload']['email'],
                 'password' => bcrypt($data['payload']['password']),
                 'phone' => $data['payload']['phone'] ?? null,
-                'location' => $data['payload']['address'] ?? null,
+                'location' => $data['payload']['location'] ?? null,
                 'type_id' => $data['payload']['type'] == 'client' ? 1 : 2,
                 'address_id' => $address->id ?? null
             ]);
             $user->save();
-            return $this->returnUserResponse($user);
+
+            return $this->returnResponse('user', new UserResource($user));
+
         } catch (\Exception $e) {
             \Log::error("Unable to create user", [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile()
             ]);
+
             return $this->returnErrorResponse($e->getMessage());
         }
     }
@@ -91,7 +94,7 @@ class UserController
 
             $user = $this->userService->setProfileImage($user_id, $image);
 
-            return $this->returnUserResponse($user);
+            return $this->returnResponse('user', new UserResource($user));
 
         } catch (UserNotFoundException $e) {
             \Log::error("Unable to find user with id of $user_id");
@@ -127,6 +130,10 @@ class UserController
         } catch (\Exception $e) {
             return $this->returnErrorResponse($e->getMessage());
         }
+
+        $user->save();
+
+        return $this->returnResponse('user', new UserResource($user));
     }
 
     /**
@@ -154,7 +161,7 @@ class UserController
 
         $user->save();
 
-        return $this->returnUserResponse($user);
+        return $this->returnResponse('user', new UserResource($user));
     }
 
     /**
@@ -163,15 +170,5 @@ class UserController
     public function delete()
     {
 
-    }
-
-    private function returnUserResponse($user): JsonResponse
-    {
-        return response()->json(['user' => new UserResource($user)]);
-    }
-
-    private function returnErrorResponse($error, $errorMessage = 'error'): JsonResponse
-    {
-        return response()->json([$errorMessage => $error]);
     }
 }

@@ -16,8 +16,12 @@ class Image extends Model
         'is_primary'
     ];
 
-    public function setUriAttribute($filename)
+    public function setUriAttribute($filename = null)
     {
-        $this->attributes['uri'] = 'https://inked-in-images.s3.amazonaws.com/' . $filename;
+        if (!$filename) { //replace with image not found perhaps
+            $this->attributes['uri'] = "https://www.gravatar.com/avatar?d=mm&s=140";
+        } else {
+            $this->attributes['uri'] = 'https://inked-in-images.s3.amazonaws.com/' . $filename;
+        }
     }
 }
