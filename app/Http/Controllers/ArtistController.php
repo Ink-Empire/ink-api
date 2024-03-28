@@ -2,15 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\UserNotFoundException;
 use App\Http\Resources\ArtistResource;
-use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 /**
  *

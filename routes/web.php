@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
 
 Route::group(['prefix' => 'users'], function () {
     Route::post('/create', 'UserController@create');
@@ -48,3 +45,9 @@ Route::group(['prefix' => 'styles'], function () {
 Route::group(['prefix' => 'images'], function () {
     Route::post('/uploadPhoto', 'ImageController@upload');
 });
+
+//Route::get('/home', function () {
+//    return "success";
+//});
+
+//Route::get('/passwordReset', '')->name('password.reset');

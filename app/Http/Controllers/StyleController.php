@@ -5,16 +5,11 @@ namespace App\Http\Controllers;
 use App\Http\Resources\StyleResource;
 use App\Models\Style;
 use App\Services\StyleService;
-use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
-use Illuminate\Foundation\Bus\DispatchesJobs;
-use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 class StyleController extends Controller
 {
-    use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
-
 
     public function __construct(protected StyleService $styleService)
     {
