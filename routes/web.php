@@ -13,6 +13,10 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/test', function () {
+    \Artisan::call('elastic:create-index "App\\\Models\\\Tattoo"');
+});
+
 Route::get('/', function () {
     return view('welcome');
 });
@@ -45,6 +49,22 @@ Route::group(['prefix' => 'styles'], function () {
     Route::get('/{id}', 'StyleController@getById');
 });
 
+Route::group(['prefix' => 'tattoos'], function () {
+    Route::get('/', 'TattooController@get');
+    Route::post('/create', 'TattooController@create');
+    Route::put('/tattoos/{id}', 'TattooController@update');
+    Route::get('/{id}', 'TattooController@getById');
+});
+
 Route::group(['prefix' => 'images'], function () {
     Route::post('/uploadPhoto', 'ImageController@upload');
+});
+
+Route::group(['prefix' => 'elastic'], function () {
+    Route::get('/{id}', 'ElasticController@getById');
+    Route::post('/rebuild', 'ElasticController@rebuild');
+    Route::post('/rebuild-by-elastic', 'ElasticController@rebuildByElasticQuery');
+    Route::post('/rebuild-bypass', 'ElasticController@rebuildBypass');
+    Route::post('/migrate', 'ElasticController@migrateAlias');
+    Route::post('translate-query', 'ElasticController@translateQuery');
 });
