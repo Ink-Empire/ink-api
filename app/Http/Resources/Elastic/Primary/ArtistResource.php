@@ -1,8 +1,11 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Elastic\Primary;
 
+use App\Http\Resources\StudioResource;
+use App\Http\Resources\StyleResource;
 use Illuminate\Http\Resources\Json\JsonResource;
+use App\Http\Resources\Elastic\TattooResource as TattooResource;
 
 class ArtistResource extends JsonResource
 {
@@ -22,25 +25,13 @@ class ArtistResource extends JsonResource
             'email' => $this->email,
             'image' => $this->image,
             'location' => $this->location,
+            'location_lat_long' => $this->location_lat_long,
             'name' => $this->name,
-            'password' => $this->password,
             'phone' => $this->phone,
-            'studio' => $this->studio,
+            'studio' => new StudioResource($this->studio),
             'type' => $this->type->name,
-            'styles' => $this->styles,
-            'tattoos' => $this->tattoos,
-            'isFavorite' => $this->getIsUserFavorite(),
+            'styles' => StyleResource::collection($this->styles),
+            'tattoos' => TattooResource::collection($this->tattoos)
         ];
-    }
-
-
-    private function getIsUserFavorite(): bool
-    {
-        if (session('user_id')) {
-            if (in_array(session('user_id'), $this->users->pluck('id')->toArray())) {
-                return true;
-            }
-        }
-        return false;
     }
 }

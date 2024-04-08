@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\Elastic\TattooResource;
+use App\Http\Resources\Elastic\Primary\TattooResource;
 use App\Services\TattooService;
 
 class TattooController extends Controller

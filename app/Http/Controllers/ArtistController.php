@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\ArtistResource;
+use App\Http\Resources\Elastic\Primary\ArtistResource;
 use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
