@@ -16,6 +16,10 @@ class Image extends Model
         'is_primary'
     ];
 
+    protected $casts = [
+        'is_primary' => 'boolean',
+    ];
+
     public function setUriAttribute($filename = null)
     {
         if (!$filename) { //replace with image not found perhaps

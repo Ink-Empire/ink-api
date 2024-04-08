@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Http\Resources\Elastic\TattooResource;
+use App\Http\Resources\Elastic\Primary\TattooResource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Larelastic\Elastic\Traits\Migratable;
@@ -37,12 +37,12 @@ class Tattoo extends Model
     //todo we need all secondary tags
     public function style()
     {
-        return $this->belongsTo(Style::class);
+        return $this->belongsTo(Style::class, 'primary_style_id', 'id');
     }
 
     public function subject()
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsTo(Subject::class, 'primary_subject_id', 'id');
     }
 
     public function primary_image()
@@ -58,7 +58,6 @@ class Tattoo extends Model
     /*
     * Elasticsearch
     */
-
 
     use Migratable;
     use Searchable;

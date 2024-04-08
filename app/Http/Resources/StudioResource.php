@@ -14,6 +14,7 @@ class StudioResource extends JsonResource
             'name' => $this->name,
             'about' => $this->about,
             'location' => $this->location,
+            'location_lat_long' => $this->location_lat_long,
             'email' => $this->email,
             'phone' => $this->phone,
             'image' => $this->getImage(),

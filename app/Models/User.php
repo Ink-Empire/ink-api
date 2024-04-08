@@ -26,6 +26,7 @@ class User extends Authenticatable
         'email',
         'image_id',
         'location',
+        'location_lat_long',
         'name',
         'password',
         'phone',

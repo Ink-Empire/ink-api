@@ -6,7 +6,7 @@ use Larelastic\Elastic\Constants\Datatypes;
 use Larelastic\Elastic\Models\IndexConfigurator;
 use Larelastic\Elastic\Traits\Migratable;
 
-class TattooIndexConfigurator extends IndexConfigurator
+class ArtistIndexConfigurator extends IndexConfigurator
 {
     use Migratable;
 
@@ -130,31 +130,14 @@ class TattooIndexConfigurator extends IndexConfigurator
         ],
     ];
 
-    const ARTIST = [
+    const TATTOOS = [
         'type' => 'nested',
-        'properties' => [
-            'id' => Datatypes::INTEGER,
-            'email' => Datatypes::KEYWORD,
-            'image' => self::IMAGE,
-            'location' => Datatypes::KEYWORD,
-            'location_lat_long' => Datatypes::GEO_POINT,
-            'name' => Datatypes::KEYWORD,
-            'studio' => Datatypes::KEYWORD,
-            'type' => Datatypes::KEYWORD,
-            'styles' => self::STYLE,
-        ],
-    ];
-
-
-    /** @var array */
-    protected $mappings = [
         'properties' => [
             'id' => Datatypes::INTEGER,
             'title' => Datatypes::KEYWORD,
             'description' => Datatypes::TEXT,
             'placement' => Datatypes::KEYWORD,
-            'artist' => self::ARTIST,
-            'studio' => self::STUDIO,
+            'studio' => Datatypes::KEYWORD,
             'primary_style' => Datatypes::KEYWORD,
             'primary_subject' => Datatypes::KEYWORD,
             'primary_image' => self::IMAGE,
@@ -162,9 +145,28 @@ class TattooIndexConfigurator extends IndexConfigurator
         ]
     ];
 
+
+    /** @var array */
+    protected $mappings = [
+        'properties' => [
+            'id' => Datatypes::INTEGER,
+            'about' => Datatypes::TEXT,
+            'email' => Datatypes::KEYWORD,
+            'image' => self::IMAGE,
+            'location' => Datatypes::KEYWORD,
+            'location_lat_long' => Datatypes::GEO_POINT,
+            'name' => Datatypes::KEYWORD,
+            'phone' => Datatypes::KEYWORD,
+            'studio' => self::STUDIO,
+            'type' => Datatypes::KEYWORD,
+            'styles' => self::STYLE,
+            'tattoos' => self::TATTOOS,
+        ]
+    ];
+
     public function getName()
     {
-        $name = config('elastic.client.index');
+        $name = 'artists';
 
         return $name;
     }
