@@ -35,7 +35,8 @@ Route::group(['middleware' => 'auth:sanctum'], function() {
                 ->middleware(array_filter([
                     'guest:'.config('fortify.guard'),  // Only guests (non-authenticated users) are allowed
                     $limiter ? 'throttle:'.$limiter : null,  // Throttle login attempts if limiter is configured
-                ]));
+                ]))
+                ->name('login');
 
             // Route for user registration
             Route::post('/register', [RegisteredUserController::class, 'store'])
@@ -53,7 +54,7 @@ Route::group(['middleware' => 'auth:sanctum'], function() {
                 'throttle:'.$verificationLimiter // Throttle resend email attempts
             ]);
 
-        Route::post('/logout', [LogoutController::class, 'destroy']);
+        // Route::post('/logout', [LogoutController::class, 'destroy']);
     });
 
     // User routes
@@ -62,13 +63,13 @@ Route::group(['middleware' => 'auth:sanctum'], function() {
             return $request->user();
         });
 
-        Route::put('/profile-information', [ProfileInformationController::class, 'update']);
+        // Route::put('/profile-information', [ProfileInformationController::class, 'update']);
 
-        Route::post('/profile-photo', [ProfilePhotoController::class, 'update']);
+        // Route::post('/profile-photo', [ProfilePhotoController::class, 'update']);
 
-        Route::post('/remove-photo', [ProfilePhotoController::class, 'delete']);
+        // Route::post('/remove-photo', [ProfilePhotoController::class, 'delete']);
 
-        Route::put('/update-password', [PasswordController::class, 'update']);
+        // Route::put('/update-password', [PasswordController::class, 'update']);
     });
 
 });
