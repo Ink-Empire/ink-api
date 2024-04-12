@@ -9,13 +9,15 @@ use App\Http\Resources\Elastic\TattooResource as TattooResource;
 
 class ArtistResource extends JsonResource
 {
-    protected $user_id;
-
-    public function user_id($value): static
-    {
-        $this->user_id = $value;
-        return $this;
-    }
+//    protected $user_id;
+//
+//    public function user_id($value): static
+//    {
+//        if ($value) {
+//            $this->user_id = $value;
+//            return $this;
+//        }
+//    }
 
     public function toArray($request)
     {

@@ -26,24 +26,24 @@ class ArtistController extends Controller
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function get($user_id = null)
+    public function get(Request $request)
     {
-        session(['user_id' => $user_id]);
+        $params = $request->all();
 
-        //eventually perhaps replaced with an ES call
-        $artists = $this->artistService->get();
+        $response = $this->artistService->search($params);
 
-        return $this->returnResponse('artists', ArtistResource::collection($artists));
+        return $this->returnResponse('artists', $response);
     }
+
+    //TODO wire these to get results from ES
 
     /**
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getById($id, $user_id = null)
+    public function getById($id): JsonResponse
     {
         $artist = $this->artistService->getById($id);
-        $artist->user_id = $user_id;
 
         return $this->returnResponse('artist', new ArtistResource($artist));
     }

@@ -13,10 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/test', function () {
-    \Artisan::call('elastic:create-index "App\\\Models\\\Tattoo"');
-});
-
 Route::get('/', function () {
     return view('welcome');
 });
@@ -29,10 +25,10 @@ Route::group(['prefix' => 'users'], function () {
 });
 
 Route::group(['prefix' => 'artists'], function () {
-    Route::get('/{user_id?}', 'ArtistController@get');
+    Route::post('/', 'ArtistController@get');
+    Route::get('/{id}', 'ArtistController@getById');
     Route::post('/create', 'ArtistController@create');
     Route::put('/artist/{id}', 'ArtistController@update');
-    Route::get('/{id}/{user_id?}', 'ArtistController@getById');
 });
 
 Route::group(['prefix' => 'studios'], function () {
