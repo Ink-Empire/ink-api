@@ -33,7 +33,10 @@ class ArtistService
     public function search($params)
     {
         $this->filters = $params;
-        $this->user = $this->userService->getById($this->filters['user_id']);
+
+        if(isset($this->filters['user_id'])) {
+            $this->user = $this->userService->getById($this->filters['user_id']);
+        }
 
         //initialize the elastic query
         $this->search = Artist::search();
@@ -98,52 +101,5 @@ class ArtistService
         }
 
         return $artist;
-    }
-
-    private function buildGeoParam($field = 'location_lat_long', string $latLongString = null)
-    {
-        //TODO add filter on distances
-        //we need the current User's location to get this
-        try {
-            if (empty($latLongString)) {
-                $latLongArray = explode(",", $this->user->location_lat_long);
-            } else {
-                $latLongArray = explode(",", $latLongString);
-            }
-
-            $data = [
-                'field' => $field,
-                'lat' => $latLongArray[0],
-                'lon' => $latLongArray[1]
-            ];
-
-            $this->search->geoSort($data);
-
-        } catch (\Exception $e) {
-            \Log::error("Unable to build geo param", [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'user_id' => $this->user->id ?? "user not found",
-            ]);
-        }
-    }
-
-    private function buildStudioParam()
-    {
-        $this->search->where('studio.id', $this->filters['studio_id']);
-    }
-
-    private function buildStylesParam($minMatch = 1)
-    {
-        //if exact, can set minMatch to count of styles
-        foreach ($this->filters['styles'] as $style) {
-            if($style) {
-                $clauses[] = ['styles.id', '=', $style];
-            }
-        }
-        if(count($clauses) > 0) {
-            $this->search->orWhere($clauses, $minMatch);
-        }
     }
 }

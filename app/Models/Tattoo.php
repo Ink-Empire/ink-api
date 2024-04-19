@@ -35,9 +35,14 @@ class Tattoo extends Model
     }
 
     //todo we need all secondary tags
-    public function style()
+    public function primary_style()
     {
         return $this->belongsTo(Style::class, 'primary_style_id', 'id');
+    }
+
+    public function styles()
+    {
+        return $this->belongsToMany(Style::class, 'tattoos_styles', 'tattoo_id', 'style_id');
     }
 
     public function subject()
@@ -72,6 +77,8 @@ class Tattoo extends Model
             'artist',
             'studio',
             'images',
+            'primary_style',
+            'styles'
         ]);
 
         return $query;
@@ -88,6 +95,8 @@ class Tattoo extends Model
             'artist',
             'studio',
             'images',
+            'primary_style',
+            'styles',
         ];
 
         $this->loadMissing($with);

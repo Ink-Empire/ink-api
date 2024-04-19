@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\Elastic\Primary\ArtistResource;
 use App\Http\Resources\Elastic\Primary\TattooResource;
 use App\Services\TattooService;
+use Illuminate\Http\JsonResponse;
 
 class TattooController extends Controller
 {
@@ -23,6 +25,17 @@ class TattooController extends Controller
         $tattoos = $this->tattooService->get();
 
         return $this->returnResponse('tattoos', TattooResource::collection($tattoos));
+    }
+
+    /**
+     * @param $id
+     * @return \Illuminate\Http\JsonResponse
+     */
+    public function getById($id): JsonResponse
+    {
+        $tattoo = $this->tattooService->getById($id);
+
+        return $this->returnResponse('tattoo', new TattooResource($tattoo));
     }
 
 }
