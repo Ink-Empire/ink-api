@@ -4,6 +4,7 @@ namespace App\Http\Resources\Elastic\Primary;
 
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\StudioResource;
+use App\Http\Resources\StyleResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class TattooResource extends JsonResource
@@ -17,10 +18,12 @@ class TattooResource extends JsonResource
             'placement' => $this->placement,
             'artist' => new ArtistResource($this->artist),
             'studio' => new StudioResource($this->studio),
-            'primary_style' => $this->style->name ?? "",
+            'primary_style' => $this->primary_style->name ?? "",
             'primary_subject' => $this->subject->name ?? "",
             'primary_image' => $this->primary_image ?? null,
             'images' => $this->images,
+            'styles' => StyleResource::collection($this->styles),
+
         ];
     }
 }

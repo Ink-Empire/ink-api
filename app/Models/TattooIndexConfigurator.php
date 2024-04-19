@@ -159,6 +159,7 @@ class TattooIndexConfigurator extends IndexConfigurator
             'primary_subject' => Datatypes::KEYWORD,
             'primary_image' => self::IMAGE,
             'images' => self::IMAGE,
+            'styles' => self::STYLE
         ]
     ];
 

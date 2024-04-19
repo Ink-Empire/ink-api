@@ -16,10 +16,11 @@ class TattooResource extends JsonResource
             'description' => $this->description,
             'placement' => $this->placement,
             'studio' => $this->studio->name ?? "",
-            'primary_style' => $this->style->name ?? "",
+            'primary_style' => $this->primary_style->name ?? "",
             'primary_subject' => $this->subject->name ?? "",
             'primary_image' => $this->primary_image ?? null,
             'images' => $this->images,
+            'styles' => $this->styles,
         ];
     }
 }

@@ -6,6 +6,7 @@ use App\Http\Resources\Elastic\Primary\ArtistResource;
 use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
+use App\Services\SearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -17,7 +18,8 @@ class ArtistController extends Controller
 
     public function __construct(
         protected ArtistService  $artistService,
-        protected ImageService $imageService
+        protected ImageService $imageService,
+        protected SearchService $searchService
     )
     {
     }
@@ -32,7 +34,7 @@ class ArtistController extends Controller
 
         $response = $this->artistService->search($params);
 
-        return $this->returnResponse('artists', $response);
+        return $this->returnElasticResponse($response);
     }
 
     //TODO wire these to get results from ES
@@ -43,9 +45,9 @@ class ArtistController extends Controller
      */
     public function getById($id): JsonResponse
     {
-        $artist = $this->artistService->getById($id);
+        $artist = $this->searchService->getById($id, 'artist');
 
-        return $this->returnResponse('artist', new ArtistResource($artist));
+        return $this->returnResponse('artist', $artist);
     }
 
     /**
