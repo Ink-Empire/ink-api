@@ -21,7 +21,7 @@ class SubjectSeeder extends Seeder
         $subjects = json_decode($json);
 
         foreach ($subjects as $key => $value) {
-            Style::create([
+            Subject::create([
                 "name" => $value->name
             ]);
         }
