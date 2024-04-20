@@ -1,0 +1,102 @@
+[
+    {
+    "first_name": "John",
+    "last_name": "Doe",
+    "address1": "123 Maple Street",
+    "address2": "Apt 101",
+    "city": "Springfield",
+    "state": "IL",
+    "postal_code": "62701",
+    "phone": "217-555-1234"
+    },
+    {
+    "first_name": "Jane",
+    "last_name": "Smith",
+    "address1": "456 Oak Avenue",
+    "address2": "Suite 202",
+    "city": "Bristol",
+    "state": "CT",
+    "postal_code": "06010",
+    "phone": "860-555-5678"
+    },
+    {
+    "first_name": "Michael",
+    "last_name": "Johnson",
+    "address1": "789 Pine Lane",
+    "address2": "Unit B",
+    "city": "Cedar Rapids",
+    "state": "IA",
+    "postal_code": "52401",
+    "phone": "319-555-9012"
+    },
+    {
+    "first_name": "Emily",
+    "last_name": "Brown",
+    "address1": "321 Elm Street",
+    "address2": "Apt 303",
+    "city": "Greenville",
+    "state": "SC",
+    "postal_code": "29601",
+    "phone": "864-555-3456"
+    },
+    {
+    "first_name": "David",
+    "last_name": "Martinez",
+    "address1": "567 Cedar Avenue",
+    "address2": "Suite 404",
+    "city": "Portland",
+    "state": "ME",
+    "postal_code": "04101",
+    "phone": "207-555-7890"
+    },
+    {
+    "first_name": "Jessica",
+    "last_name": "Garcia",
+    "address1": "890 Pine Street",
+    "address2": "Unit C",
+    "city": "Santa Fe",
+    "state": "NM",
+    "postal_code": "87501",
+    "phone": "505-555-2345"
+    },
+    {
+    "first_name": "Matthew",
+    "last_name": "Lopez",
+    "address1": "234 Oak Lane",
+    "address2": "Apt 505",
+    "city": "Augusta",
+    "state": "ME",
+    "postal_code": "04330",
+    "phone": "207-555-6789"
+    },
+    {
+    "first_name": "Sarah",
+    "last_name": "Perez",
+    "address1": "678 Maple Avenue",
+    "address2": "Suite 606",
+    "city": "Bismarck",
+    "state": "ND",
+    "postal_code": "58501",
+    "phone": "701-555-0123"
+    },
+    {
+    "first_name": "Daniel",
+    "last_name": "Gonzalez",
+    "address1": "901 Elm Street",
+    "address2": "Unit D",
+    "city": "Boise",
+    "state": "ID",
+    "postal_code": "83702",
+    "phone": "208-555-4567"
+    },
+    {
+    "first_name": "Amanda",
+    "last_name": "Rodriguez",
+    "address1": "345 Cedar Lane",
+    "address2": "Apt 707",
+    "city": "Helena",
+    "state": "MT",
+    "postal_code": "59601",
+    "phone": "406-555-8901"
+    }
+]
