@@ -71,7 +71,7 @@ class SearchService
             $this->buildDistanceParam('studio.location_lat_long', $this->filters['location_lat_long']);
         }
 
-        $this->search->sort('studio.id', 'desc');
+        $this->buildGeoSort();
 
         $response = $this->search->get();
 
@@ -83,7 +83,7 @@ class SearchService
         //TODO build in support for KM
         $distance = $this->filters['distance'] . 'mi' ?? '25mi';
 
-        if (empty($latLongString)) {
+        if (empty($latLongString) && isset($this->user)) {
             $latLongArray = explode(",", $this->user->location_lat_long);
         } else {
             $latLongArray = explode(",", $latLongString);
@@ -97,7 +97,7 @@ class SearchService
         //TODO add filter on distances
         //we need the current User's location to get this
         try {
-            if (empty($latLongString)) {
+            if (empty($latLongString) && isset($this->user)) {
                 $latLongArray = explode(",", $this->user->location_lat_long);
             } else {
                 $latLongArray = explode(",", $latLongString);
