@@ -65,7 +65,8 @@ class ArtistService
             $this->buildGeoParam('studio.location_lat_long', $this->filters['studio_near_location']);
         }
 
-        $this->search->sort('studio.id', 'desc');
+        //TODO in future let user decide their preference, always closest?
+        $this->search->geoSort('studio.id', 'desc');
 
         $response = $this->search->get();
 
