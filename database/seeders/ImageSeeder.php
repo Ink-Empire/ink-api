@@ -4,6 +4,9 @@ namespace Database\Seeders;
 
 use App\Models\Image;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Schema;
+use File;
 
 class ImageSeeder extends Seeder
 {
@@ -14,8 +17,15 @@ class ImageSeeder extends Seeder
      */
     public function run()
     {
-        Image::factory()
-            ->count(50)
-            ->create();
+        $json = File::get("database/seed-data/images.json");
+        $images = json_decode($json);
+
+        foreach ($images as $key => $value) {
+            Image::create([
+                "filename" => $value->filename,
+                "uri" => $value->uri,
+                "is_primary" => 0
+            ]);
+        }
     }
 }
