@@ -1,0 +1,502 @@
+[
+    {
+        "title": "trad1",
+        "description": "A traditional anchor tattoo with waves, symbolizing strength and resilience.",
+        "placement": "Forearm",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "1",
+        "primary_subject_id": "7",
+        "primary_image_id": "1"
+    },
+    {
+        "title": "trad2",
+        "description": "A traditional eagle tattoo, representing freedom and courage, typically placed on the chest.",
+        "placement": "Chest",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "1",
+        "primary_subject_id": "1",
+        "primary_image_id": "2"
+    },
+    {
+        "title": "trad3",
+        "description": "A traditional tiger tattoo, symbolizing power and ferocity, often placed on the back.",
+        "placement": "Back",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "1",
+        "primary_subject_id": "1",
+        "primary_image_id": "3"
+    },
+    {
+        "title": "trad4",
+        "description": "A classic rose tattoo, representing love and beauty, commonly found on the shoulder.",
+        "placement": "Shoulder",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "1",
+        "primary_subject_id": "2",
+        "primary_image_id": "4"
+    },
+    {
+        "title": "trad5",
+        "description": "A traditional lion tattoo, symbolizing strength and courage, often inked on the thigh.",
+        "placement": "Thigh",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "1",
+        "primary_subject_id": "1",
+        "primary_image_id": "5"
+    },
+    {
+        "title": "neotrad1",
+        "description": "A neo-traditional style tattoo featuring a vibrant floral design, blending traditional elements with modern techniques.",
+        "placement": "Upper arm",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "2",
+        "primary_subject_id": "2",
+        "primary_image_id": "6"
+    },
+    {
+        "title": "neotrad2",
+        "description": "A neo-traditional owl tattoo, incorporating bold colors and intricate linework to create a striking piece of body art.",
+        "placement": "Calf",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "2",
+        "primary_subject_id": "1",
+        "primary_image_id": "7"
+    },
+    {
+        "title": "neotrad3",
+        "description": "A neo-traditional rose tattoo with a modern twist, showcasing vibrant colors and dynamic shading.",
+        "placement": "Forearm",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "2",
+        "primary_subject_id": "2",
+        "primary_image_id": "8"
+    },
+    {
+        "title": "neotrad4",
+        "description": "A neo-traditional snake tattoo, featuring intricate details and vibrant colors, often symbolizing transformation and rebirth.",
+        "placement": "Thigh",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "2",
+        "primary_subject_id": "1",
+        "primary_image_id": "9"
+    },
+    {
+        "title": "neotrad5",
+        "description": "A neo-traditional mermaid tattoo, blending traditional imagery with contemporary design elements, often placed on the ribs.",
+        "placement": "Ribs",
+        "artist_id": "1",
+        "studio_id": "1",
+        "primary_style_id": "2",
+        "primary_subject_id": "5",
+        "primary_image_id": "10"
+    },
+    {
+        "title": "bg1",
+        "description": "A black and grey skull tattoo, often associated with themes of mortality and the passage of time, commonly placed on the forearm.",
+        "placement": "Forearm",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "3",
+        "primary_subject_id": "4",
+        "primary_image_id": "11"
+    },
+    {
+        "title": "bg2",
+        "description": "A black and grey rose tattoo, symbolizing love and remembrance, frequently inked on the shoulder or upper arm.",
+        "placement": "Shoulder",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "3",
+        "primary_subject_id": "2",
+        "primary_image_id": "12"
+    },
+    {
+        "title": "bg3",
+        "description": "A black and grey wolf tattoo, often representing loyalty and strength, commonly placed on the chest or back.",
+        "placement": "Chest",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "3",
+        "primary_subject_id": "1",
+        "primary_image_id": "13"
+    },
+    {
+        "title": "bg4",
+        "description": "A black and grey compass tattoo, symbolizing guidance and direction, typically found on the forearm or calf.",
+        "placement": "Forearm",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "3",
+        "primary_subject_id": "7",
+        "primary_image_id": "14"
+    },
+    {
+        "title": "bg5",
+        "description": "A black and grey clock tattoo, often representing the passage of time and mortality, commonly placed on the wrist or forearm.",
+        "placement": "Wrist",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "3",
+        "primary_subject_id": "10",
+        "primary_image_id": "15"
+    },
+    {
+        "title": "portrait1",
+        "description": "A portrait tattoo of a loved one, capturing their likeness and personality in intricate detail, often placed on the upper arm or back.",
+        "placement": "Upper arm",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "4",
+        "primary_subject_id": "3",
+        "primary_image_id": "16"
+    },
+    {
+        "title": "portrait2",
+        "description": "A realistic portrait tattoo of a famous figure, showcasing the artist's skill in capturing lifelike features and expressions, commonly placed on the chest or back.",
+        "placement": "Chest",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "4",
+        "primary_subject_id": "3",
+        "primary_image_id": "17"
+    },
+    {
+        "title": "portrait3",
+        "description": "A portrait tattoo of a beloved pet, immortalizing their memory and companionship with intricate detail and expressive eyes, often placed on the forearm or calf.",
+        "placement": "Forearm",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "4",
+        "primary_subject_id": "1",
+        "primary_image_id": "18"
+    },
+    {
+        "title": "portrait4",
+        "description": "A portrait tattoo of a historical figure, depicting their likeness and significance with meticulous detail and shading, commonly found on the shoulder or back.",
+        "placement": "Shoulder",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "4",
+        "primary_subject_id": "3",
+        "primary_image_id": "19"
+    },
+    {
+        "title": "portrait5",
+        "description": "A portrait tattoo of a family member, capturing their personality and essence with lifelike precision, often placed on the chest or upper back.",
+        "placement": "Chest",
+        "artist_id": "2",
+        "studio_id": "2",
+        "primary_style_id": "4",
+        "primary_subject_id": "3",
+        "primary_image_id": "20"
+    },
+    {
+        "title": "real1",
+        "description": "A realistic rose tattoo, capturing the delicate beauty of the flower with intricate shading and lifelike details, commonly placed on the forearm or shoulder.",
+        "placement": "Forearm",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "5",
+        "primary_subject_id": "2",
+        "primary_image_id": "21"
+    },
+    {
+        "title": "real2",
+        "description": "A realistic lion tattoo, showcasing the majestic features of the king of the jungle with lifelike detail and dynamic shading, often placed on the thigh or back.",
+        "placement": "Thigh",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "5",
+        "primary_subject_id": "1",
+        "primary_image_id": "22"
+    },
+    {
+        "title": "real3",
+        "description": "A realistic owl tattoo, capturing the wisdom and mystery of the nocturnal bird with intricate linework and shading, commonly found on the upper arm or chest.",
+        "placement": "Upper arm",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "5",
+        "primary_subject_id": "1",
+        "primary_image_id": "23"
+    },
+    {
+        "title": "real4",
+        "description": "A realistic tiger tattoo, showcasing the strength and power of the wild cat with lifelike detail and bold colors, often placed on the back or thigh.",
+        "placement": "Back",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "5",
+        "primary_subject_id": "1",
+        "primary_image_id": "24"
+    },
+    {
+        "title": "real5",
+        "description": "A realistic wolf tattoo, symbolizing loyalty and strength, with intricate detailing and dynamic shading, commonly placed on the forearm or calf.",
+        "placement": "Forearm",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "5",
+        "primary_subject_id": "1",
+        "primary_image_id": "25"
+    },
+    {
+        "title": "japan1",
+        "description": "A Japanese dragon tattoo, symbolizing power, strength, and good luck, with intricate details and vibrant colors, commonly placed on the back or chest.",
+        "placement": "Back",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "6",
+        "primary_subject_id": "3",
+        "primary_image_id": "26"
+    },
+    {
+        "title": "japan2",
+        "description": "A Japanese cherry blossom tattoo, representing beauty, renewal, and the fleeting nature of life, often placed on the upper arm or back.",
+        "placement": "Upper arm",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "6",
+        "primary_subject_id": "2",
+        "primary_image_id": "27"
+    },
+    {
+        "title": "japan3",
+        "description": "A Japanese koi fish tattoo, symbolizing perseverance, courage, and good fortune, with vibrant colors and flowing movement, commonly found on the forearm or calf.",
+        "placement": "Forearm",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "6",
+        "primary_subject_id": "1",
+        "primary_image_id": "28"
+    },
+    {
+        "title": "japan4",
+        "description": "A Japanese geisha tattoo, representing elegance, beauty, and mystery, with intricate detailing and dynamic shading, often placed on the upper arm or back.",
+        "placement": "Upper arm",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "6",
+        "primary_subject_id": "5",
+        "primary_image_id": "29"
+    },
+    {
+        "title": "japan5",
+        "description": "A Japanese samurai tattoo, symbolizing honor, loyalty, and strength, with intricate armor details and dynamic posing, commonly found on the back or chest.",
+        "placement": "Chest",
+        "artist_id": "3",
+        "studio_id": "3",
+        "primary_style_id": "6",
+        "primary_subject_id": "6",
+        "primary_image_id": "30"
+    },
+    {
+        "title": "newsch1",
+        "description": "A New School style tattoo featuring colorful, cartoonish characters and bold outlines, often portraying whimsical and surreal imagery, commonly placed on the upper arm or thigh.",
+        "placement": "Upper arm",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "7",
+        "primary_subject_id": "10",
+        "primary_image_id": "31"
+    },
+    {
+        "title": "newsch2",
+        "description": "A New School style tattoo with vibrant colors and exaggerated proportions, showcasing playful and imaginative designs, frequently inked on the forearm or calf.",
+        "placement": "Forearm",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "7",
+        "primary_subject_id": "10",
+        "primary_image_id": "32"
+    },
+    {
+        "title": "newsch3",
+        "description": "A New School style animal tattoo featuring a stylized and colorful depiction of a creature, often with exaggerated features and dynamic poses, commonly found on the thigh or back.",
+        "placement": "Thigh",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "7",
+        "primary_subject_id": "1",
+        "primary_image_id": "33"
+    },
+    {
+        "title": "newsch4",
+        "description": "A New School style tattoo with a whimsical and surreal theme, often featuring vibrant colors and imaginative characters, commonly placed on the chest or upper arm.",
+        "placement": "Chest",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "7",
+        "primary_subject_id": "3",
+        "primary_image_id": "34"
+    },
+    {
+        "title": "newsch5",
+        "description": "A New School style tattoo with a playful and colorful design, often featuring cartoonish characters and whimsical imagery, frequently inked on the forearm or calf.",
+        "placement": "Forearm",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "7",
+        "primary_subject_id": "10",
+        "primary_image_id": "35"
+    },
+    {
+        "title": "trashpolk1",
+        "description": "A Trash Polka style tattoo featuring a combination of realistic and abstract elements, with bold black lines and vibrant red accents, commonly placed on the forearm or chest.",
+        "placement": "Forearm",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "8",
+        "primary_subject_id": "3",
+        "primary_image_id": "36"
+    },
+    {
+        "title": "trashpolk2",
+        "description": "A Trash Polka style skull tattoo with bold black lines and splashes of red, showcasing a unique and dynamic composition, often found on the upper arm or back.",
+        "placement": "Upper arm",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "8",
+        "primary_subject_id": "3",
+        "primary_image_id": "37"
+    },
+    {
+        "title": "trashpolk3",
+        "description": "A Trash Polka style wolf tattoo with bold black lines and abstract red accents, symbolizing strength and resilience, commonly placed on the thigh or calf.",
+        "placement": "Thigh",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "8",
+        "primary_subject_id": "1",
+        "primary_image_id": "38"
+    },
+    {
+        "title": "trashpolk4",
+        "description": "A Trash Polka style rose tattoo with bold black lines and splashes of red, symbolizing love and passion, frequently inked on the chest or shoulder.",
+        "placement": "Chest",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "8",
+        "primary_subject_id": "8",
+        "primary_image_id": "39"
+    },
+    {
+        "title": "trashpolk5",
+        "description": "A Trash Polka style bird tattoo with bold black lines and abstract red accents, representing freedom and independence, commonly found on the forearm or back.",
+        "placement": "Forearm",
+        "artist_id": "4",
+        "studio_id": "4",
+        "primary_style_id": "8",
+        "primary_subject_id": "9",
+        "primary_image_id": "40"
+    },
+    {
+        "title": "water1",
+        "description": "A watercolor style feather tattoo with soft, blended colors and delicate linework, symbolizing freedom and flight, commonly placed on the upper arm or shoulder.",
+        "placement": "Upper arm",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "9",
+        "primary_subject_id": "2",
+        "primary_image_id": "41"
+    },
+    {
+        "title": "water2",
+        "description": "A watercolor style galaxy tattoo with vibrant hues and swirling patterns, evoking the mysteries of the cosmos, often found on the thigh or back.",
+        "placement": "Thigh",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "9",
+        "primary_subject_id": "3",
+        "primary_image_id": "42"
+    },
+    {
+        "title": "water3",
+        "description": "A watercolor style floral tattoo with soft pastel colors and flowing lines, symbolizing beauty and growth, commonly inked on the forearm or calf.",
+        "placement": "Forearm",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "9",
+        "primary_subject_id": "2",
+        "primary_image_id": "43"
+    },
+    {
+        "title": "water4",
+        "description": "A watercolor style animal tattoo featuring vibrant colors and fluid lines, capturing the essence and spirit of the creature, often placed on the back or shoulder.",
+        "placement": "Back",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "9",
+        "primary_subject_id": "1",
+        "primary_image_id": "44"
+    },
+    {
+        "title": "water5",
+        "description": "A watercolor style landscape tattoo with soft, blended colors and dreamy atmosphere, evoking a sense of serenity and tranquility, commonly found on the thigh or calf.",
+        "placement": "Thigh",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "9",
+        "primary_subject_id": "2",
+        "primary_image_id": "45"
+    },
+    {
+        "title": "geo1",
+        "description": "A geometric tattoo featuring intricate shapes and patterns, symbolizing harmony and balance, often placed on the forearm or chest.",
+        "placement": "Forearm",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "10",
+        "primary_subject_id": "8",
+        "primary_image_id": "46"
+    },
+    {
+        "title": "geo2",
+        "description": "A geometric animal tattoo with bold lines and abstract shapes, representing strength and connection to nature, commonly found on the upper arm or back.",
+        "placement": "Upper arm",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "10",
+        "primary_subject_id": "8",
+        "primary_image_id": "47"
+    },
+    {
+        "title": "geo3",
+        "description": "A geometric mandala tattoo with intricate symmetry and mesmerizing patterns, symbolizing unity and spirituality, often placed on the chest or back.",
+        "placement": "Chest",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "10",
+        "primary_subject_id": "8",
+        "primary_image_id": "48"
+    },
+    {
+        "title": "geo4",
+        "description": "A geometric arrow tattoo with clean lines and precise angles, symbolizing direction and focus, commonly inked on the forearm or calf.",
+        "placement": "Forearm",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "10",
+        "primary_subject_id": "8",
+        "primary_image_id": "49"
+    },
+    {
+        "title": "geo5",
+        "description": "A geometric flower tattoo with intricate patterns and vibrant colors, symbolizing growth and renewal, often found on the thigh or shoulder.",
+        "placement": "Thigh",
+        "artist_id": "5",
+        "studio_id": "5",
+        "primary_style_id": "10",
+        "primary_subject_id": "8",
+        "primary_image_id": "50"
+    }
+]
