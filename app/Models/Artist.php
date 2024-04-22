@@ -44,6 +44,11 @@ class Artist extends User
         return $this->belongsToMany(Tattoo::class, 'users_tattoos', 'user_id', 'tattoo_id');
     }
 
+    public function primary_image()
+    {
+        return $this->belongsTo(Image::class, 'image_id', 'id');
+    }
+
     /*
     * Elasticsearch
     */
@@ -77,6 +82,7 @@ class Artist extends User
             'studio',
             'styles',
             'tattoos',
+            'primary_image'
         ];
 
         $this->loadMissing($with);

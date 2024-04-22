@@ -6,6 +6,8 @@ namespace App\Services;
 
 use App\Exceptions\ElasticException;
 use App\Exceptions\ItemNotFoundException;
+use App\Models\Artist;
+use App\Models\User;
 use Exception;
 use GuzzleHttp\Client;
 use GuzzleHttp\Exception\GuzzleException;

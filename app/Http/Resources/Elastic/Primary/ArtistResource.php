@@ -25,7 +25,6 @@ class ArtistResource extends JsonResource
             'id' => $this->id,
             'about' => $this->about,
             'email' => $this->email,
-            'image' => $this->image,
             'location' => $this->location,
             'location_lat_long' => $this->location_lat_long,
             'name' => $this->name,
@@ -33,7 +32,8 @@ class ArtistResource extends JsonResource
             'studio' => new StudioResource($this->studio),
             'type' => $this->type->name,
             'styles' => StyleResource::collection($this->styles),
-            'tattoos' => TattooResource::collection($this->tattoos)
+            'tattoos' => TattooResource::collection($this->tattoos),
+            'primary_image' => $this->primary_image ?? null,
         ];
     }
 }

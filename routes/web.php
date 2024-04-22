@@ -42,7 +42,7 @@ Route::group(['prefix' => 'studios'], function () {
 Route::group(['prefix' => 'styles'], function () {
     Route::get('/', 'StyleController@get');
     Route::post('/create', 'StyleController@create');
-    Route::put('/styles/{id}', 'StyleController@update');
+    Route::put('/style/{id}', 'StyleController@update');
     Route::get('/{id}', 'StyleController@getById');
 });
 
