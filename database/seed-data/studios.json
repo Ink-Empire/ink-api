@@ -1,0 +1,47 @@
+[
+    {
+        "name": "InkMaster Studios",
+        "email": "inkmaster@example.com",
+        "phone": "555-123-4567",
+        "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+        "location": "Los Angeles, CA, USA",
+        "address_id": 1,
+        "location_lat_long": "34.0522, -118.2437"
+    },
+    {
+        "name": "Eternal Inkworks",
+        "email": "eternalink@example.com",
+        "phone": "555-234-5678",
+        "about": "Eternal Inkworks is more than just a tattoo studio; it's a sanctuary for self-expression. Our talented artists are committed to providing you with top-notch service and stunning artwork that you'll cherish forever.",
+        "location": "New York, NY, USA",
+        "address_id": 2,
+        "location_lat_long": "40.7128, -74.0060"
+    },
+    {
+        "name": "Artistic Skin Studio",
+        "email": "artisticskin@example.com",
+        "phone": "555-345-6789",
+        "about": "At Artistic Skin Studio, we believe that tattoos are not just ink on skin; they're pieces of art that tell a story. Our skilled artists strive to create meaningful and beautiful tattoos that reflect your individuality.",
+        "location": "Miami, FL, USA",
+        "address_id": 3,
+        "location_lat_long": "25.7617, -80.1918"
+    },
+    {
+        "name": "Inked Expressions",
+        "email": "inkedexpressions@example.com",
+        "phone": "555-456-7890",
+        "about": "Inked Expressions is where creativity meets craftsmanship. Our passionate artists are dedicated to delivering high-quality tattoos that exceed your expectations. Come visit us and let your imagination soar.",
+        "location": "Austin, TX, USA",
+        "address_id": 4,
+        "location_lat_long": "30.2672, -97.7431"
+    },
+    {
+        "name": "Phoenix Tattoo Collective",
+        "email": "phoenixtattoo@example.com",
+        "phone": "555-567-8901",
+        "about": "At Phoenix Tattoo Collective, we believe that tattoos are symbols of transformation and rebirth. Our team of skilled artists is here to guide you through your tattoo journey and help you embrace your true self.",
+        "location": "Seattle, WA, USA",
+        "address_id": 5,
+        "location_lat_long": "47.6062, -122.3321"
+    }
+]
