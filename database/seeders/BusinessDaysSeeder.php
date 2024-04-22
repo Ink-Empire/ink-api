@@ -5,31 +5,22 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use File;
 
 class BusinessDaysSeeder extends Seeder
 {
-    const DAYS = [
-        'Monday',
-        'Tuesday',
-        'Wednesday',
-        'Thursday',
-        'Friday',
-        'Saturday',
-        'Sunday'
-    ];
-
     /**
      * Run the database seeds.
      */
     public function run()
     {
-        if (Schema::hasTable('business_days')) {
+        $json = File::get("database/seed-data/business_days.json");
+        $business_days = json_decode($json);
 
-            foreach (self::DAYS as $day) {
+        if (Schema::hasTable('business_days')) {
+            foreach ($business_days as $key => $value) {
                 DB::table('business_days')->insert(
-                    [
-                        'day' => $day
-                    ]
+                    ['day' => $value->day]
                 );
             }
         }
