@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use File;
 
 class StudiosStylesSeeder extends Seeder
 {
@@ -15,10 +16,13 @@ class StudiosStylesSeeder extends Seeder
      */
     public function run()
     {
+        $json = File::get("database/seed-data/studios_styles.json");
+        $studios_styles = json_decode($json);
+
         if (Schema::hasTable('studios_styles')) {
-            for ($count = 1; $count < 51; $count++) {
+            foreach ($studios_styles as $key => $value) {
                 DB::table('studios_styles')->insert(
-                    ['studio_id' => $count, 'style_id' => rand(1,10)]
+                    ['studio_id' => $value->studio_id, 'style_id' => $value->style_id]
                 );
             }
         }

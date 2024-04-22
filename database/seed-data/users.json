@@ -1,0 +1,92 @@
+[
+    {
+        "name": "Alex Johnson",
+        "about": "Hi, I'm Alex! I'm passionate about art, music, and exploring new places. I love expressing myself through tattoos, and I'm always on the lookout for talented artists to collaborate with.",
+        "location": "Chicago, IL, USA",
+        "location_lat_long": "41.8781, -87.6298",
+        "email": "alex.johnson@example.com",
+        "studio_id": "1",
+        "type_id": "2"
+    },
+    {
+        "name": "Emma Davis",
+        "about": "Hey there! I'm Emma, a nature enthusiast and avid hiker. I believe that tattoos are a form of self-expression and storytelling. I'm excited to connect with like-minded individuals and discover unique tattoo studios.",
+        "location": "Denver, CO, USA",
+        "location_lat_long": "39.7392, -104.9903",
+        "email": "emma.davis@example.com",
+        "studio_id": "2",
+        "type_id": "2"
+    },
+    {
+        "name": "Ryan Wilson",
+        "about": "Greetings! I'm Ryan, a lover of all things creative. Whether it's painting, writing, or getting inked, I'm always seeking new ways to express myself. Let's chat about our favorite tattoo artists and share inspiration!",
+        "location": "Portland, OR, USA",
+        "location_lat_long": "45.5051, -122.6750",
+        "email": "ryan.wilson@example.com",
+        "studio_id": "3",
+        "type_id": "2"
+    },
+    {
+        "name": "Sophia Lee",
+        "about": "Hi everyone! I'm Sophia, a photography enthusiast with a passion for adventure. I believe that tattoos are a beautiful way to commemorate meaningful moments in life. Let's connect and share our tattoo stories!",
+        "location": "San Francisco, CA, USA",
+        "location_lat_long": "37.7749, -122.4194",
+        "email": "sophia.lee@example.com",
+        "studio_id": "4",
+        "type_id": "2"
+    },
+    {
+        "name": "Liam Martinez",
+        "about": "Hola amigos! I'm Liam, a salsa dancer and foodie. I'm fascinated by the artistry behind tattoos and the stories they tell. Let's explore the vibrant world of tattoo culture together!",
+        "location": "Miami, FL, USA",
+        "location_lat_long": "25.7617, -80.1918",
+        "email": "liam.martinez@example.com",
+        "studio_id": "5",
+        "type_id": "2"
+    },
+    {
+        "name": "Olivia Nguyen",
+        "about": "Hey everyone! I'm Olivia, a coffee lover and bookworm. Tattoos are like chapters in the story of our lives, and I'm eager to connect with fellow enthusiasts and share our favorite tattoo experiences.",
+        "location": "Seattle, WA, USA",
+        "location_lat_long": "47.6062, -122.3321",
+        "email": "olivia.nguyen@example.com",
+        "studio_id": null,
+        "type_id": "1"
+    },
+    {
+        "name": "Noah Taylor",
+        "about": "Hey there! I'm Noah, a music producer and adventure seeker. I believe that tattoos are a form of self-expression and empowerment. Let's connect and discuss our favorite tattoo styles and artists!",
+        "location": "Austin, TX, USA",
+        "location_lat_long": "30.2672, -97.7431",
+        "email": "noah.taylor@example.com",
+        "studio_id": null,
+        "type_id": "1"
+    },
+    {
+        "name": "Ava Brown",
+        "about": "Hello world! I'm Ava, a yoga instructor and meditation enthusiast. Tattoos are symbols of strength and resilience, and I'm excited to connect with others who share my appreciation for body art.",
+        "location": "Nashville, TN, USA",
+        "location_lat_long": "36.1627, -86.7816",
+        "email": "ava.brown@example.com",
+        "studio_id": null,
+        "type_id": "1"
+    },
+    {
+        "name": "Mia Clark",
+        "about": "Hi, I'm Mia! I'm a film buff and aspiring filmmaker. I see tattoos as wearable art that tells a story. Let's share our favorite tattoo designs and experiences!",
+        "location": "New York, NY, USA",
+        "location_lat_long": "40.7128, -74.0060",
+        "email": "mia.clark@example.com",
+        "studio_id": null,
+        "type_id": "1"
+    },
+    {
+        "name": "Ethan Garcia",
+        "about": "Hey folks! I'm Ethan, a fitness enthusiast and outdoor lover. I'm fascinated by the symbolism and beauty of tattoos. Let's connect and discuss our favorite tattoo designs and artists!",
+        "location": "Phoenix, AZ, USA",
+        "location_lat_long": "33.4484, -112.0740",
+        "email": "ethan.garcia@example.com",
+        "studio_id": null,
+        "type_id": "1"
+    }
+]

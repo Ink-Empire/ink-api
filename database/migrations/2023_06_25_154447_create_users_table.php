@@ -18,6 +18,7 @@ return new class extends Migration
             $table->string('name');
             $table->text('about')->nullable();
             $table->string('location');
+            $table->string('location_lat_long')->nullable();
             $table->string('email')->unique();
             $table->string('password');
             $table->string('phone')->nullable();
