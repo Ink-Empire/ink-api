@@ -44,7 +44,7 @@ class UserController extends Controller
     public function create(Request $request)
     {
         try {
-            $data = $request->get('payload');
+            $data = $request->all();
 
             if ($data['address']) {
                 $address = $this->addressService->create(
@@ -126,12 +126,9 @@ class UserController extends Controller
                 }
             }
             $user->save();
-            return $this->returnUserResponse('user', new UserResource($user));
         } catch (\Exception $e) {
             return $this->returnErrorResponse($e->getMessage());
         }
-
-        $user->save();
 
         return $this->returnResponse('user', new UserResource($user));
     }
