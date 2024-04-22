@@ -28,6 +28,7 @@ class StudioSeeder extends Seeder
                     "phone" => $value->phone,
                     "about" => $value->about,
                     "location" => $value->location,
+                    "location_lat_long" => $value->location_lat_long,
                     "address_id" => $value->address_id
                 ]);
             }
