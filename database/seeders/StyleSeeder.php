@@ -20,10 +20,12 @@ class StyleSeeder extends Seeder
         $json = File::get("database/seed-data/styles.json");
         $styles = json_decode($json);
 
-        foreach ($styles as $key => $value) {
-            Style::create([
-                "name" => $value->name
-            ]);
+        if (Schema::hasTable('styles')) {
+            foreach ($styles as $key => $value) {
+                Style::create([
+                    "name" => $value->name
+                ]);
+            }
         }
     }
 }

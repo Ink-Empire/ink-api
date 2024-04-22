@@ -20,10 +20,12 @@ class SubjectSeeder extends Seeder
         $json = File::get("database/seed-data/subjects.json");
         $subjects = json_decode($json);
 
-        foreach ($subjects as $key => $value) {
-            Subject::create([
-                "name" => $value->name
-            ]);
+        if (Schema::hasTable('subjects')) {
+            foreach ($subjects as $key => $value) {
+                Subject::create([
+                    "name" => $value->name
+                ]);
+            }
         }
     }
 }

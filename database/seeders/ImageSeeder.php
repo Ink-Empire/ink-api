@@ -20,12 +20,14 @@ class ImageSeeder extends Seeder
         $json = File::get("database/seed-data/images.json");
         $images = json_decode($json);
 
-        foreach ($images as $key => $value) {
-            Image::create([
-                "filename" => $value->filename,
-                "uri" => $value->uri,
-                "is_primary" => 0
-            ]);
+        if (Schema::hasTable('images')) {
+            foreach ($images as $key => $value) {
+                Image::create([
+                    "filename" => $value->filename,
+                    "uri" => $value->uri,
+                    "is_primary" => 0
+                ]);
+            }
         }
     }
 }

@@ -20,17 +20,19 @@ class TattooSeeder extends Seeder
         $json = File::get("database/seed-data/tattoos.json");
         $tattoos = json_decode($json);
 
-        foreach ($tattoos as $key => $value) {
-            Tattoo::create([
-                "title" => $value->title,
-                "description" => $value->description,
-                "placement" => $value->placement,
-                "artist_id" => $value->artist_id,
-                "studio_id" => $value->studio_id,
-                "primary_style_id" => $value->primary_style_id,
-                "primary_subject_id" => $value->primary_subject_id,
-                "primary_image_id" => $value->primary_image_id
-            ]);
+        if (Schema::hasTable('tattoos')) {
+            foreach ($tattoos as $key => $value) {
+                Tattoo::create([
+                    "title" => $value->title,
+                    "description" => $value->description,
+                    "placement" => $value->placement,
+                    "artist_id" => $value->artist_id,
+                    "studio_id" => $value->studio_id,
+                    "primary_style_id" => $value->primary_style_id,
+                    "primary_subject_id" => $value->primary_subject_id,
+                    "primary_image_id" => $value->primary_image_id
+                ]);
+            }
         }
     }
 }
