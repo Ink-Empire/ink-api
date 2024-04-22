@@ -20,7 +20,6 @@ class DatabaseSeeder extends Seeder
             ImageSeeder::class,
             StudioSeeder::class,
             UserSeeder::class,
-            ArtistSeeder::class,
             SubjectSeeder::class,
             TattooSeeder::class,
             TattoosStylesSeeder::class,
