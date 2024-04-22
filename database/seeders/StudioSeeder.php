@@ -20,15 +20,17 @@ class StudioSeeder extends Seeder
         $json = File::get("database/seed-data/studios.json");
         $studios = json_decode($json);
 
-        foreach ($studios as $key => $value) {
-            Studio::create([
-                "name" => $value->name,
-                "email" => $value->email,
-                "phone" => $value->phone,
-                "about" => $value->about,
-                "location" => $value->location,
-                "address_id" => $value->address_id
-            ]);
+        if (Schema::hasTable('studios')) {
+            foreach ($studios as $key => $value) {
+                Studio::create([
+                    "name" => $value->name,
+                    "email" => $value->email,
+                    "phone" => $value->phone,
+                    "about" => $value->about,
+                    "location" => $value->location,
+                    "address_id" => $value->address_id
+                ]);
+            }
         }
     }
 }
