@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use File;
 
 class ArtistsStylesSeeder extends Seeder
 {
@@ -13,10 +14,13 @@ class ArtistsStylesSeeder extends Seeder
      */
     public function run()
     {
+        $json = File::get("database/seed-data/artists_styles.json");
+        $artists_styles = json_decode($json);
+
         if (Schema::hasTable('artists_styles')) {
-            for ($count = 1; $count < 51; $count++) {
+            foreach ($artists_styles as $key => $value) {
                 DB::table('artists_styles')->insert(
-                    ['artist_id' => $count, 'style_id' => rand(1, 10)]
+                    ['artist_id' => $value->artist_id, 'style_id' => $value->style_id]
                 );
             }
         }
