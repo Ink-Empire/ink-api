@@ -14,10 +14,6 @@ use Illuminate\Support\Facades\Route;
 */
 
 
-Route::group(['prefix' => 'elastic'], function () {
-    Route::post('/', 'SearchController@index');
-});
-
 Route::group(['prefix' => 'users'], function () {
     Route::post('/create', 'UserController@create');
     Route::put('/user/{id}', 'UserController@update');
@@ -58,6 +54,7 @@ Route::group(['prefix' => 'images'], function () {
 });
 
 Route::group(['prefix' => 'elastic'], function () {
+    Route::post('/', 'SearchController@index');
     Route::get('/{id}', 'ElasticController@getById');
     Route::post('/rebuild', 'ElasticController@rebuild');
     Route::post('/rebuild-by-elastic', 'ElasticController@rebuildByElasticQuery');
