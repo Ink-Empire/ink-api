@@ -14,6 +14,7 @@ class Studio extends Model
         'address_id',
         'about',
         'location',
+        'location_lat_long',
         'email',
         'phone',
     ];

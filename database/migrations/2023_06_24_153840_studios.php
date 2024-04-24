@@ -21,6 +21,7 @@ return new class extends Migration
             $table->text('about')->nullable();
             $table->foreignId('address_id')->constrained();
             $table->string('location')->nullable();
+            $table->string('location_lat_long')->nullable();
             $table->foreignId('image_id')->nullable()->constrained()->onDelete('cascade')->onUpdate('cascade');
             $table->tinyInteger('is_verified')->default(0);
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));

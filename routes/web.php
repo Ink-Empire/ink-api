@@ -13,9 +13,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/', function () {
-    return view('welcome');
-});
 
 Route::group(['prefix' => 'users'], function () {
     Route::post('/create', 'UserController@create');
@@ -25,10 +22,10 @@ Route::group(['prefix' => 'users'], function () {
 });
 
 Route::group(['prefix' => 'artists'], function () {
-    Route::get('/{user_id?}', 'ArtistController@get');
+    Route::post('/', 'ArtistController@get');
+    Route::get('/{id}', 'ArtistController@getById');
     Route::post('/create', 'ArtistController@create');
     Route::put('/artist/{id}', 'ArtistController@update');
-    Route::get('/{id}/{user_id?}', 'ArtistController@getById');
 });
 
 Route::group(['prefix' => 'studios'], function () {
@@ -41,10 +38,27 @@ Route::group(['prefix' => 'studios'], function () {
 Route::group(['prefix' => 'styles'], function () {
     Route::get('/', 'StyleController@get');
     Route::post('/create', 'StyleController@create');
-    Route::put('/styles/{id}', 'StyleController@update');
+    Route::put('/style/{id}', 'StyleController@update');
     Route::get('/{id}', 'StyleController@getById');
+});
+
+Route::group(['prefix' => 'tattoos'], function () {
+    Route::get('/', 'TattooController@get');
+    Route::post('/create', 'TattooController@create');
+    Route::put('/tattoos/{id}', 'TattooController@update');
+    Route::get('/{id}', 'TattooController@getById');
 });
 
 Route::group(['prefix' => 'images'], function () {
     Route::post('/uploadPhoto', 'ImageController@upload');
+});
+
+Route::group(['prefix' => 'elastic'], function () {
+    Route::post('/', 'SearchController@index');
+    Route::get('/{id}', 'ElasticController@getById');
+    Route::post('/rebuild', 'ElasticController@rebuild');
+    Route::post('/rebuild-by-elastic', 'ElasticController@rebuildByElasticQuery');
+    Route::post('/rebuild-bypass', 'ElasticController@rebuildBypass');
+    Route::post('/migrate', 'ElasticController@migrateAlias');
+    Route::post('translate-query', 'ElasticController@translateQuery');
 });

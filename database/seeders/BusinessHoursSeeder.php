@@ -5,47 +5,37 @@ namespace Database\Seeders;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use File;
 
 class BusinessHoursSeeder extends Seeder
 {
-    const OPEN_TIME = [
-        '07:00',
-        '08:00',
-        '09:00',
-        '10:00',
-        '11:00',
-        '12:00',
-        '13:00'
-    ];
-
-    const CLOSE_TIME = [
-        '17:00',
-        '18:00',
-        '19:00',
-        '20:00',
-        '21:00',
-        '22:00',
-        '23:00'
-    ];
+    /**
+     * chatGPT prompt used to generate the seed data
+     * ----------------------------------------------
+     * I need a json object with the following fields: "studio_id", "day_id", "open_time", "close_time"
+     * there are five studios, with IDs from 1 to 5. there are seven days, starting on Monday, with Monday having a day_id of "1" and Sunday an ID of "7".
+     * open_time is a time between 07:00 and 13:00, and close_time is a time between 17:00 and 23:00.
+     * can you generate this json for me such that each studio has open and close times for at least 5 days of the week?
+     */
 
     /**
      * Run the database seeds.
      */
     public function run()
     {
-        if (Schema::hasTable('business_hours')) {
+        $json = File::get("database/seed-data/business_hours.json");
+        $business_hours = json_decode($json);
 
-            for ($x = 1; $x <= 50; $x++) {
-                for ($y = 1; $y <= 7; $y++) {
-                    DB::table('business_hours')->insert(
-                        [
-                            'studio_id' => $x,
-                            'day_id' => $y,
-                            'open_time' => self::OPEN_TIME[array_rand(self::OPEN_TIME)],
-                            'close_time' => self::CLOSE_TIME[array_rand(self::CLOSE_TIME)]
-                        ]
-                    );
-                }
+        if (Schema::hasTable('business_hours')) {
+            foreach ($business_hours as $key => $value) {
+                DB::table('business_hours')->insert(
+                    [
+                        'studio_id' => $value->studio_id,
+                        'day_id' => $value->day_id,
+                        'open_time' => $value->open_time,
+                        'close_time' => $value->close_time
+                    ]
+                );
             }
         }
     }

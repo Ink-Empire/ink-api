@@ -17,13 +17,13 @@ return [
 
     'paths' => ['*', 'api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['*'],
+    'allowed_methods' => ['GET, POST, PUT, PATCH, DELETE, OPTIONS'],
 
-    'allowed_origins' => ['https://www.inkempire.local'],
+    'allowed_origins' => ['https://www.inkempire.local', 'https://inkempire.local', '*'],
 
     'allowed_origins_patterns' => [],
 
-    'allowed_headers' => ['Content-Type, Origin, Authorization'],
+    'allowed_headers' => ['*'],
 
     'exposed_headers' => [],
 

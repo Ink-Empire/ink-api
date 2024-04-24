@@ -1,19 +1,11 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Elastic;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ArtistResource extends JsonResource
 {
-    protected $user_id;
-
-    public function user_id($value): static
-    {
-        $this->user_id = $value;
-        return $this;
-    }
-
     public function toArray($request)
     {
         return [
@@ -22,13 +14,13 @@ class ArtistResource extends JsonResource
             'email' => $this->email,
             'image' => $this->image,
             'location' => $this->location,
+            'location_lat_long' => $this->location_lat_long,
             'name' => $this->name,
             'password' => $this->password,
             'phone' => $this->phone,
-            'studio' => $this->studio,
+            'studio' => $this->studio->name ?? "",
             'type' => $this->type->name,
             'styles' => $this->styles,
-            'tattoos' => $this->tattoos,
             'isFavorite' => $this->getIsUserFavorite(),
         ];
     }
