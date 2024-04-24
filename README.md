@@ -10,7 +10,7 @@
 
 # Elasticsearch
 
-after running db:seed to get data into your database, ssh into your ink-api container.
+after running db:seed to get data into your database, ssh into your ink-api container. (`docker compose exec ink-api bash`)
 
 Run the following commands:
 
