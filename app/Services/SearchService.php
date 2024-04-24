@@ -51,8 +51,8 @@ class SearchService
             $this->buildStylesParam();
         }
 
-        if (isset($this->filters['near_me'])) {
-            $this->buildDistanceParam();
+        if (isset($this->filters['artist_near_me'])) {
+            $this->buildDistanceParam('artist.location_lat_long');
         }
 
         if (isset($this->filters['near_location'])) {
@@ -71,7 +71,8 @@ class SearchService
             $this->buildDistanceParam('studio.location_lat_long', $this->filters['location_lat_long']);
         }
 
-        $this->buildGeoSort();
+
+        //$this->buildGeoSort();
 
         $response = $this->search->get();
 

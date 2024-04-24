@@ -28,11 +28,21 @@ class ArtistController extends Controller
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function get(Request $request)
+    public function search(Request $request)
     {
         $params = $request->all();
 
         $response = $this->artistService->search($params);
+
+        return $this->returnElasticResponse($response);
+    }
+
+
+    public function get(Request $request)
+    {
+        $params = $request->all();
+
+        $response = $this->artistService->get();
 
         return $this->returnElasticResponse($response);
     }
