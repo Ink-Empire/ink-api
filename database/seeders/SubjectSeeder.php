@@ -2,25 +2,14 @@
 
 namespace Database\Seeders;
 
+use App\Models\Subject;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
+use File;
 
 class SubjectSeeder extends Seeder
 {
-    const subject_array = [
-        'Animal',
-        'Nature',
-        'Alien',
-        'Skull',
-        'Woman',
-        'Man',
-        'Gypsy',
-        'Anchor',
-        'Script',
-        'Tree',
-    ];
-
     /**
      * Run the database seeds.
      *
@@ -28,11 +17,14 @@ class SubjectSeeder extends Seeder
      */
     public function run()
     {
+        $json = File::get("database/seed-data/subjects.json");
+        $subjects = json_decode($json);
+
         if (Schema::hasTable('subjects')) {
-            foreach (self::subject_array as $value) {
-                DB::table('subjects')->insert(
-                    ['name' => $value]
-                );
+            foreach ($subjects as $key => $value) {
+                Subject::create([
+                    "name" => $value->name
+                ]);
             }
         }
     }

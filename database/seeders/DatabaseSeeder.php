@@ -4,6 +4,8 @@ namespace Database\Seeders;
 
 // use Illuminate\Database\Console\Seeds\WithoutModelEvents;
 use Illuminate\Database\Seeder;
+use Illuminate\Support\Facades\DB;
+use Artisan;
 
 class DatabaseSeeder extends Seeder
 {
@@ -14,13 +16,15 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
+        Artisan::call("db:wipe");
+        Artisan::call("migrate");
+
         $this->call([
             AddressSeeder::class,
             StyleSeeder::class,
             ImageSeeder::class,
             StudioSeeder::class,
             UserSeeder::class,
-            ArtistSeeder::class,
             SubjectSeeder::class,
             TattooSeeder::class,
             TattoosStylesSeeder::class,

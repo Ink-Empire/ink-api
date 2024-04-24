@@ -2,13 +2,15 @@
 
 namespace App\Models;
 
+use App\Http\Resources\Elastic\Primary\TattooResource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Larelastic\Elastic\Traits\Migratable;
+use Larelastic\Elastic\Traits\Searchable;
 
 class Tattoo extends Model
 {
     use HasFactory;
-    public $with = ['image'];
 
     protected $fillable = [
         'id',
@@ -24,7 +26,7 @@ class Tattoo extends Model
 
     public function artist()
     {
-        return $this->hasOne(User::class);
+        return $this->belongsTo(User::class);
     }
 
     public function studio()
@@ -33,18 +35,76 @@ class Tattoo extends Model
     }
 
     //todo we need all secondary tags
-    public function style()
+    public function primary_style()
     {
-        return $this->belongsTo(Style::class);
+        return $this->belongsTo(Style::class, 'primary_style_id', 'id');
     }
 
-    public function theme()
+    public function styles()
     {
-        return $this->belongsTo(Subject::class);
+        return $this->belongsToMany(Style::class, 'tattoos_styles', 'tattoo_id', 'style_id');
     }
 
-    public function image()
+    public function subject()
+    {
+        return $this->belongsTo(Subject::class, 'primary_subject_id', 'id');
+    }
+
+    public function primary_image()
     {
         return $this->belongsTo(Image::class, 'primary_image_id', 'id');
+    }
+
+    public function images()
+    {
+        return $this->belongsToMany(Image::class, 'tattoos_images', 'tattoo_id');
+    }
+
+    /*
+    * Elasticsearch
+    */
+
+    use Migratable;
+    use Searchable;
+
+    /** @var string */
+    protected $indexConfigurator = TattooIndexConfigurator::class;
+
+    public function searchableQuery()
+    {
+        $query = $this->newQuery();
+        $query->with([
+            'artist',
+            'studio',
+            'images',
+            'primary_style',
+            'styles'
+        ]);
+
+        return $query;
+    }
+
+    public function shouldBeSearchable()
+    {
+        return $this['id'] > 0;
+    }
+
+    public function toSearchableArray()
+    {
+        $with = [
+            'artist',
+            'studio',
+            'images',
+            'primary_style',
+            'styles',
+        ];
+
+        $this->loadMissing($with);
+
+        if ($this instanceof Tattoo) {
+            return (new TattooResource($this))->jsonSerialize();
+        } else {
+            return TattooResource::collection($this)->jsonSerialize();
+        }
     }
 }

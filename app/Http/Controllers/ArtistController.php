@@ -2,15 +2,13 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\UserNotFoundException;
-use App\Http\Resources\ArtistResource;
-use App\Http\Resources\UserResource;
+use App\Http\Resources\Elastic\Primary\ArtistResource;
 use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
+use App\Services\SearchService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Http\Response;
 
 /**
  *
@@ -20,7 +18,8 @@ class ArtistController extends Controller
 
     public function __construct(
         protected ArtistService  $artistService,
-        protected ImageService $imageService
+        protected ImageService $imageService,
+        protected SearchService $searchService
     )
     {
     }
@@ -29,26 +28,36 @@ class ArtistController extends Controller
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function get($user_id = null)
+    public function search(Request $request)
     {
-        session(['user_id' => $user_id]);
+        $params = $request->all();
 
-        //eventually perhaps replaced with an ES call
-        $artists = $this->artistService->get();
+        $response = $this->artistService->search($params);
 
-        return $this->returnResponse('artists', ArtistResource::collection($artists));
+        return $this->returnElasticResponse($response);
     }
+
+
+    public function get(Request $request)
+    {
+        $params = $request->all();
+
+        $response = $this->artistService->get();
+
+        return $this->returnElasticResponse($response);
+    }
+
+    //TODO wire these to get results from ES
 
     /**
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getById($id, $user_id = null)
+    public function getById($id): JsonResponse
     {
-        $artist = $this->artistService->getById($id);
-        $artist->user_id = $user_id;
+        $artist = $this->searchService->getById($id, 'artist');
 
-        return $this->returnResponse('artist', new ArtistResource($artist));
+        return $this->returnResponse('artist', $artist);
     }
 
     /**

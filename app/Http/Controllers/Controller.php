@@ -17,6 +17,11 @@ class Controller extends BaseController
         return response()->json([$objectName => $resource]);
     }
 
+    protected function returnElasticResponse($data)
+    {
+        return response()->json($data);
+    }
+
     protected function returnErrorResponse($error, $errorMessage = 'error')
     {
         return response()->json([$errorMessage => $error]);
