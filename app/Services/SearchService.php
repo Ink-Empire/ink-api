@@ -129,6 +129,8 @@ class SearchService
 
     private function buildStylesParam($minMatch = 1)
     {
+        $clauses = [];
+
         //if exact, can set minMatch to count of styles
         foreach ($this->filters['styles'] as $style) {
             if ($style) {
