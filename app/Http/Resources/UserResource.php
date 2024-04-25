@@ -20,7 +20,7 @@ class UserResource extends JsonResource
             'studio' => $this->studio,
             'type' => $this->type->name,
             'artists' => $this->artists,
-            'styles' => $this->styles,
+            'styles' => $this->styles->pluck('id')->toArray(),
             'studios' => $this->studios
         ];
     }

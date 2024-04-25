@@ -107,4 +107,5 @@ class Tattoo extends Model
             return TattooResource::collection($this)->jsonSerialize();
         }
     }
+
 }
