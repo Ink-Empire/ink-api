@@ -25,15 +25,17 @@ class UserSeeder extends Seeder
         if (Schema::hasTable('users')) {
             foreach ($users as $key => $value) {
                 User::create([
+                    "name" => $value->name,
                     "about" => $value->about,
-                    "email" => $value->email,
                     "location" => $value->location,
                     "location_lat_long" => $value->location_lat_long,
-                    "name" => $value->name,
-                    "studio_id" => $value->studio_id ?? null,
+                    "email" => $value->email,
                     "password" => "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
+                    "phone" => $value->phone,
+                    "studio_id" => $value->studio_id ?? null,
+                    "type_id" => $value->type_id,
+                    "image_id" => $value->image_id,
                     "remember_token" => Str::random(10),
-                    "type_id" => $value->type_id
                 ]);
             }
         }
