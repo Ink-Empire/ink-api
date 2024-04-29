@@ -58,6 +58,7 @@ class UserController extends Controller
                 'password' => bcrypt($data['password']),
                 'phone' => $data['phone'] ?? null,
                 'location' => $data['location'] ?? null,
+                'location_lat_long' => $data['location_lat_long'] ?? null,
                 'type_id' => $data['type'] == 'client' ? 1 : 2,
                 'address_id' => $address->id ?? null
             ]);

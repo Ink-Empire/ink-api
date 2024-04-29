@@ -30,6 +30,7 @@ class ArtistResource extends JsonResource
             'name' => $this->name,
             'phone' => $this->phone,
             'studio' => new StudioResource($this->studio),
+            'studio_name' => $this->studio->name,
             'type' => $this->type->name,
             'styles' => StyleResource::collection($this->styles),
             'tattoos' => TattooResource::collection($this->tattoos),
