@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Artist;
 use App\Util\stringToModel;
+use Larelastic\Elastic\Facades\Elastic;
 
 class SearchService
 {
@@ -20,7 +21,7 @@ class SearchService
 
         $response = $this->search->where('id', $id)->get();
 
-        if(!empty($response)) {
+        if (!empty($response)) {
             return collect($response['response'])->first();
         }
     }
@@ -43,6 +44,15 @@ class SearchService
         //initialize the elastic query (model for either artist or tattoo)
         $this->search = $this->model->search();
 
+        if (isset($this->filters['search_text']) && $this->filters['model'] == 'tattoo') {
+            $this->search->wherePrefix('description', $this->filters['search_text']);
+        }
+
+        if (isset($this->filters['search_text']) && $this->filters['model'] == 'artist') {
+            $this->search->whereMulti(['name', 'about', 'studio_name'], 'or', $this->filters['search_text']);
+        }
+
+
         if (isset($this->filters['studio_id'])) {
             $this->buildStudioParam();
         }
@@ -51,23 +61,30 @@ class SearchService
             $this->buildStylesParam();
         }
 
-        if (isset($this->filters['artist_near_me'])) {
-            $this->buildDistanceParam('artist.location_lat_long');
+        if (isset($this->filters['artist_near_me']) && $this->filters['artist_near_me'] == true) {
+
+            if ($this->filters['model'] == 'artist') {
+                $distanceParam = 'location_lat_long';
+            } else {
+                $distanceParam = 'artist.location_lat_long';
+            }
+
+            $this->buildDistanceParam($distanceParam);
         }
 
-        if (isset($this->filters['near_location'])) {
+        if (isset($this->filters['artist_near_location']) && $this->filters['artist_near_location'] == true) {
 
             //artist.location_lat_long for example
-            $nestedField = $this->filters['near_location'] . '.location_lat_long';
+            $nestedField = 'artist.location_lat_long';
 
             $this->buildDistanceParam($nestedField, $this->filters['location_lat_long']);
         }
 
-        if (isset($this->filters['studio_near_me'])) {
+        if (isset($this->filters['studio_near_me']) && $this->filters['studio_near_me'] == true) {
             $this->buildDistanceParam('studio.location_lat_long');
         }
 
-        if (isset($this->filters['studio_near_location'])) {
+        if (isset($this->filters['studio_near_location']) && $this->filters['studio_near_location'] == true) {
             $this->buildDistanceParam('studio.location_lat_long', $this->filters['location_lat_long']);
         }
 
@@ -82,15 +99,23 @@ class SearchService
     private function buildDistanceParam($field = 'location_lat_long', string $latLongString = null)
     {
         //TODO build in support for KM
-        $distance = $this->filters['distance'] . 'mi' ?? '25mi';
 
-        if (empty($latLongString) && isset($this->user)) {
-            $latLongArray = explode(",", $this->user->location_lat_long);
-        } else {
-            $latLongArray = explode(",", $latLongString);
+        try {
+            $distance = $this->filters['distance'] . 'mi' ?? '25mi';
+            if (empty($latLongString) && isset($this->user)) {
+                $latLongArray = explode(",", $this->user->location_lat_long);
+            } else {
+                $latLongArray = explode(",", $latLongString);
+            }
+            $this->search->whereDistance($field, $latLongArray[0], $latLongArray[1], $distance);
+        } catch (\Exception $e) {
+            \Log::error("Unable to build distance param", [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'user_id' => $this->user->id ?? "user not found",
+            ]);
         }
-
-        $this->search->whereDistance($field, $latLongArray[0], $latLongArray[1], $distance);
     }
 
     private function buildGeoSort($field = 'location_lat_long', string $latLongString = null)
