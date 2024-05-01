@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Artist;
+use App\Models\Tattoo;
 use App\Util\stringToModel;
 use Larelastic\Elastic\Facades\Elastic;
 
@@ -45,13 +46,20 @@ class SearchService
         $this->search = $this->model->search();
 
         if (isset($this->filters['search_text']) && $this->filters['model'] == 'tattoo') {
-            $this->search->wherePrefix('description', $this->filters['search_text']);
+
+            $query = Tattoo::search();
+
+            $query->wherePrefix('description', $this->filters['search_text']);
+            $query->where('tags', 'in', [$this->filters['search_text']]);
+
+            $this->search->orWhere(
+                $query, 1
+            );
         }
 
         if (isset($this->filters['search_text']) && $this->filters['model'] == 'artist') {
             $this->search->whereMulti(['name', 'about', 'studio_name'], 'or', $this->filters['search_text']);
         }
-
 
         if (isset($this->filters['studio_id'])) {
             $this->buildStudioParam();

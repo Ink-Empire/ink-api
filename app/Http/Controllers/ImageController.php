@@ -2,10 +2,14 @@
 
 namespace App\Http\Controllers;
 
+use App\Exceptions\TattooNotFoundException;
+use App\Exceptions\UserNotFoundException;
+use App\Http\Resources\Elastic\TattooResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
 use App\Services\ImageService;
 use App\Services\StudioService;
+use App\Services\TattooService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -16,7 +20,8 @@ class ImageController extends Controller
     public function __construct(
         protected ImageService  $imageService,
         protected UserService   $userService,
-        protected StudioService $studioService
+        protected StudioService $studioService,
+        protected TattooService $tattooService
     )
     {
     }
@@ -41,7 +46,7 @@ class ImageController extends Controller
             $image = $this->imageService->processImage($file, $filename);
 
             if ($image) {
-                return $this->setProfileImage($type, $id, $image);
+                return $this->setPrimaryImage($type, $id, $image);
             }
 
         } catch (\Exception $e) {
@@ -56,7 +61,11 @@ class ImageController extends Controller
         }
     }
 
-    private function setProfileImage($type, $id, $image)
+    /**
+     * @throws TattooNotFoundException
+     * @throws UserNotFoundException
+     */
+    private function setPrimaryImage($type, $id, $image)
     {
         switch ($type) {
             case 'user': //artists can also use user service during registration for upload

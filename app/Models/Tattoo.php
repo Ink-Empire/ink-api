@@ -60,6 +60,11 @@ class Tattoo extends Model
         return $this->belongsToMany(Image::class, 'tattoos_images', 'tattoo_id');
     }
 
+    public function tags()
+    {
+        return $this->hasMany(Tag::class);
+    }
+
     /*
     * Elasticsearch
     */

@@ -67,7 +67,7 @@ class TattooIndexConfigurator extends IndexConfigurator
                         ") => ",
                     ]
                 ],
-                'synonyms_char_filter' => [
+                'tags_char_filter' => [
                     'type' => "mapping",
                     'mappings' => [
                         ". => ",
@@ -88,6 +88,11 @@ class TattooIndexConfigurator extends IndexConfigurator
                 'lowercase_normalizer' => [
                     'type' => 'custom',
                     'char_filter' => [],
+                    'filter' => ['lowercase'],
+                ],
+                'tags_normalizer' => [
+                    'type' => 'custom',
+                    'char_filter' => 'tags_char_filter',
                     'filter' => ['lowercase'],
                 ]
             ],
@@ -159,7 +164,12 @@ class TattooIndexConfigurator extends IndexConfigurator
             'primary_subject' => Datatypes::KEYWORD,
             'primary_image' => self::IMAGE,
             'images' => self::IMAGE,
-            'styles' => self::STYLE
+            'styles' => self::STYLE,
+
+            'tags' => [
+                'type' => 'keyword',
+                'normalizer' => 'tags_normalizer'
+            ],
         ]
     ];
 
