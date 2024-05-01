@@ -3,6 +3,7 @@
 namespace App\Services;
 
 
+use App\Exceptions\TattooNotFoundException;
 use App\Models\Tattoo;
 
 /**
@@ -30,5 +31,19 @@ class TattooService
         }
 
         return null;
+    }
+
+    public function setPrimaryImage($id, $image)
+    {
+        $tattoo = $this->getById($id);
+
+        if ($tattoo) {
+            $tattoo->primary_image_id = $image->id;
+            $tattoo->save();
+        } else {
+            throw new TattooNotFoundException();
+        }
+
+        return $tattoo;
     }
 }

@@ -29,7 +29,6 @@ class TattooSeeder extends Seeder
                     "artist_id" => $value->artist_id,
                     "studio_id" => $value->studio_id,
                     "primary_style_id" => $value->primary_style_id,
-                    "primary_subject_id" => $value->primary_subject_id,
                     "primary_image_id" => $value->primary_image_id
                 ]);
             }
