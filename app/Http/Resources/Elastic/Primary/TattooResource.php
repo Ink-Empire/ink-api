@@ -23,7 +23,17 @@ class TattooResource extends JsonResource
             'primary_image' => $this->primary_image ?? null,
             'images' => $this->images,
             'styles' => StyleResource::collection($this->styles),
-            'tags' => $this->tags->pluck('tag')->toArray(),
+            'tags' => $this->getTags(),
         ];
+    }
+
+
+    private function getTags()
+    {
+        if (isset($this->tags)) {
+            return $this->tags->pluck('tag')->toArray();
+        }
+
+        return [];
     }
 }

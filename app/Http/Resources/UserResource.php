@@ -18,6 +18,7 @@ class UserResource extends JsonResource
             'password' => $this->password,
             'phone' => $this->phone,
             'studio' => $this->studio,
+            'studio_name' => $this->studio_name ?? "",
             'type' => $this->type->name,
             'artists' => $this->artists,
             'styles' => $this->styles->pluck('id')->toArray(),

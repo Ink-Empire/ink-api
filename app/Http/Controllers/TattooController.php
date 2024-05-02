@@ -78,7 +78,7 @@ class TattooController extends Controller
                 'description' => $data['description'],
                 'title' => $data['title'] ?? $filename ?? null,
                 'artist_id' => $user->id,
-                'studio_id' => $user->studio_id ?? null,
+                'studio_id' => $data['studio_id'] ?? null,
                 'primary_style_id' => $styles[0] ?? null, //TODO decide how we let the user pick #1
                 'primary_image_id' => $image->id ?? null,
             ]);
@@ -106,7 +106,6 @@ class TattooController extends Controller
 
             $tattoo->searchable();
 
-            //TODO trigger rebuild
             return $this->returnResponse('tattoo', new TattooResource($user));
 
         } catch (\Exception $e) {
