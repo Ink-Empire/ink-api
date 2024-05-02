@@ -19,7 +19,7 @@ return new class extends Migration
             $table->string('description');
             $table->string('placement')->nullable();
             $table->foreignId('artist_id')->constrained('users', 'id')->onDelete('cascade')->onUpdate('cascade');
-            $table->foreignId('studio_id')->constrained()->onDelete('no action')->onUpdate('no action');
+            $table->foreignId('studio_id')->constrained()->onDelete('no action')->onUpdate('no action')->nullable();
             $table->foreignId('primary_style_id')->constrained('styles', 'id')->onDelete('no action')->onUpdate('no action');
             $table->foreignId('primary_image_id')->constrained('images', 'id')->onDelete('cascade')->onUpdate('cascade');
             $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
