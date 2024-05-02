@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Console\ElasticService;
 use Larelastic\Elastic\Console\ElasticIndexDropCommand;
 use Larelastic\Elastic\Facades\Elastic;
+use Larelastic\Elastic\Payloads\RawPayload;
 use Larelastic\Elastic\Traits\RequiresModelArgument;
 
 class DeleteIndexIfExistsCommand extends ElasticIndexDropCommand
@@ -51,7 +52,7 @@ class DeleteIndexIfExistsCommand extends ElasticIndexDropCommand
                 'The index %s was deleted!',
                 $indexName
             ));
-            
+
         }
     }
 }
