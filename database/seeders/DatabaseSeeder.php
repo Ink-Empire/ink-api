@@ -19,6 +19,9 @@ class DatabaseSeeder extends Seeder
         Artisan::call("db:wipe");
         Artisan::call("migrate");
 
+        Artisan::call('elastic:delete-index "App\\\\Models\\\\Tattoo"');
+        Artisan::call('elastic:delete-index "App\\\\Models\\\\Artist"');
+
         $this->call([
             AddressSeeder::class,
             StyleSeeder::class,
@@ -37,5 +40,22 @@ class DatabaseSeeder extends Seeder
             BusinessDaysSeeder::class,
             BusinessHoursSeeder::class
         ]);
+
+        try {
+            Artisan::call('elastic:create-index-ifnotexists "App\\\Models\\\Tattoo"');
+
+            Artisan::call('scout:import "App\\\Models\\\Tattoo"');
+
+            Artisan::call('elastic:create-index-ifnotexists "App\\\\Models\\\\Artist"');
+
+            Artisan::call('scout:import "App\\\Models\\\Artist"');
+
+        } catch (\Exception $e) {
+            \Log::error("Unable to create and populate elastic ", [
+                'message' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+        }
     }
 }
