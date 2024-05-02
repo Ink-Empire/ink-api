@@ -37,7 +37,21 @@ class DeleteIndexIfExistsCommand extends ElasticIndexDropCommand
     {
         if ($this->indexExists()) {
 
-            $this->handle();
+            $configurator = $this->getModel()->getIndexConfigurator();
+            $indexName = $this->resolveIndexName($configurator);
+
+            $payload = (new RawPayload())
+                ->set('index', $indexName)
+                ->get();
+
+            Elastic::indices()
+                ->delete($payload);
+
+            $this->info(sprintf(
+                'The index %s was deleted!',
+                $indexName
+            ));
+            
         }
     }
 }
