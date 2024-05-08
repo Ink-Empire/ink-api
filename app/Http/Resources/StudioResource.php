@@ -18,7 +18,8 @@ class StudioResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'image' => $this->getImage(),
-            'is_verified' => $this->is_verified
+            'is_verified' => $this->is_verified,
+            'business_hours' => $this->business_hours,
         ];
     }
 

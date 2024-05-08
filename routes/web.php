@@ -30,9 +30,11 @@ Route::group(['prefix' => 'artists'], function () {
 
 Route::group(['prefix' => 'studios'], function () {
     Route::get('/{user_id?}', 'StudioController@get');
+    Route::get('/studio/{id}', 'StudioController@getById');
     Route::post('/create', 'StudioController@create');
     Route::put('/studio/{id}', 'StudioController@update');
     Route::get('/{id}/{user_id?}', 'StudioController@getById');
+    Route::put('/studios/studio-hours/{id}', 'StudioController@updateBusinessHours');
 });
 
 Route::group(['prefix' => 'styles'], function () {

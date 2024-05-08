@@ -85,4 +85,32 @@ class StudioController extends Controller
         }
     }
 
+    public function update(Request $request, $id)
+    {
+        $data = $request->all();
+
+        $studio = $this->studioService->getById($id);
+
+        if (isset($data['days'])) {
+            $this->studioService->setBusinessDays($data, $studio);
+            $studio->load('business_hours');
+        }
+
+        return $this->returnResponse('studio', new StudioResource($studio));
+
+    }
+
+    public function updateBusinessHours(Request $request, $id)
+    {
+        $data = $request->all();
+
+        $studio = $this->studioService->getById($id);
+
+        if (isset($data['days'])) {
+            $this->studioService->setBusinessDays($data, $studio);
+            $studio->load('business_hours');
+        }
+
+        return $this->returnResponse('studio', new StudioResource($studio));
+    }
 }

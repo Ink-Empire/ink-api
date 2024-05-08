@@ -14,9 +14,9 @@ class StudioService
 {
 
     /**
-     * @param int $id
+     * @param $id
      */
-    public function getById(int $id) : ?Studio
+    public function getById($id): ?Studio
     {
         if ($id) {
             return Studio::where('id', $id)->first();
@@ -49,5 +49,23 @@ class StudioService
         }
 
         return $studio;
+    }
+
+    public function setBusinessDays(array $data, $studio)
+    {
+        if (isset($data['start']) && isset($data['end'])) {
+            foreach ($data['days'] as $day) {
+                $studio->business_hours()->updateOrCreate(
+                    [
+                        'day_id' => $day,
+                        'studio_id' => $studio->id
+                    ],
+                    [
+                        'day_id' => $day,
+                        'open_time' => $data['start'],
+                        'close_time' => $data['end']
+                    ]);
+            }
+        }
     }
 }
