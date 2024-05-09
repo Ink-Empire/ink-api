@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Services\AddressService;
 use App\Services\ImageService;
 use App\Services\UserService;
+use App\Util\stringToModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -117,13 +118,16 @@ class UserController extends Controller
                     $user->{$fieldName} = $fieldVal;
                 }
 
-                if (in_array($fieldName, array_keys(UserRelationships::RELATIONSHIPS))) {
-                    foreach ($fieldVal as $val) {
-
-                        $instance = UserRelationships::RELATIONSHIPS[$fieldName];
-                        $toSave = new $instance($val);
-                        $user->{$fieldName}()->syncWithoutDetaching($toSave);
-                    }
+                switch ($fieldName) {
+                    case 'styles':
+                        $this->userService->updateStyles($user, $fieldVal);
+                        break;
+                    case 'tattoos':
+                        $this->userService->updateTattoos($user, $fieldVal);
+                        break;
+                    case 'artists':
+                        $this->userService->updateArtists($user, $fieldVal);
+                        break;
                 }
             }
             $user->save();
