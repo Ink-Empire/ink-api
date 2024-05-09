@@ -9,8 +9,8 @@ use App\Models\User;
 class UserRelationships
 {
     const RELATIONSHIPS = [
-        'styles' => Style::class,
-        'tattoos' => Tattoo::class,
-        'artists' => User::class
+        'styles' => 'style',
+        'tattoos' => 'tattoo',
+        'artists' => 'user'
     ];
 }

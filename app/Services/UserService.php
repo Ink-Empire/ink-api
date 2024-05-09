@@ -48,4 +48,19 @@ class UserService
 
         return $user;
     }
+
+    public function updateStyles(?User $user, $stylesArray): void
+    {
+        $user->styles()->sync($stylesArray);
+    }
+
+    public function updateTattoos(?User $user, mixed $tattooArray): void
+    {
+        //
+    }
+
+    public function updateArtists(?User $user, mixed $fieldVal): void
+    {
+        //
+    }
 }
