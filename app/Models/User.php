@@ -88,4 +88,9 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Address::class);
     }
+
+    public function studio()
+    {
+        return $this->belongsTo(Studio::class);
+    }
 }
