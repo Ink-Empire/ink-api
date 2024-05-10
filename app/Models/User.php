@@ -56,7 +56,7 @@ class User extends Authenticatable
 
     public function scopeArtist(Builder $query): void
     {
-        $query->where(['type_id' => UserTypes::ARTIST_TYPE]);
+        $query->where(['type_id' => UserTypes::ARTIST_TYPE_ID]);
     }
 
     public function type()

@@ -99,9 +99,8 @@ class SearchService
 
         //$this->buildGeoSort();
 
-        $response = $this->search->get();
+        return $this->search->get();
 
-        return $response;
     }
 
     private function buildDistanceParam($field = 'location_lat_long', string $latLongString = null)

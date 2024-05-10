@@ -47,7 +47,7 @@ class UserFactory extends Factory
     {
         return $this->state(function (array $attributes) {
             return [
-                'type_id' => UserTypes::ARTIST_TYPE,
+                'type_id' => UserTypes::ARTIST_TYPE_ID,
             ];
         });
     }

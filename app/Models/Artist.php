@@ -73,7 +73,7 @@ class Artist extends User
 
     public function shouldBeSearchable()
     {
-        return $this['type_id'] === UserTypes::ARTIST_TYPE;
+        return $this['type_id'] === UserTypes::ARTIST_TYPE_ID;
     }
 
     public function toSearchableArray()
