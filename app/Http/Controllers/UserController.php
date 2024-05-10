@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserRelationships;
+use App\Enums\UserTypes;
 use App\Exceptions\UserNotFoundException;
 use App\Http\Resources\UserResource;
 use App\Models\User;
@@ -35,7 +36,7 @@ class UserController extends Controller
     public function getById($id)
     {
         $user = $this->userService->getById($id);
-        return $this->returnResponse('user', new UserResource($user));
+        return $this->returnResponse(UserTypes::USER, new UserResource($user));
     }
 
     /**
@@ -60,12 +61,12 @@ class UserController extends Controller
                 'phone' => $data['phone'] ?? null,
                 'location' => $data['location'] ?? null,
                 'location_lat_long' => $data['location_lat_long'] ?? null,
-                'type_id' => $data['type'] == 'client' ? 1 : 2,
+                'type_id' => $data['type'] == UserTypes::USER ? 1 : 2,
                 'address_id' => $address->id ?? null
             ]);
             $user->save();
 
-            return $this->returnResponse('user', new UserResource($user));
+            return $this->returnResponse(UserTypes::USER, new UserResource($user));
 
         } catch (\Exception $e) {
             \Log::error("Unable to create user", [
@@ -135,7 +136,7 @@ class UserController extends Controller
             return $this->returnErrorResponse($e->getMessage());
         }
 
-        return $this->returnResponse('user', new UserResource($user));
+        return $this->returnResponse(UserTypes::USER, new UserResource($user));
     }
 
     /**
@@ -163,7 +164,7 @@ class UserController extends Controller
 
         $user->save();
 
-        return $this->returnResponse('user', new UserResource($user));
+        return $this->returnResponse(UserTypes::USER, new UserResource($user));
     }
 
     /**

@@ -17,6 +17,15 @@ class SearchController extends Controller
 
         $response = $this->searchService->search($params);
 
+        if ($response['response']->count() == 0 && !isset($params['search_again'])) {
+            //instead we will need to formulate a popularity system and use GeoSort here, once we have more data
+            $params['artist_near_me'] = false;
+            $params['search_again'] = true;
+
+            $response = $this->searchService->search($params);
+
+        }
         return $this->returnElasticResponse($response);
+
     }
 }

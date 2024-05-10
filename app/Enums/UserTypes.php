@@ -4,6 +4,9 @@ namespace App\Enums;
 
 class UserTypes
 {
-    const CLIENT_TYPE = 1;
-    const ARTIST_TYPE = 2;
+    const USER = 'user';
+    const ARTIST = 'artist';
+
+    const USER_TYPE_ID = 1;
+    const ARTIST_TYPE_ID = 2;
 }
