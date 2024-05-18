@@ -2,8 +2,7 @@
 
 namespace App\Services;
 
-use App\Exceptions\UserNotFoundException;
-use App\Models\Artist;
+use App\Exceptions\StudioNotFoundException;
 use App\Models\Image;
 use App\Models\Studio;
 
@@ -35,7 +34,7 @@ class StudioService
 
 
     /**
-     * @throws UserNotFoundException
+     * @throws StudioNotFoundException
      */
     public function setStudioImage(string $studio_id, Image $image): Studio
     {
@@ -45,7 +44,7 @@ class StudioService
             $studio->image_id = $image->id;
             $studio->save();
         } else {
-            throw new UserNotFoundException();
+            throw new StudioNotFoundException();
         }
 
         return $studio;
@@ -68,4 +67,21 @@ class StudioService
             }
         }
     }
+
+
+    public function updateStyles(?Studio $studio, $stylesArray): void
+    {
+        $studio->styles()->sync($stylesArray);
+    }
+
+    public function updateTattoos(?Studio $studio, mixed $tattooArray): void
+    {
+        //
+    }
+
+    public function updateArtists(?Studio $studio, mixed $fieldVal): void
+    {
+        //
+    }
+
 }

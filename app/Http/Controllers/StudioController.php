@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserTypes;
 use App\Http\Resources\StudioResource;
 use App\Models\Studio;
+use App\Models\User;
 use App\Services\AddressService;
 use App\Services\StudioService;
 use App\Services\UserService;
@@ -44,38 +46,37 @@ class StudioController extends Controller
     public function create(Request $request): \Illuminate\Http\JsonResponse
     {
         try {
-            $data = $request->get('payload');
+            $data = $request->all();
 
-            $studioData = $data['studioData'];
-            $addressData = $data['address'];
-            $user_id = $data['user_id'];
-
-            $studioAddress = $this->addressService->create($addressData);
-
-            if ($studioAddress) {
-                $studio = new Studio([
-                    'name' => $studioData['name'],
-                    'email' => $studioData['email'],
-                    'phone' => $studioData['phone'] ?? null,
-                ]);
-
-                //attach address to studio
-                $studio->address_id = $studioAddress->id;
-                $studio->save();
+            if ($data['address']) {
+                $address = $this->addressService->create(
+                    [
+                        'address1' => $data['address']['address1'],
+                        'address2' => $data['address']['address2'] ?? null,
+                        'city' => $data['address']['city'],
+                        'state' => $data['address']['state'],
+                        'postal_code' => $data['address']['postal_code'],
+                        'country_code' => $data['address']['country_code'] ?? "US"
+                    ]
+                );
             }
 
-            $user = $this->userService->getById($user_id);
+            $studio = new Studio([
+                'name' => $data['name'],
+                'email' => $data['email'],
+                'password' => bcrypt($data['password']),
+                'phone' => $data['phone'] ?? null,
+                'location' => $data['location'] ?? null,
+                'location_lat_long' => $data['location_lat_long'] ?? null,
+                'address_id' => $address->id ?? null
+            ]);
 
-            if ($user) {
-                //primary studio id -- TODO possibilities on attaching user to many if its relevant
-                $user->studio_id = $studio->id;
-                $user->save();
-            }
+            $studio->save();
 
             return $this->returnResponse('studio', new StudioResource($studio));
 
         } catch (\Exception $e) {
-            \Log::error("Unable to create user", [
+            \Log::error("Unable to create studio", [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile()
@@ -88,13 +89,30 @@ class StudioController extends Controller
     public function update(Request $request, $id)
     {
         $data = $request->all();
-
         $studio = $this->studioService->getById($id);
 
-        if (isset($data['days'])) {
-            $this->studioService->setBusinessDays($data, $studio);
-            $studio->load('business_hours');
+        foreach ($data as $fieldName => $fieldVal) {
+            if (in_array($fieldName, $studio->getFillable())) {
+                $studio->{$fieldName} = $fieldVal;
+            }
+
+            switch ($fieldName) {
+                case 'days':
+                    $this->studioService->setBusinessDays($data, $studio);
+                    $studio->load('business_hours');
+                    break;
+                case 'styles':
+                    $this->studioService->updateStyles($studio, $fieldVal);
+                    break;
+                case 'tattoos':
+                    $this->userService->updateTattoos($studio, $fieldVal);
+                    break;
+                case 'artists':
+                    $this->userService->updateArtists($studio, $fieldVal);
+                    break;
+            }
         }
+        $studio->save();
 
         return $this->returnResponse('studio', new StudioResource($studio));
 
