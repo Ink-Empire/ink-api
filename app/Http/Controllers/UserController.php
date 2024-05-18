@@ -48,7 +48,7 @@ class UserController extends Controller
         try {
             $data = $request->all();
 
-            if ($data['address']) {
+            if (isset($data['address'])) {
                 $address = $this->addressService->create(
                     $this->addressService->mapFields($data['address'])
                 );
