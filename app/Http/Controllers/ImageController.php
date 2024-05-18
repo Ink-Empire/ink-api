@@ -62,8 +62,7 @@ class ImageController extends Controller
     }
 
     /**
-     * @throws TattooNotFoundException
-     * @throws UserNotFoundException
+     * @throws UserNotFoundException|\App\Exceptions\StudioNotFoundException
      */
     private function setPrimaryImage($type, $id, $image)
     {

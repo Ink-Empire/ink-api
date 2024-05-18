@@ -12,10 +12,12 @@ class Studio extends Model
     protected $fillable = [
         'name',
         'address_id',
+        'image_id',
         'about',
         'location',
         'location_lat_long',
         'email',
+        'password',
         'phone',
     ];
 
@@ -31,12 +33,18 @@ class Studio extends Model
 
     public function styles()
     {
-        return $this->hasMany(Style::class);
+        return $this->belongsToMany(Style::class, 'studios_styles', 'studio_id', 'style_id');
     }
 
+    //TODO this table doesn't exist yet... unsure if we will want this
     public function tattoos()
     {
-        return $this->hasMany(Tattoo::class);
+        return $this->belongsToMany(Tattoo::class, 'studios_tattoos', 'studio_id', 'tattoo_id');
+    }
+
+    public function artists()
+    {
+        return $this->hasMany(User::class,  'artist_id');
     }
 
     public function business_hours()

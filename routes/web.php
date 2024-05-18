@@ -64,3 +64,7 @@ Route::group(['prefix' => 'elastic'], function () {
     Route::post('/migrate', 'ElasticController@migrateAlias');
     Route::post('translate-query', 'ElasticController@translateQuery');
 });
+
+Route::group(['prefix' => 'countries'], function () {
+    Route::get('/', 'CountryController@get');
+});
