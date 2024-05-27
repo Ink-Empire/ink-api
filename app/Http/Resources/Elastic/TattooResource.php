@@ -21,6 +21,7 @@ class TattooResource extends JsonResource
             'primary_image' => $this->primary_image ?? null,
             'images' => $this->images,
             'styles' => $this->styles,
+            'tags' => $this->tags,
         ];
     }
 }
