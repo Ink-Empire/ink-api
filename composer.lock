@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "7f2023ca967ea6efe4995f50cf382f10",
+    "content-hash": "07d0b59ad00006d0abb5ca4e50dd0f4a",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -1373,11 +1373,11 @@
         },
         {
             "name": "ink-empire/elastic",
-            "version": "1.4",
+            "version": "1.5",
             "source": {
                 "type": "git",
                 "url": "git@github.com:ccennis/larelastic.git",
-                "reference": "fe0af1323ace839082817dc3fd32f3114d0714a9"
+                "reference": "179b0b325a41a39dfeeb821d06f4212eb7a40875"
             },
             "require": {
                 "elasticsearch/elasticsearch": "^7.16",
@@ -1400,7 +1400,7 @@
                 }
             },
             "description": "Generic Wrapper for elasticsearch and indexing",
-            "time": "2024-04-19T16:49:46+00:00"
+            "time": "2024-06-03T15:42:43+00:00"
         },
         {
             "name": "intervention/gif",
