@@ -20,9 +20,10 @@ class UserResource extends JsonResource
             'studio' => $this->studio,
             'studio_name' => $this->studio_name ?? "",
             'type' => $this->type->name,
-            'artists' => $this->artists,
+            'artists' => $this->artists->pluck('id')->toArray(),
             'styles' => $this->styles->pluck('id')->toArray(),
-            'studios' => $this->studios
+            'studios' => $this->studios,
+            'tattoos' => $this->tattoos->pluck('id')->toArray()
         ];
     }
 }

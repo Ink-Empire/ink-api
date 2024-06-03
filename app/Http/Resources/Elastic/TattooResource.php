@@ -12,6 +12,8 @@ class TattooResource extends JsonResource
     {
         return [
             'id' => $this->id,
+            'artist_id' => $this->artist->id,
+            'studio_id' => $this->studio->id ?? null,
             'title' => $this->title,
             'description' => $this->description,
             'placement' => $this->placement,

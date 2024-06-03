@@ -156,6 +156,8 @@ class TattooIndexConfigurator extends IndexConfigurator
     protected $mappings = [
         'properties' => [
             'id' => Datatypes::INTEGER,
+            'artist_id' => Datatypes::KEYWORD,
+            'studio_id' => Datatypes::KEYWORD,
             'title' => Datatypes::KEYWORD,
             'description' => Datatypes::TEXT,
             'placement' => Datatypes::KEYWORD,
