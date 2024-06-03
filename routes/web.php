@@ -63,6 +63,8 @@ Route::group(['prefix' => 'elastic'], function () {
     Route::post('/rebuild-bypass', 'ElasticController@rebuildBypass');
     Route::post('/migrate', 'ElasticController@migrateAlias');
     Route::post('translate-query', 'ElasticController@translateQuery');
+
+    Route::post('/initial-search', 'SearchController@getInitialSearch');
 });
 
 Route::group(['prefix' => 'countries'], function () {

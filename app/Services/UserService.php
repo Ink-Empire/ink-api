@@ -56,11 +56,26 @@ class UserService
 
     public function updateTattoos(?User $user, mixed $tattooArray): void
     {
-        //
+        if($tattooArray === null) {
+            $user->tattoos()->detach();
+            return;
+        }
+
+        $user->tattoos()->sync($tattooArray);
     }
 
-    public function updateArtists(?User $user, mixed $fieldVal): void
+    public function updateArtists(?User $user, mixed $artistArray): void
     {
-        //
+        if($artistArray === null) {
+            $user->artists()->detach();
+            return;
+        }
+
+        $user->artists()->sync($artistArray);
+    }
+
+    public function getFavoriteArtistIds(mixed $id)
+    {
+        return User::where('id', $id)->first()->artists->pluck('id')->toArray();
     }
 }

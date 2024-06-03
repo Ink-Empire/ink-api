@@ -27,25 +27,16 @@ class SearchService
         }
     }
 
-    public function search($params)
+    public function search_tattoo($filters)
     {
-        \Log::debug(json_encode($params));
-
-        $this->filters = $params;
-
-        if (isset($this->filters['model'])) {
-            $model = ucfirst($this->filters['model']);
-            $this->model = stringToModel::convert($model);
-        }
+        $this->search = Tattoo::search();
+        $this->filters = $filters;
 
         if (isset($this->filters['user_id'])) {
-            $this->user = $this->userService->getById($this->filters['user_id']);
+            $this->user = $this->userService->getById($filters['user_id']);
         }
 
-        //initialize the elastic query (model for either artist or tattoo)
-        $this->search = $this->model->search();
-
-        if (isset($this->filters['search_text']) && $this->filters['model'] == 'tattoo') {
+        if (isset($this->filters['search_text'])) {
 
             $query = Tattoo::search();
 
@@ -57,7 +48,53 @@ class SearchService
             );
         }
 
-        if (isset($this->filters['search_text']) && $this->filters['model'] == 'artist') {
+        if (isset($this->filters['studio_id'])) {
+            $this->buildStudioParam();
+        }
+
+        if (isset($this->filters['styles'])) {
+            $this->buildStylesParam();
+        }
+
+        if (isset($this->filters['artist_near_me']) && $this->filters['artist_near_me']) {
+            $distanceParam = 'artist.location_lat_long';
+            $this->buildDistanceParam($distanceParam);
+        }
+
+        if (isset($this->filters['artist_near_location']) && $this->filters['artist_near_location']) {
+            //artist.location_lat_long for example
+            $nestedField = 'artist.location_lat_long';
+            $this->buildDistanceParam($nestedField, $this->filters['location_lat_long']);
+        }
+
+        if (isset($this->filters['saved_artists'])) {
+
+            $favoriteArtistIds = $this->userService->getFavoriteArtistIds($this->user->id);
+
+            $this->search->where('artist_id', 'in', $favoriteArtistIds);
+        }
+
+        if (isset($this->filters['studio_near_me']) && $this->filters['studio_near_me']) {
+            $this->buildDistanceParam('studio.location_lat_long');
+        }
+
+        if (isset($this->filters['studio_near_location']) && $this->filters['studio_near_location']) {
+            $this->buildDistanceParam('studio.location_lat_long', $this->filters['location_lat_long']);
+        }
+
+        return $this->search->get();
+    }
+
+    public function search_artist($filters)
+    {
+        $this->search = Artist::search();
+        $this->filters = $filters;
+
+        if (isset($this->filters['user_id'])) {
+            $this->user = $this->userService->getById($filters['user_id']);
+        }
+
+        if (isset($this->filters['search_text'])) {
             $this->search->whereMulti(['name', 'about', 'studio_name'], 'or', $this->filters['search_text']);
         }
 
@@ -69,38 +106,31 @@ class SearchService
             $this->buildStylesParam();
         }
 
-        if (isset($this->filters['artist_near_me']) && $this->filters['artist_near_me'] == true) {
+        if (isset($this->filters['artists'])) {
 
-            if ($this->filters['model'] == 'artist') {
-                $distanceParam = 'location_lat_long';
-            } else {
-                $distanceParam = 'artist.location_lat_long';
-            }
+            $favoriteArtistIds = $this->userService->getFavoriteArtistIds($this->user->id);
 
+            $this->search->where('id', 'in', $favoriteArtistIds);
+        }
+
+        if (isset($this->filters['artist_near_me']) && $this->filters['artist_near_me']) {
+            $distanceParam = 'location_lat_long';
             $this->buildDistanceParam($distanceParam);
         }
 
-        if (isset($this->filters['artist_near_location']) && $this->filters['artist_near_location'] == true) {
-
-            //artist.location_lat_long for example
-            $nestedField = 'artist.location_lat_long';
-
-            $this->buildDistanceParam($nestedField, $this->filters['location_lat_long']);
+        if (isset($this->filters['artist_near_location']) && $this->filters['artist_near_location']) {
+            $this->buildDistanceParam('location_lat_long', $this->filters['location_lat_long']);
         }
 
-        if (isset($this->filters['studio_near_me']) && $this->filters['studio_near_me'] == true) {
+        if (isset($this->filters['studio_near_me']) && $this->filters['studio_near_me']) {
             $this->buildDistanceParam('studio.location_lat_long');
         }
 
-        if (isset($this->filters['studio_near_location']) && $this->filters['studio_near_location'] == true) {
+        if (isset($this->filters['studio_near_location']) && $this->filters['studio_near_location']) {
             $this->buildDistanceParam('studio.location_lat_long', $this->filters['location_lat_long']);
         }
 
-
-        //$this->buildGeoSort();
-
         return $this->search->get();
-
     }
 
     private function buildDistanceParam($field = 'location_lat_long', string $latLongString = null)
@@ -123,6 +153,24 @@ class SearchService
                 'user_id' => $this->user->id ?? "user not found",
             ]);
         }
+    }
+
+    public function initialUserResults($user_id)
+    {
+        //home page initial search will return tattoo results
+        //either tattoos in saved styles OR artists user has saved OR artists near location, sorted by new
+        $this->search = Tattoo::search();
+
+        $this->user = $this->userService->getById($user_id);
+
+        $this->getInitialNestedUserQuery();
+
+        //TODO get some pagination in here
+        $this->search->size($this->search->count());
+
+        //TODO add sort for newest posted
+        return $this->search->get();
+
     }
 
     private function buildGeoSort($field = 'location_lat_long', string $latLongString = null)
@@ -173,4 +221,84 @@ class SearchService
             $this->search->orWhere($clauses, $minMatch);
         }
     }
+
+    private function buildDistanceOrSavedArtists()
+    {
+        $styleSearch = Tattoo::search();
+        foreach ($this->user->styles as $style) {
+            if ($style) {
+                $clauses[] = ['styles.id', '=', $style->id];
+            }
+        }
+
+        $styleSearch->orWhere($clauses, 1);
+        $styleResponse = $styleSearch->get();
+
+        $distanceSearch = Tattoo::search();
+        $distance = '25mi';
+        $latLongArray = explode(",", $this->user->location_lat_long);
+
+        $distanceSearch->whereDistance('artist.location_lat_long', $latLongArray[0], $latLongArray[1], $distance);
+
+        $distanceResponse = $distanceSearch->get();
+
+
+        return $styleResponse['response']->merge($distanceResponse['response']);
+
+    }
+
+    //this creates opposing queries and nests them as THIS or THAT. Prime example: WUB + 1 and 4 color cards.
+    private function getInitialNestedUserQuery()
+    {
+        $styleClause = $this->getUserStylesOrSyntax(1);
+        $savedArtistsOrSyntax = $this->getSavedArtistsOrSyntax(1);
+        $artistsNearMeSyntax = $this->getArtistsNearMeSyntax();
+        $minMatch = 1;
+
+        $this->search->nestedOr(
+            [
+                [
+                    $styleClause,
+                    $savedArtistsOrSyntax,
+                    $artistsNearMeSyntax
+                ]
+            ], $minMatch //we only care if one of these brings back results
+        );
+    }
+
+    private function getUserStylesOrSyntax($minMatch = 1)
+    {
+        $styles_clauses = collect($this->user->styles)
+            ->map(function ($value) {
+                return ['styles.id', '=', $value->id];
+            })->toArray();
+
+        $response['bool']['minimum_should_match'] = $minMatch;
+        $response['bool']['should'] = $this->search->orWhereSyntax($styles_clauses, $minMatch);
+
+        return $response;
+    }
+
+    private function getSavedArtistsOrSyntax($minMatch = 1)
+    {
+        $faves_clauses = collect($this->user->artists)
+            ->map(function ($value) {
+                return ['artist_id', '=', $value->id];
+            })->toArray();
+
+        $response['bool']['minimum_should_match'] = $minMatch;
+        $response['bool']['should'] = $this->search->orWhereSyntax($faves_clauses, $minMatch);
+
+        return $response;
+    }
+
+    private function getArtistsNearMeSyntax()
+    {
+        $latLongArray = explode(",", $this->user->location_lat_long);
+
+        $response['bool']['must'] = $this->search->whereDistanceSyntax('artist.location_lat_long', $latLongArray[0], $latLongArray[1], '25mi');
+
+        return $response;
+    }
+
 }
