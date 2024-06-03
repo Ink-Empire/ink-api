@@ -72,6 +72,14 @@ return [
             'replace_placeholders' => true,
         ],
 
+        'debug' => [
+            'driver' => 'daily',
+            'path' => env('LOG_DEBUG_STORAGE_PATH', storage_path('logs/debug.log')),
+            'level' => 'debug',
+            'days' => env('LOG_ROTATION_DAYS', 14),
+            'permission' => 0664,
+        ],
+
         'slack' => [
             'driver' => 'slack',
             'url' => env('LOG_SLACK_WEBHOOK_URL'),
