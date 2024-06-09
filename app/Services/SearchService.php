@@ -78,7 +78,7 @@ class SearchService
 
             $favoriteTattooIds = $this->userService->getFavoriteTattooIds($this->user->id);
 
-            $this->search->where('tattoo_id', 'in', $favoriteTattooIds);
+            $this->search->where('id', 'in', $favoriteTattooIds);
         }
 
         if (isset($this->filters['studio_near_me']) && $this->filters['studio_near_me']) {
