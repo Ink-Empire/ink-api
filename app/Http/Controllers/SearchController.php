@@ -21,7 +21,7 @@ class SearchController extends Controller
         //either tattoos in saved styles OR artists user has saved OR artists near location, sorted by new
         $response = $this->searchService->initialUserResults($request->get('user_id'));
 
-        return $this->returnElasticResponse($response);
+        return $this->returnElasticResponse($response['response']);
     }
 
     public function index(Request $request)
