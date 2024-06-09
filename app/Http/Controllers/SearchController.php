@@ -10,9 +10,10 @@ class SearchController extends Controller
 {
     public function __construct(
         protected SearchService $searchService,
-        protected UserService $userService
+        protected UserService   $userService
     )
-    {}
+    {
+    }
 
     public function getInitialSearch(Request $request)
     {
@@ -30,7 +31,7 @@ class SearchController extends Controller
         $filters = $request->except('model');
 
         if ($model == 'tattoo') {
-           $response = $this->checkResponse($this->searchService->search_tattoo($filters), $model);
+            $response = $this->checkResponse($this->searchService->search_tattoo($filters), $model);
         } else {
             $response = $this->checkResponse($this->searchService->search_artist($filters), $model);
         }
@@ -40,16 +41,19 @@ class SearchController extends Controller
 
     private function checkResponse($response, $model)
     {
-        if ($response['response']->count() == 0 && !isset($params['search_again'])) {
-            //instead we will need to formulate a popularity system and use GeoSort here, once we have more data
-            $params['artist_near_me'] = false;
-            $params['search_again'] = true;
+        //we dont want to return generic results if we are asking for saved items
+        if (!request()->has('saved_artists') && !request()->has('saved_tattoos')) {
+            if ($response['response']->count() == 0 && !isset($params['search_again'])) {
+                //instead we will need to formulate a popularity system and use GeoSort here, once we have more data
+                $params['artist_near_me'] = false;
+                $params['search_again'] = true;
 
-            $method = "search" . "_" . $model;
+                $method = "search" . "_" . $model;
 
-            return $this->searchService->{$method}($params);
-        } else {
-            return $response['response'];
+                \Log::info("no search results returned, searching again for generic response");
+                return $this->searchService->{$method}($params);
+            }
         }
+        return $response['response'];
     }
 }
