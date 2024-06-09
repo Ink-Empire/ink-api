@@ -78,4 +78,9 @@ class UserService
     {
         return User::where('id', $id)->first()->artists->pluck('id')->toArray();
     }
+
+    public function getFavoriteTattooIds(mixed $id)
+    {
+        return User::where('id', $id)->first()->tattoos->pluck('id')->toArray();
+    }
 }

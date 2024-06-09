@@ -74,6 +74,13 @@ class SearchService
             $this->search->where('artist_id', 'in', $favoriteArtistIds);
         }
 
+        if (isset($this->filters['saved_tattoos'])) {
+
+            $favoriteTattooIds = $this->userService->getFavoriteTattooIds($this->user->id);
+
+            $this->search->where('tattoo_id', 'in', $favoriteTattooIds);
+        }
+
         if (isset($this->filters['studio_near_me']) && $this->filters['studio_near_me']) {
             $this->buildDistanceParam('studio.location_lat_long');
         }
@@ -106,7 +113,7 @@ class SearchService
             $this->buildStylesParam();
         }
 
-        if (isset($this->filters['artists'])) {
+        if (isset($this->filters['saved_artists'])) {
 
             $favoriteArtistIds = $this->userService->getFavoriteArtistIds($this->user->id);
 
