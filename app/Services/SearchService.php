@@ -214,12 +214,16 @@ class SearchService
         $this->search->where('studio.id', $this->filters['studio_id']);
     }
 
-    private function buildStylesParam($minMatch = 1)
+    private function buildStylesParam($minMatch = 1): void
     {
         $clauses = [];
 
+        $styles = $this->filters['styles'];
+
+        $styles = !is_array($styles) ? [$styles] : $styles;
+
         //if exact, can set minMatch to count of styles
-        foreach ($this->filters['styles'] as $style) {
+        foreach ($styles as $style) {
             if ($style) {
                 $clauses[] = ['styles.id', '=', $style];
             }
