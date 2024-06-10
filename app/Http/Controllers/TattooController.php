@@ -106,7 +106,7 @@ class TattooController extends Controller
 
             $tattoo->searchable();
 
-            return $this->returnResponse('tattoo', new TattooResource($user));
+            return $this->returnResponse('tattoo', new TattooResource($tattoo));
 
         } catch (\Exception $e) {
             \Log::error("Unable to create tattoo", [
