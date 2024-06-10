@@ -104,7 +104,12 @@ class TattooController extends Controller
                 }
             }
 
+            \Log::info("created tattoo", ['tattoo' => $tattoo->id]);
+
             $tattoo->searchable();
+
+            \Log::info("indexed tattoo", ['tattoo' => $tattoo->id]);
+
 
             return $this->returnResponse('tattoo', new TattooResource($tattoo));
 
