@@ -51,7 +51,7 @@ class UserService
 
     public function updateStyles(?User $user, $stylesArray): void
     {
-        $user->styles()->sync($stylesArray);
+        $user->styles()->sync(array_filter($stylesArray));
     }
 
     public function updateTattoos(?User $user, mixed $tattooArray): void
@@ -61,7 +61,7 @@ class UserService
             return;
         }
 
-        $user->tattoos()->sync($tattooArray);
+        $user->tattoos()->sync(array_filter($tattooArray));
     }
 
     public function updateArtists(?User $user, mixed $artistArray): void
@@ -71,7 +71,7 @@ class UserService
             return;
         }
 
-        $user->artists()->sync($artistArray);
+        $user->artists()->sync(array_filter($artistArray));
     }
 
     public function getFavoriteArtistIds(mixed $id)
