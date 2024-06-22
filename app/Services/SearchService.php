@@ -261,33 +261,40 @@ class SearchService
     //this creates opposing queries and nests them as THIS or THAT. Prime example: WUB + 1 and 4 color cards.
     private function getInitialNestedUserQuery()
     {
-        $styleClause = $this->getUserStylesOrSyntax(1);
-        $savedArtistsOrSyntax = $this->getSavedArtistsOrSyntax(1);
-        $artistsNearMeSyntax = $this->getArtistsNearMeSyntax();
+        $searchClauseArray = [
+            'style_clause' => $this->getUserStylesOrSyntax(1),
+            'savedArtistClause' => $this->getSavedArtistsOrSyntax(1),
+            'artistsNearMeClause' => $this->getArtistsNearMeSyntax(),
+        ];
+
         $minMatch = 1;
 
-        $this->search->nestedOr(
-            [
-                [
-                    $styleClause,
-                    $savedArtistsOrSyntax,
-                    $artistsNearMeSyntax
-                ]
-            ], $minMatch //we only care if one of these brings back results
-        );
+        foreach($searchClauseArray as $key => $clause) {
+            if($clause) {
+                $this->search->nestedOr(
+                    [
+                        $clause
+                    ], $minMatch
+                );
+            }
+        }
     }
 
-    private function getUserStylesOrSyntax($minMatch = 1)
+    private function getUserStylesOrSyntax($minMatch = 1): ?array
     {
         $styles_clauses = collect($this->user->styles)
             ->map(function ($value) {
                 return ['styles.id', '=', $value->id];
             })->toArray();
 
-        $response['bool']['minimum_should_match'] = $minMatch;
-        $response['bool']['should'] = $this->search->orWhereSyntax($styles_clauses, $minMatch);
+        if (count($styles_clauses) > 0) {
 
-        return $response;
+            $response['bool']['minimum_should_match'] = $minMatch;
+            $response['bool']['should'] = $this->search->orWhereSyntax($styles_clauses, $minMatch);
+
+            return $response;
+        }
+        return null;
     }
 
     private function getSavedArtistsOrSyntax($minMatch = 1)
@@ -297,10 +304,14 @@ class SearchService
                 return ['artist_id', '=', $value->id];
             })->toArray();
 
-        $response['bool']['minimum_should_match'] = $minMatch;
-        $response['bool']['should'] = $this->search->orWhereSyntax($faves_clauses, $minMatch);
+        if (count($faves_clauses) > 0) {
 
-        return $response;
+            $response['bool']['minimum_should_match'] = $minMatch;
+            $response['bool']['should'] = $this->search->orWhereSyntax($faves_clauses, $minMatch);
+
+            return $response;
+        }
+        return null;
     }
 
     private function getArtistsNearMeSyntax()
