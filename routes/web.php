@@ -13,6 +13,12 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/debug-test', function () {
+    \Log::info('Debug route hit!');
+   echo(xdebug_info());
+    return 'Debugging...';
+});
+
 
 Route::group(['prefix' => 'users'], function () {
     Route::post('/create', 'UserController@create');

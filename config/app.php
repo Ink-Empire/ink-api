@@ -159,6 +159,7 @@ return [
         /*
          * Package Service Providers...
          */
+        Larelastic\Elastic\Providers\ElasticServiceProvider::class,
 
         /*
          * Application Service Providers...
@@ -168,7 +169,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        Larelastic\Elastic\Providers\ElasticServiceProvider::class,
+        App\Providers\ElasticsearchServiceProvider::class
     ])->toArray(),
 
     /*
@@ -184,7 +185,6 @@ return [
 
     'aliases' => Facade::defaultAliases()->merge([
         'Elastic' => Larelastic\Elastic\Facades\Elastic::class,
-        // 'Example' => App\Facades\Example::class,
     ])->toArray(),
 
 ];

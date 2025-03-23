@@ -33,5 +33,7 @@ class Kernel extends ConsoleKernel
     protected $commands = [
         'App\Console\Commands\CreateIndexIfNotExists',
         'App\Console\Commands\DeleteIndexIfExistsCommand',
+        'App\Console\Commands\ElasticMigrateCommand',
+        'App\Console\Commands\ElasticRebuildCommand',
     ];
 }

@@ -1,0 +1,25 @@
+#!/usr/bin/env bash
+
+if [ ! -z "$WWWUSER" ]; then
+    usermod -u $WWWUSER sail
+fi
+
+if [ ! -d /.composer ]; then
+    mkdir /.composer
+fi
+
+chmod -R ugo+rw /.composer
+
+# Set correct permissions
+chown -R sail:sail /var/www/html/storage
+chown -R sail:sail /var/www/html/bootstrap/cache
+
+# Start Apache service
+service apache2 start
+
+if [ $# -gt 0 ]; then
+    exec gosu sail "$@"
+else
+    # Keep container running
+    tail -f /dev/null
+fi
