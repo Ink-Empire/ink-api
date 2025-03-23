@@ -20,11 +20,16 @@ class StyleController extends Controller
     {
     }
 
+    public function index()
+    {
+        $styles = $this->styleService->get();
+
+        return $this->returnResponse('styles', StyleResource::collection($styles));
+    }
+
     public function get()
     {
-        $studios = $this->styleService->get();
-
-        return $this->returnResponse('styles', StyleResource::collection($studios));
+        return $this->index();
     }
 
     public function create(Request $request)
