@@ -46,7 +46,7 @@ services:
             context: /Users/carolineennis/inkedin/inked-in-www/nextjs
             dockerfile: Dockerfile.dev
         ports:
-            - '3000:3000'
+            - '4000:3000'
         volumes:
             - '/Users/carolineennis/inkedin/inked-in-www/nextjs:/app'
             - '/app/node_modules'

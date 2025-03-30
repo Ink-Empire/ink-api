@@ -2,6 +2,10 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\AuthController;
+use App\Http\Controllers\UserController;
+use App\Http\Controllers\StyleController;
+use App\Http\Controllers\CountryController;
 
 /*
 |--------------------------------------------------------------------------
@@ -14,10 +18,27 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::middleware('auth:sanctum')->get('/user', function (Request $request) {
-    return $request->user();
-});
-
 // Public routes
-Route::get('/styles', [\App\Http\Controllers\StyleController::class, 'index']);
-Route::get('/countries', [\App\Http\Controllers\CountryController::class, 'index']);
+Route::get('/styles', [StyleController::class, 'index']);
+Route::get('/countries', [CountryController::class, 'index']);
+
+// Auth routes
+Route::post('/register', [AuthController::class, 'register']);
+Route::post('/login', [AuthController::class, 'login']);
+
+// Protected routes
+Route::middleware('auth:sanctum')->group(function () {
+    // Auth
+    Route::post('/logout', [AuthController::class, 'logout']);
+
+    Route::prefix('users')->group(function () {
+        Route::get('/me', 'UserController@me');
+    });
+
+
+//    // User routes
+//    Route::get('/users/{id}', [UserController::class, 'getById']);
+//    Route::put('/users/{id}', [UserController::class, 'update']);
+//    Route::put('/users/{id}/favorites', [UserController::class, 'updateFavorite']);
+//    Route::post('/users/profile-photo', [UserController::class, 'upload']);
+});

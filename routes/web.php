@@ -1,5 +1,7 @@
 <?php
 
+use App\Http\Controllers\ImageController;
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -20,59 +22,65 @@ Route::get('/debug-test', function () {
 });
 
 
-Route::group(['prefix' => 'users'], function () {
-    Route::post('/create', 'UserController@create');
-    Route::put('/user/{id}', 'UserController@update');
-    Route::post('/user/{id}/favorites', 'UserController@updateFavorite');
-    Route::get('/{id}', 'UserController@getById');
-});
 
-Route::group(['prefix' => 'artists'], function () {
-    Route::post('/', 'ArtistController@get');
-    Route::get('/{id}', 'ArtistController@getById');
-    Route::post('/create', 'ArtistController@create');
-    Route::put('/artist/{id}', 'ArtistController@update');
-});
+Route::prefix('api')->group(function () {
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::group(['prefix' => 'users'], function () {
+            Route::post('/create', [UserController::class, 'create']);
+            Route::post('profile-photo', [UserController::class, 'upload']);
+            Route::put('/{id}', [UserController::class, 'update']);
+            Route::post('/{id}/favorites', [UserController::class, 'updateFavorite']);
+            Route::get('/{id}', [UserController::class, 'getById']);
+        });
+    });
 
-Route::group(['prefix' => 'studios'], function () {
-    Route::get('/{user_id?}', 'StudioController@get');
-    Route::get('/studio/{id}', 'StudioController@getById');
-    Route::post('/create', 'StudioController@create');
-    Route::put('/studio/{id}', 'StudioController@update');
-    Route::get('/{id}/{user_id?}', 'StudioController@getById');
-    Route::put('/studios/studio-hours/{id}', 'StudioController@updateBusinessHours');
-});
+    Route::group(['prefix' => 'artists'], function () {
+        Route::post('/', 'ArtistController@get');
+        Route::get('/{id}', 'ArtistController@getById');
+        Route::post('/create', 'ArtistController@create');
+        Route::put('/artist/{id}', 'ArtistController@update');
+    });
 
-Route::group(['prefix' => 'styles'], function () {
-    Route::get('/', 'StyleController@get');
-    Route::post('/create', 'StyleController@create');
-    Route::put('/style/{id}', 'StyleController@update');
-    Route::get('/{id}', 'StyleController@getById');
-});
+    Route::group(['prefix' => 'studios'], function () {
+        Route::get('/{user_id?}', 'StudioController@get');
+        Route::get('/studio/{id}', 'StudioController@getById');
+        Route::post('/create', 'StudioController@create');
+        Route::put('/studio/{id}', 'StudioController@update');
+        Route::get('/{id}/{user_id?}', 'StudioController@getById');
+        Route::put('/studios/studio-hours/{id}', 'StudioController@updateBusinessHours');
+    });
 
-Route::group(['prefix' => 'tattoos'], function () {
-    Route::get('/', 'TattooController@get');
-    Route::post('/create', 'TattooController@create');
-    Route::put('/tattoos/{id}', 'TattooController@update');
-    Route::get('/{id}', 'TattooController@getById');
-});
+    Route::group(['prefix' => 'styles'], function () {
+        Route::get('/', 'StyleController@get');
+        Route::post('/create', 'StyleController@create');
+        Route::put('/style/{id}', 'StyleController@update');
+        Route::get('/{id}', 'StyleController@getById');
+    });
 
-Route::group(['prefix' => 'images'], function () {
-    Route::post('/uploadPhoto', 'ImageController@upload');
-});
+    Route::group(['prefix' => 'tattoos'], function () {
+        Route::get('/', 'TattooController@get');
+        Route::post('/create', 'TattooController@create');
+        Route::put('/tattoos/{id}', 'TattooController@update');
+        Route::get('/{id}', 'TattooController@getById');
+    });
 
-Route::group(['prefix' => 'elastic'], function () {
-    Route::post('/', 'SearchController@index');
-    Route::get('/{id}', 'ElasticController@getById');
-    Route::post('/rebuild', 'ElasticController@rebuild');
-    Route::post('/rebuild-by-elastic', 'ElasticController@rebuildByElasticQuery');
-    Route::post('/rebuild-bypass', 'ElasticController@rebuildBypass');
-    Route::post('/migrate', 'ElasticController@migrateAlias');
-    Route::post('translate-query', 'ElasticController@translateQuery');
+    Route::group(['prefix' => 'images'], function () {
+        Route::post('/uploadPhoto', [ImageController::class, 'upload']);
+    });
 
-    Route::post('/initial-search', 'SearchController@getInitialSearch');
-});
+    Route::group(['prefix' => 'elastic'], function () {
+        Route::post('/', 'SearchController@index');
+        Route::get('/{id}', 'ElasticController@getById');
+        Route::post('/rebuild', 'ElasticController@rebuild');
+        Route::post('/rebuild-by-elastic', 'ElasticController@rebuildByElasticQuery');
+        Route::post('/rebuild-bypass', 'ElasticController@rebuildBypass');
+        Route::post('/migrate', 'ElasticController@migrateAlias');
+        Route::post('translate-query', 'ElasticController@translateQuery');
 
-Route::group(['prefix' => 'countries'], function () {
-    Route::get('/', 'CountryController@get');
+        Route::post('/initial-search', 'SearchController@getInitialSearch');
+    });
+
+    Route::group(['prefix' => 'countries'], function () {
+        Route::get('/', 'CountryController@get');
+    });
 });
