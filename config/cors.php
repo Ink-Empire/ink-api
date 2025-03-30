@@ -17,9 +17,9 @@ return [
 
     'paths' => ['*', 'api/*', 'sanctum/csrf-cookie'],
 
-    'allowed_methods' => ['GET, POST, PUT, PATCH, DELETE, OPTIONS'],
+    'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['https://www.inkempire.local', 'https://inkempire.local', '*'],
+    'allowed_origins' => ['*'],
 
     'allowed_origins_patterns' => [],
 

@@ -25,12 +25,14 @@
         "predis/predis": "^2.2",
         "psr/http-message": "^1.0",
         "symfony/http-client": "^7.0",
-        "elasticsearch/elasticsearch": "^7.17"
+        "elasticsearch/elasticsearch": "^7.17",
+        "ext-fileinfo": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
         "laravel/pint": "^1.0",
         "laravel/sail": "^1.18",
+        "laravel/telescope": "^5.6",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^7.0",
         "phpunit/phpunit": "^10.1",

@@ -34,7 +34,7 @@ class ImageController extends Controller
         try {
             $data = $request->all();
 
-            $file = $request->get('my_file');
+            $file = $request->get('profile_photo');
 
             $id = $request->get('id');
             $type = $request->get('type'); //user, studio

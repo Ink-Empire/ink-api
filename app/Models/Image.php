@@ -25,7 +25,9 @@ class Image extends Model
         if (!$filename) { //replace with image not found perhaps
             $this->attributes['uri'] = "https://www.gravatar.com/avatar?d=mm&s=140";
         } else {
-            $this->attributes['uri'] = 'https://inked-in-images.s3.amazonaws.com/' . $filename;
+            // Use configured AWS_URL from env file instead of hardcoded URL
+            $s3Url = rtrim(config('filesystems.disks.s3.url', 'https://inked-in-images.s3.amazonaws.com'), '/');
+            $this->attributes['uri'] = $s3Url . '/' . $filename;
         }
     }
 }

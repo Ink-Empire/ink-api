@@ -209,12 +209,12 @@ class SearchService
         }
     }
 
-    private function buildStudioParam()
+    protected function buildStudioParam()
     {
         $this->search->where('studio.id', $this->filters['studio_id']);
     }
 
-    private function buildStylesParam($minMatch = 1): void
+    protected function buildStylesParam($minMatch = 1): void
     {
         $clauses = [];
 
@@ -259,7 +259,7 @@ class SearchService
     }
 
     //this creates opposing queries and nests them as THIS or THAT. Prime example: WUB + 1 and 4 color cards.
-    private function getInitialNestedUserQuery()
+    private function getInitialNestedUserQuery(): void
     {
         $searchClauseArray = [
             'style_clause' => $this->getUserStylesOrSyntax(1),
@@ -297,7 +297,7 @@ class SearchService
         return null;
     }
 
-    private function getSavedArtistsOrSyntax($minMatch = 1)
+    private function getSavedArtistsOrSyntax($minMatch = 1): ?array
     {
         $faves_clauses = collect($this->user->artists)
             ->map(function ($value) {
@@ -314,7 +314,7 @@ class SearchService
         return null;
     }
 
-    private function getArtistsNearMeSyntax()
+    private function getArtistsNearMeSyntax(): array
     {
         $latLongArray = explode(",", $this->user->location_lat_long);
 

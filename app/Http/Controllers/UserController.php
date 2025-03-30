@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\UserRelationships;
 use App\Enums\UserTypes;
 use App\Exceptions\UserNotFoundException;
+use App\Http\Resources\SelfUserResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AddressService;
@@ -27,6 +28,14 @@ class UserController extends Controller
         protected AddressService $addressService
     )
     {
+    }
+
+    /**
+     * Get the authenticated user
+     */
+    public function me(Request $request): SelfUserResource
+    {
+        return new SelfUserResource($request->user());
     }
 
     /**
@@ -85,24 +94,42 @@ class UserController extends Controller
     public function upload(Request $request): JsonResponse|Response
     {
         try {
-            $data = $request->all();
+            $user = $request->user();
 
-            $file = $request->get('my_file');
+            if ($request->hasFile('profile_photo')) {
 
-            $user_id = $request->get('user_id');
-            $date = Date('Ymdi');
-            $filename = "profile_" . $data['user_id'] . $date . ".jpeg";
+                $file = $request->file('profile_photo');
+                $date = Date('Ymdi');
+                $extension = $file->getClientOriginalExtension() ?: 'jpeg';
+                $filename = "profile_" . $user->id . "_" . $date . "." . $extension;
 
-            $image = $this->imageService->processImage($file, $filename);
+                // Read file and encode to base64
+                $fileData = base64_encode(file_get_contents($file->getRealPath()));
+                $image = $this->imageService->processImage($fileData, $filename);
+            } else if ($request->has('profile_photo')) {
+                // Handle direct base64 string if that's what's being sent
+                $file = $request->profile_photo;
+                $date = Date('Ymdi');
+                $filename = "profile_" . $user->id . "_" . $date . ".jpeg";
 
-            $user = $this->userService->setProfileImage($user_id, $image);
+                $image = $this->imageService->processImage($file, $filename);
+            } else {
+                return $this->returnErrorResponse("No profile photo provided", "No file uploaded");
+            }
+
+            $user = $this->userService->setProfileImage($user->id, $image);
 
             return $this->returnResponse('user', new UserResource($user));
 
-        } catch (UserNotFoundException $e) {
-            \Log::error("Unable to find user with id of $user_id");
+        } catch (\Exception $e) {
+            \Log::error("Error uploading profile photo", [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'user_id' => $request->user()->id ?? 'unknown'
+            ]);
 
-            return $this->returnErrorResponse($e->getMessage(), "User $user_id not found");
+            return $this->returnErrorResponse($e->getMessage(), "Error uploading profile photo");
         }
     }
 
