@@ -22,6 +22,16 @@ class Artist extends User
     {
         static::addGlobalScope(new ArtistScope());
     }
+    
+    /**
+     * Get the index name for the model.
+     *
+     * @return string
+     */
+    public function searchableAs()
+    {
+        return 'artists';
+    }
 
     //the people who favorite this artist
     public function users()

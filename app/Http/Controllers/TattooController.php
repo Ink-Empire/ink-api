@@ -10,6 +10,7 @@ use App\Models\Tag;
 use App\Models\Tattoo;
 use App\Models\User;
 use App\Services\ImageService;
+use App\Services\SearchService;
 use App\Services\TattooService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -17,15 +18,18 @@ use Illuminate\Http\Request;
 
 class TattooController extends Controller
 {
+    private $filters = [];
+    private $search;
 
     const RELATIONSHIPS = [
         'styles' => Style::class,
     ];
 
     public function __construct(
-        protected TattooService  $tattooService,
-        protected ImageService   $imageService,
-        protected UserService    $userService
+        protected TattooService $tattooService,
+        protected ImageService  $imageService,
+        protected UserService   $userService,
+        protected SearchService $searchService
     )
     {
     }
@@ -53,11 +57,24 @@ class TattooController extends Controller
         return $this->returnResponse('tattoo', new TattooResource($tattoo));
     }
 
+    public function search(Request $request): JsonResponse
+    {
+        $params = $request->all();
+
+        if($request->user()){
+            $params['user_id'] = $request->user()->id;
+        }
+
+        $response = $this->searchService->search_tattoo($params);
+
+        return $this->returnElasticResponse($response);
+    }
+
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function create(Request $request)
+    public function create(Request $request): JsonResponse
     {
         try {
             $data = $request->all();

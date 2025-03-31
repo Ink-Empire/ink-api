@@ -1,6 +1,8 @@
 <?php
 
+use App\Http\Controllers\ArtistController;
 use App\Http\Controllers\ImageController;
+use App\Http\Controllers\TattooController;
 use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Route;
 
@@ -32,13 +34,20 @@ Route::prefix('api')->group(function () {
             Route::post('/{id}/favorites', [UserController::class, 'updateFavorite']);
             Route::get('/{id}', [UserController::class, 'getById']);
         });
+
+        Route::group(['prefix' => 'tattoos'], function () {
+            Route::post('/', [TattooController::class, 'search']);
+            Route::post('/create', [TattooController::class, 'create']);
+            Route::put('/tattoos/{id}', [TattooController::class, 'update']);
+            Route::get('/{id}', [TattooController::class, 'getById']);
+        });
     });
 
     Route::group(['prefix' => 'artists'], function () {
-        Route::post('/', 'ArtistController@get');
-        Route::get('/{id}', 'ArtistController@getById');
-        Route::post('/create', 'ArtistController@create');
-        Route::put('/artist/{id}', 'ArtistController@update');
+        Route::post('/', [ArtistController::class, 'search']);
+        Route::get('/{id}', [ArtistController::class, 'getById']);
+        Route::post('/create', [ArtistController::class, 'create']);
+        Route::put('/artist/{id}', [ArtistController::class, 'update']);
     });
 
     Route::group(['prefix' => 'studios'], function () {
@@ -55,13 +64,6 @@ Route::prefix('api')->group(function () {
         Route::post('/create', 'StyleController@create');
         Route::put('/style/{id}', 'StyleController@update');
         Route::get('/{id}', 'StyleController@getById');
-    });
-
-    Route::group(['prefix' => 'tattoos'], function () {
-        Route::get('/', 'TattooController@get');
-        Route::post('/create', 'TattooController@create');
-        Route::put('/tattoos/{id}', 'TattooController@update');
-        Route::get('/{id}', 'TattooController@getById');
     });
 
     Route::group(['prefix' => 'images'], function () {
