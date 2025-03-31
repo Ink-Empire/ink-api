@@ -19,6 +19,7 @@ class Controller extends BaseController
 
     protected function returnElasticResponse($data)
     {
+        ray($data)->label('Elastic Response')->purple();
         return response()->json($data);
     }
 

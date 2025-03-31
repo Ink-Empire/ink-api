@@ -66,7 +66,7 @@ class ArtistService
         }
 
         //TODO in future let user decide their preference, always closest?
-        $this->search->geoSort('studio.id', 'desc');
+       // $this->search->geoSort('studio.id', 'desc');
 
         $response = $this->search->get();
 

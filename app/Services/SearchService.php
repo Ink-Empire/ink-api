@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Artist;
 use App\Models\Tattoo;
 use App\Util\stringToModel;
+use Illuminate\Support\Collection;
 use Larelastic\Elastic\Facades\Elastic;
 
 class SearchService

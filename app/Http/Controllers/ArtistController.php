@@ -25,10 +25,10 @@ class ArtistController extends Controller
     }
 
     /**
-     * @param $id
-     * @return \Illuminate\Http\JsonResponse
+     * @param Request $request
+     * @return JsonResponse
      */
-    public function search(Request $request)
+    public function search(Request $request): JsonResponse
     {
         $params = $request->all();
 
