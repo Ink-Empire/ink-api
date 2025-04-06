@@ -49,11 +49,11 @@ class AuthController extends Controller
             'address_id' => $address->id ?? null
         ]);
 
-        $token = $user->createToken('authToken')->plainTextToken;
+        $token = $user->createToken('authToken', ['*'], now()->addYears(10));
 
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $token,
+            'token' => $token->plainTextToken,
         ], 201);
     }
 
@@ -78,7 +78,7 @@ class AuthController extends Controller
         // Revoke previous tokens for this device if they exist
         $user->tokens()->delete();
 
-        $token = $user->createToken('authToken')->plainTextToken;
+        $token = $user->createToken('authToken', ['*'], now()->addYears(10));
 
         return response()->json([
             'user' => new UserResource($user),

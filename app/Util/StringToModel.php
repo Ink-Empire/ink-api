@@ -2,11 +2,11 @@
 
 namespace App\Util;
 
-class stringToModel
+class StringToModel
 {
     public static function convert($model)
     {
-        $model = 'App\Models\\' . $model;
+        $model = 'App\Models\\' . ($model);
         return new $model;
     }
 }

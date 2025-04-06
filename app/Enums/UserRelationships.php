@@ -9,8 +9,13 @@ use App\Models\User;
 class UserRelationships
 {
     const RELATIONSHIPS = [
-        'styles' => 'style',
-        'tattoos' => 'tattoo',
-        'artists' => 'user'
+        'style' => 'styles',
+        'tattoo' => 'tattoos',
+        'artist' => 'artists'
     ];
+
+    public static function getRelationship($relationship): ?string
+    {
+        return self::RELATIONSHIPS[$relationship] ?? null;
+    }
 }

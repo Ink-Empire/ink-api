@@ -4,14 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRelationships;
 use App\Enums\UserTypes;
-use App\Exceptions\UserNotFoundException;
 use App\Http\Resources\SelfUserResource;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AddressService;
 use App\Services\ImageService;
 use App\Services\UserService;
-use App\Util\stringToModel;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -169,25 +167,25 @@ class UserController extends Controller
     /**
      * @return JsonResponse
      */
-    public function updateFavorite(Request $request, $id)
+    public function updateFavorite(Request $request, $type)
     {
-        $data = $request->get('body');
-        $user = $this->userService->getById($id);
+        $ids = collect($request->get('ids'))->toArray();
+        $user = $request->user();
 
-        foreach (UserRelationships::RELATIONSHIPS as $relationship_name => $class) {
-            if (isset($data[$relationship_name])) {
+        //get relationship to user from class name
+        $relationship = UserRelationships::getRelationship($type);
 
-                foreach ($data[$relationship_name] as $relationship) {
-                    $instance = new $class(['id' => $relationship['id']]); //returns a new User or Artists class with attributes
+        //existing favorites
+        $favorites = $user->{$relationship}()->pluck('artist_id')->toArray();
 
-                    if ($data['isFavorite']) {
-                        $user->{$relationship_name}()->syncWithoutDetaching($instance);
-                    } else {
-                        $user->{$relationship_name}()->detach($instance);
-                    }
-                }
-            }
-        }
+        //find any that are in both array
+        $existingIds = array_intersect($ids, $favorites);
+        //detach them if they've been sent again
+        $user->{$relationship}()->detach($existingIds);
+
+        //sync the new ones
+        $ids = array_diff($ids, $existingIds);
+        $user->{$relationship}()->syncWithoutDetaching($ids);
 
         $user->save();
 

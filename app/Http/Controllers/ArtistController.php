@@ -17,8 +17,8 @@ class ArtistController extends Controller
 {
 
     public function __construct(
-        protected ArtistService  $artistService,
-        protected ImageService $imageService,
+        protected ArtistService $artistService,
+        protected ImageService  $imageService,
         protected SearchService $searchService
     )
     {
@@ -106,6 +106,16 @@ class ArtistController extends Controller
         $user->save();
 
         return response()->json(['user' => $user]);
+    }
+
+    public function portfolio(Request $request, $id): JsonResponse
+    {
+        $response = $this->artistService->getById($id);
+
+        if ($response) {
+            return response()->json($response->first()['tattoos']);
+        }
+
     }
 
     /**
