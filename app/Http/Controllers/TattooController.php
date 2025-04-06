@@ -62,10 +62,20 @@ class TattooController extends Controller
         $params = $request->all();
 
         if($request->user()){
-            $params['user_id'] = $request->user()->id;
+            $user = $request->user();
         }
 
-        $response = $this->searchService->search_tattoo($params);
+        $response = $this->searchService->search_tattoo($params, $user);
+
+        //if response.items is empty, re-do searh without distance filters and return an error message
+        if (count($response["response"]) == 0) {
+
+            $response = $this->searchService->search_tattoo($params, $user);
+            $response['none_found'] = "No results found for your search, here are some suggestions: \n" .
+                "1. Try searching for a different tattoo style or artist.\n" .
+                "2. Check your spelling and try again.\n" .
+                "3. Broaden your search radius to find more results.";
+        }
 
         return $this->returnElasticResponse($response);
     }

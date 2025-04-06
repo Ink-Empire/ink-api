@@ -9,7 +9,7 @@ use App\Enums\QueueNames;
 use App\Http\Requests\ElasticQueryTranslateRequest;
 use App\Http\Requests\MigrateElasticAliasRequest;
 use App\Services\ElasticService;
-use App\Util\stringToModel;
+use App\Util\StringToModel;
 use Exception;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -108,7 +108,7 @@ class ElasticController
             if (count($ids) > 200) {
                 return response("Count sent cannot exceed 200, please reduce the count and try again", 400);
             } else {
-                $model = stringToModel::convert($model);
+                $model = StringToModel::convert($model);
                 $this->elasticService->rebuild($ids, $model);
             }
         } catch (Exception $e) {
@@ -217,7 +217,7 @@ class ElasticController
 
     private function getIdsFromQuery($wheres, $whereIns, $model)
     {
-        $instance = stringToModel::convert($model);
+        $instance = StringToModel::convert($model);
         ini_set('memory_limit', '2000M');
         $query = $instance::query();
 

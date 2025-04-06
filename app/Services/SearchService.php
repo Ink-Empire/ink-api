@@ -4,7 +4,8 @@ namespace App\Services;
 
 use App\Models\Artist;
 use App\Models\Tattoo;
-use App\Util\stringToModel;
+use App\Models\User;
+use App\Util\StringToModel;
 use Illuminate\Support\Collection;
 use Larelastic\Elastic\Facades\Elastic;
 
@@ -17,7 +18,7 @@ class SearchService
 
     public function getById($id, $model)
     {
-        $model = stringToModel::convert(ucfirst($model));
+        $model = StringToModel::convert(ucfirst($model));
 
         $this->search = $model->search();
 
@@ -28,14 +29,11 @@ class SearchService
         }
     }
 
-    public function search_tattoo($filters)
+    public function search_tattoo($filters, ?User $user = null)
     {
         $this->search = Tattoo::search();
         $this->filters = $filters;
-
-        if (isset($this->filters['user_id'])) {
-            $this->user = $this->userService->getById($filters['user_id']);
-        }
+        $this->user = $user;
 
         if (isset($this->filters['search_text'])) {
 
@@ -57,22 +55,15 @@ class SearchService
             $this->buildStylesParam();
         }
 
-        if (isset($this->filters['artist_near_me']) && $this->filters['artist_near_me']) {
-            $distanceParam = 'artist.location_lat_long';
-            $this->buildDistanceParam($distanceParam);
-        }
-
-        if (isset($this->filters['artist_near_location']) && $this->filters['artist_near_location']) {
-            //artist.location_lat_long for example
-            $nestedField = 'artist.location_lat_long';
-            $this->buildDistanceParam($nestedField, $this->filters['location_lat_long']);
-        }
-
         if (isset($this->filters['saved_artists'])) {
 
             $favoriteArtistIds = $this->userService->getFavoriteArtistIds($this->user->id);
 
             $this->search->where('artist_id', 'in', $favoriteArtistIds);
+        }
+
+        if (isset($this->filters['studio_id'])) {
+            $this->search->where('studio.id', $this->filters['studio_id']);
         }
 
         if (isset($this->filters['saved_tattoos'])) {
@@ -82,12 +73,21 @@ class SearchService
             $this->search->where('id', 'in', $favoriteTattooIds);
         }
 
-        if (isset($this->filters['studio_near_me']) && $this->filters['studio_near_me']) {
-            $this->buildDistanceParam('studio.location_lat_long');
-        }
+        /* distance related params */
+        if (isset($this->filters['useAnyLocation']) && !$this->filters['useAnyLocation']) {
+            if (isset($this->filters['useMyLocation']) && $this->filters['useMyLocation']) {
+                $this->latLongString = $this->user->location_lat_long;
+            } else {
+                $this->latLongString = $this->filters['locationCoords'];
+            }
 
-        if (isset($this->filters['studio_near_location']) && $this->filters['studio_near_location']) {
-            $this->buildDistanceParam('studio.location_lat_long', $this->filters['location_lat_long']);
+            if (isset($this->filters['subject']) && $this->filters['subject'] == 'studio') {
+                $distanceParam = 'studio.location_lat_long';
+            } else {
+                $distanceParam = 'artist.location_lat_long';
+            }
+
+            $this->buildDistanceParam($distanceParam, $this->latLongString);
         }
 
         return $this->search->get();
@@ -141,17 +141,12 @@ class SearchService
         return $this->search->get();
     }
 
-    private function buildDistanceParam($field = 'location_lat_long', string $latLongString = null)
+    private function buildDistanceParam($field = 'location_lat_long', string $latLongString = null): void
     {
-        //TODO build in support for KM
-
         try {
-            $distance = $this->filters['distance'] . 'mi' ?? '25mi';
-            if (empty($latLongString) && isset($this->user)) {
-                $latLongArray = explode(",", $this->user->location_lat_long);
-            } else {
-                $latLongArray = explode(",", $latLongString);
-            }
+            $distance = $this->filters['distance'] . $this->filters['distanceUnit'];
+            $latLongArray = explode(",", $latLongString);
+
             $this->search->whereDistance($field, $latLongArray[0], $latLongArray[1], $distance);
         } catch (\Exception $e) {
             \Log::error("Unable to build distance param", [
@@ -270,8 +265,8 @@ class SearchService
 
         $minMatch = 1;
 
-        foreach($searchClauseArray as $key => $clause) {
-            if($clause) {
+        foreach ($searchClauseArray as $key => $clause) {
+            if ($clause) {
                 $this->search->nestedOr(
                     [
                         $clause

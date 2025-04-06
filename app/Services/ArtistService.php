@@ -128,7 +128,13 @@ class ArtistService
     public function getById($id)
     {
         if ($id) {
-            return Artist::where('id', $id)->first();
+            $this->search = Artist::search();
+
+            $this->search->where('id', $id);
+
+            $response = $this->search->get();
+
+            return collect($response)->first();
         }
 
         return null;

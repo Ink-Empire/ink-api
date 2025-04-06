@@ -17,21 +17,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/debug-test', function () {
-    \Log::info('Debug route hit!');
-   echo(xdebug_info());
-    return 'Debugging...';
-});
-
-
-
 Route::prefix('api')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::group(['prefix' => 'users'], function () {
             Route::post('/create', [UserController::class, 'create']);
             Route::post('profile-photo', [UserController::class, 'upload']);
             Route::put('/{id}', [UserController::class, 'update']);
-            Route::post('/{id}/favorites', [UserController::class, 'updateFavorite']);
+            Route::post('/favorites/{type}', [UserController::class, 'updateFavorite']);
             Route::get('/{id}', [UserController::class, 'getById']);
         });
 
@@ -47,6 +39,7 @@ Route::prefix('api')->group(function () {
         Route::post('/', [ArtistController::class, 'search']);
         Route::get('/{id}', [ArtistController::class, 'getById']);
         Route::post('/create', [ArtistController::class, 'create']);
+        Route::get('/{id}/tattoos', [ArtistController::class, 'portfolio']);
         Route::put('/artist/{id}', [ArtistController::class, 'update']);
     });
 

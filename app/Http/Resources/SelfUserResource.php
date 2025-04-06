@@ -11,7 +11,7 @@ class SelfUserResource extends JsonResource
             'id' => $this->id,
             'about' => $this->about,
             'email' => $this->email,
-            'image' => $this->image->uri,
+            'image' => $this->image->uri ?? "",
             'location' => $this->location,
             'location_lat_long' => $this->location_lat_long,
             'name' => $this->name,
