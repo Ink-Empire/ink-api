@@ -4,9 +4,8 @@ namespace App\Services;
 
 
 use App\Models\Image;
-use Illuminate\Database\DatabaseManager;
-use Illuminate\Events\Dispatcher;
 use Illuminate\Support\Facades\Storage;
+use Illuminate\Http\UploadedFile;
 
 class ImageService
 {
@@ -20,51 +19,45 @@ class ImageService
         $this->s3 = Storage::disk('s3');
     }
 
-
-    /**
-     * @param $image
-     * @param $filename
-     * @return mixed
-     */
-    public function processImage($image, $filename): mixed
+    public function processImage(mixed $input, string $filename): ?Image
     {
         try {
-            if ($image != null) {
-                // Validate that the image is actually base64 encoded
-                if (!preg_match('/^[a-zA-Z0-9\/+]*={0,2}$/', $image)) {
-                    throw new \Exception("Invalid base64 format");
+            if ($input instanceof UploadedFile) {
+                // Handle uploaded file
+                $imageData = file_get_contents($input->getRealPath());
+                $mimeType = $input->getMimeType();
+            } elseif ($this->isBase64String($input)) {
+                // Handle base64 string
+                if (preg_match('/^data:image\/(\w+);base64,/', $input, $matches)) {
+                    $mimeType = 'image/' . $matches[1];
+                    $input = substr($input, strpos($input, ',') + 1); // Strip the data URI prefix
+                } else {
+                    $mimeType = 'image/jpeg'; // Fallback MIME type
                 }
 
-                // Decode the base64 image
-                $imageData = base64_decode($image);
-                if (!$imageData) {
+                $imageData = base64_decode($input);
+                if ($imageData === false) {
                     throw new \Exception("Could not decode base64 image data");
                 }
-
-                // Get mime type to add proper content-type
-                $f = finfo_open();
-                $mimeType = finfo_buffer($f, $imageData, FILEINFO_MIME_TYPE);
-                finfo_close($f);
-
-                // Upload to S3 with content-type header
-                $this->s3->put($filename, $imageData, [
-                    'visibility' => 'public',
-                    'ContentType' => $mimeType,
-                    'CacheControl' => 'max-age=31536000' // 1 year cache
-                ]);
-
-                // Save the image record in the database
-                $image = $this->saveImage($filename);
+            } else {
+                throw new \Exception("Invalid image input type");
             }
 
-            return $image;
+            $this->s3->put($filename, $imageData, [
+                'visibility' => 'public',
+                'ContentType' => $mimeType,
+                'CacheControl' => 'max-age=31536000'
+            ]);
+
+            return $this->saveImage($filename);
 
         } catch (\Exception $e) {
-            $message = $e->getMessage() . " " . (basename($e->getFile())) . " " . $e->getLine();
-            \Log::error($message);
-            throw $e; // Re-throw so calling code can handle it
+            \Log::error(
+                $e->getMessage() . " in " . basename($e->getFile()) . " line " . $e->getLine());
+            throw $e;
         }
     }
+
 
     private function saveImage(string $filename)
     {
@@ -78,6 +71,22 @@ class ImageService
         $image->save();
 
         return $image;
+    }
+
+    private function isBase64String($input): bool
+    {
+        if (!is_string($input)) {
+            return false;
+        }
+
+        // Detect data URI base64
+        if (preg_match('/^data:image\/(\w+);base64,/', $input)) {
+            return true;
+        }
+
+        // Fallback: clean string and validate
+        $decoded = base64_decode($input, true);
+        return $decoded !== false && base64_encode($decoded) === $input;
     }
 
 }

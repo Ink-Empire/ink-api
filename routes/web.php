@@ -17,10 +17,13 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
+Route::get('/test', function () {
+    return "hello";
+});
+
 Route::prefix('api')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::group(['prefix' => 'users'], function () {
-            Route::post('/create', [UserController::class, 'create']);
             Route::post('profile-photo', [UserController::class, 'upload']);
             Route::put('/{id}', [UserController::class, 'update']);
             Route::post('/favorites/{type}', [UserController::class, 'updateFavorite']);
@@ -38,15 +41,13 @@ Route::prefix('api')->group(function () {
     Route::group(['prefix' => 'artists'], function () {
         Route::post('/', [ArtistController::class, 'search']);
         Route::get('/{id}', [ArtistController::class, 'getById']);
-        Route::post('/create', [ArtistController::class, 'create']);
-        Route::get('/{id}/tattoos', [ArtistController::class, 'portfolio']);
         Route::put('/artist/{id}', [ArtistController::class, 'update']);
     });
 
     Route::group(['prefix' => 'studios'], function () {
         Route::get('/{user_id?}', 'StudioController@get');
         Route::get('/studio/{id}', 'StudioController@getById');
-        Route::post('/create', 'StudioController@create');
+        Route::post('/', 'StudioController@create');
         Route::put('/studio/{id}', 'StudioController@update');
         Route::get('/{id}/{user_id?}', 'StudioController@getById');
         Route::put('/studios/studio-hours/{id}', 'StudioController@updateBusinessHours');

@@ -22,7 +22,7 @@ class Artist extends User
     {
         static::addGlobalScope(new ArtistScope());
     }
-    
+
     /**
      * Get the index name for the model.
      *
@@ -51,7 +51,7 @@ class Artist extends User
 
     public function tattoos()
     {
-        return $this->belongsToMany(Tattoo::class, 'users_tattoos', 'user_id', 'tattoo_id');
+        return $this->hasMany(Tattoo::class, 'artist_id', 'id');
     }
 
     public function primary_image()

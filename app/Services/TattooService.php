@@ -5,6 +5,7 @@ namespace App\Services;
 
 use App\Exceptions\TattooNotFoundException;
 use App\Models\Tattoo;
+use App\Models\User;
 
 /**
  *
@@ -15,13 +16,31 @@ class TattooService
     private $search;
     private $user;
 
-    /**
-     * @param int $id
-     * @return void|Tattoo
-     */
-    public function get()
+
+    public function __construct(public ImageService $imageService)
     {
-        return Tattoo::paginate(25);
+    }
+
+    public function upload(array $files, User $user): Array
+    {
+        $images = [];
+
+        foreach ($files as $file) {
+            $date = Date('Ymdi');
+
+            //get image extension
+            $extension = $file->getClientOriginalExtension() ?: 'jpeg';
+
+            $filename = "tattoo_" . $user->id . "_" . $date . "." . $extension;
+            $image = $this->imageService->processImage($file, $filename);
+
+            if ($image) {
+                $images[] = $image;
+            } else {
+                throw new \Exception("Unable to process image");
+            }
+        }
+        return $images;
     }
 
     public function search($params)

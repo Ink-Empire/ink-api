@@ -21,6 +21,6 @@ class VerifyCsrfToken extends Middleware
         '/images/*',
         '/studios/*',
         '/styles/*',
-        '/elastic/*',
+        '/api/elastic/*',
     ];
 }
