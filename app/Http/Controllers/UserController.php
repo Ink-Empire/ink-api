@@ -48,46 +48,6 @@ class UserController extends Controller
 
     /**
      * @param Request $request
-     * @return \Illuminate\Http\JsonResponse
-     */
-    public function create(Request $request)
-    {
-        try {
-            $data = $request->all();
-
-            if (isset($data['address'])) {
-                $address = $this->addressService->create(
-                    $this->addressService->mapFields($data['address'])
-                );
-            }
-
-            $user = new User([
-                'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => bcrypt($data['password']),
-                'phone' => $data['phone'] ?? null,
-                'location' => $data['location'] ?? null,
-                'location_lat_long' => $data['location_lat_long'] ?? null,
-                'type_id' => $data['type'] == UserTypes::USER ? 1 : 2,
-                'address_id' => $address->id ?? null
-            ]);
-            $user->save();
-
-            return $this->returnResponse(UserTypes::USER, new UserResource($user));
-
-        } catch (\Exception $e) {
-            \Log::error("Unable to create user", [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile()
-            ]);
-
-            return $this->returnErrorResponse($e->getMessage());
-        }
-    }
-
-    /**
-     * @param Request $request
      */
     public function upload(Request $request): JsonResponse|Response
     {

@@ -5,6 +5,8 @@ namespace App\Http\Controllers;
 use App\Http\Requests\TattooCreateRequest;
 use App\Http\Resources\Elastic\Primary\ArtistResource;
 use App\Http\Resources\Elastic\Primary\TattooResource;
+use App\Models\Artist;
+use App\Models\Image;
 use App\Models\Style;
 use App\Models\Tag;
 use App\Models\Tattoo;
@@ -61,7 +63,7 @@ class TattooController extends Controller
     {
         $params = $request->all();
 
-        if($request->user()){
+        if ($request->user()) {
             $user = $request->user();
         }
 
@@ -80,43 +82,69 @@ class TattooController extends Controller
         return $this->returnElasticResponse($response);
     }
 
+    public function create(Request $request): JsonResponse|TattooResource
+    {
+        try {
+            $user = $request->user();
+
+            //get the files uploaded, there may be multiple
+            $files = $request->file('files');
+
+            //if we just have one file, make it an array
+            if (!is_array($files)) {
+                $files = [$files];
+            }
+
+            $images = $this->tattooService->upload($files, $user);
+
+            if(count($images) > 0) {
+               $primaryImage = $images[0];
+
+                $tattoo = Tattoo::create([
+                    'artist_id' => $user->id,
+                    'primary_image_id' => $primaryImage->id,
+                    'studio_id' => $user->studio_id ?? null,
+                ]);
+
+                $tattoo->images()->attach(collect($images)->pluck('id'));
+
+                $tattoo->searchable(); //this is likely unnecessary, but we will need to re-index the tattoo
+                Artist::find($user->id)->searchable(); //re-index the artist
+
+                return new TattooResource($tattoo);
+            } else {
+                return $this->returnErrorResponse("No images uploaded", "No files uploaded");
+            }
+
+        } catch (\Exception $e) {
+            return $this->returnErrorResponse($e->getMessage());
+        }
+    }
+
     /**
      * @param Request $request
      * @return \Illuminate\Http\JsonResponse
      */
-    public function create(Request $request): JsonResponse
+    public function update(Request $request, $id): JsonResponse
     {
         try {
-            $data = $request->all();
+            $user = $request->user();
+            //todo figure out how jonathan is returning that object without querying it
+            $tattoo = $this->tattooService->getById($id);
 
-            $user = $this->userService->getById($data['user_id']);
+            $tags = $data['tags'] ?? null; //TODO properly implement tags
 
-            $file = $request->get('file');
-            $tags = $data['tags'] ?? null;
+            //TODO idea get AI to analyze image in post-process to add subject/tags
             $styles = $data['styles'] ?? null;
 
-            if ($file) {
-                $date = Date('Ymdi');
-                $filename = "tattoo_" . $user->id . "_" . $date . ".jpeg";
-                $image = $this->imageService->processImage($file, $filename);
+            if(!empty($styles)) {
+                $styles = Style::whereIn('id', explode(",", $styles))->get();
+                //attach styles to tattoo
+                $tattoo->styles()->sync($styles);
             }
-
-            $tattoo = new Tattoo([
-                'description' => $data['description'],
-                'title' => $data['title'] ?? $filename ?? null,
-                'artist_id' => $user->id,
-                'studio_id' => $data['studio_id'] ?? null,
-                'primary_style_id' => $styles[0] ?? null, //TODO decide how we let the user pick #1
-                'primary_image_id' => $image->id ?? null,
-            ]);
 
             $tattoo->save();
 
-            if (!empty($styles)) {
-                $styles = Style::whereIn('id', explode(",", $styles))->get();
-            }
-
-            $tattoo->styles()->attach($styles);
 
             if (!empty($tags)) {
                 $tags = explode(",", $tags);
@@ -137,7 +165,6 @@ class TattooController extends Controller
 
             \Log::info("indexed tattoo", ['tattoo' => $tattoo->id]);
 
-
             return $this->returnResponse('tattoo', new TattooResource($tattoo));
 
         } catch (\Exception $e) {
@@ -150,5 +177,4 @@ class TattooController extends Controller
             return $this->returnErrorResponse($e->getMessage());
         }
     }
-
 }

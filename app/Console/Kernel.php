@@ -35,5 +35,6 @@ class Kernel extends ConsoleKernel
         'App\Console\Commands\DeleteIndexIfExistsCommand',
         'App\Console\Commands\ElasticMigrateCommand',
         'App\Console\Commands\ElasticRebuildCommand',
+        'App\Console\Commands\RebuildElasticItem',
     ];
 }
