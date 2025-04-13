@@ -29,12 +29,14 @@ class ArtistResource extends JsonResource
             'location_lat_long' => $this->location_lat_long,
             'name' => $this->name,
             'phone' => $this->phone,
+            'slug' => $this->slug,
             'studio' => new StudioResource($this->studio),
             'studio_name' => $this->studio?->name,
             'type' => $this->type->name,
             'styles' => StyleResource::collection($this->styles),
             'tattoos' => TattooResource::collection($this->tattoos),
             'primary_image' => $this->primary_image ?? null,
+            'username' => $this->username,
         ];
     }
 }

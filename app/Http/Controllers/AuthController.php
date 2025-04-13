@@ -29,6 +29,14 @@ class AuthController extends Controller
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
             'password' => 'required|string|min:8|confirmed',
+            'username' => [
+                'required',
+                'string',
+                'max:30',
+                'unique:users',
+                'regex:/^[a-zA-Z0-9._]+$/' // Only letters, numbers, periods, and underscores
+            ],
+            'slug' => 'required|string|max:30|unique:users',
             //'device_name' => 'required|string',
         ]);
 
@@ -41,6 +49,8 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'username' => $request->username,
+            'slug' => $request->slug,
             'password' => Hash::make($request->password),
             'phone' => $request->phone ?? null,
             'location' => $request->location ?? null,
@@ -55,6 +65,21 @@ class AuthController extends Controller
             'user' => new UserResource($user),
             'token' => $token->plainTextToken,
         ], 201);
+    }
+
+    public function checkUsername(Request $request)
+    {
+        $request->validate([
+            'username' => [
+                'required',
+                'string',
+                'max:30',
+                'unique:users',
+                'regex:/^[a-zA-Z0-9._]+$/' // Only letters, numbers, periods, and underscores
+            ],
+        ]);
+
+        return response()->json(['message' => 'Username is available'], 200);
     }
 
     /**

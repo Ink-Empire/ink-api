@@ -84,13 +84,19 @@ class ElasticService
 
     public function getById($id)
     {
+        if(!numericValue($id)) {
+            $field = 'slug';
+        } else {
+            $field = 'id';
+        }
+
         try {
             $params = [
                 'index' => $this->elastic_index,
                 'body'  => [
                     'query' => [
                         'match' => [
-                            'id' => $id
+                            $field => $id
                         ]
                     ]
                 ]

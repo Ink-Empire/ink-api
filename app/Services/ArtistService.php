@@ -34,7 +34,7 @@ class ArtistService
     {
         $this->filters = $params;
 
-        if(isset($this->filters['user_id'])) {
+        if (isset($this->filters['user_id'])) {
             $this->user = $this->userService->getById($this->filters['user_id']);
         }
 
@@ -66,7 +66,7 @@ class ArtistService
         }
 
         //TODO in future let user decide their preference, always closest?
-       // $this->search->geoSort('studio.id', 'desc');
+        // $this->search->geoSort('studio.id', 'desc');
 
         $response = $this->search->get();
 
@@ -110,14 +110,17 @@ class ArtistService
 
     private function buildStylesParam($minMatch = 1): void
     {
+        $clauses = [];
+
         //if exact, can set minMatch to count of styles
         foreach ($this->filters['styles'] as $style) {
-            if($style) {
+            if ($style) {
                 $clauses[] = ['styles.id', '=', $style];
             }
-        }
-        if(count($clauses) > 0) {
-            $this->search->orWhere($clauses, $minMatch);
+
+            if (count($clauses) > 0) {
+                $this->search->orWhere($clauses, $minMatch);
+            }
         }
     }
 

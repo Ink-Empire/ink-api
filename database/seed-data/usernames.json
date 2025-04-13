@@ -1,0 +1,252 @@
+[
+    {
+        "id": 1,
+        "username": "TattooJohnny",
+        "slug": "tattoo-johnny"
+    },
+    {
+        "id": 2,
+        "username": "InkSmith",
+        "slug": "ink-smith"
+    },
+    {
+        "id": 3,
+        "username": "StoryTeller_Alice",
+        "slug": "story-teller-alice"
+    },
+    {
+        "id": 4,
+        "username": "GeoMike",
+        "slug": "geo-mike"
+    },
+    {
+        "id": 5,
+        "username": "LevvyDog",
+        "slug": "levvy-dog"
+    },
+    {
+        "id": 6,
+        "username": "ColorfulWill",
+        "slug": "colorful-will"
+    },
+    {
+        "id": 7,
+        "username": "AbstractSophie",
+        "slug": "abstract-sophie"
+    },
+    {
+        "id": 8,
+        "username": "TradModernJames",
+        "slug": "trad-modern-james"
+    },
+    {
+        "id": 9,
+        "username": "MiniMia",
+        "slug": "mini-mia"
+    },
+    {
+        "id": 10,
+        "username": "RealisticBen",
+        "slug": "realistic-ben"
+    },
+    {
+        "id": 11,
+        "username": "FloralCharlotte",
+        "slug": "floral-charlotte"
+    },
+    {
+        "id": 12,
+        "username": "BoldEthan",
+        "slug": "bold-ethan"
+    },
+    {
+        "id": 13,
+        "username": "WhimsicalAmelia",
+        "slug": "whimsical-amelia"
+    },
+    {
+        "id": 14,
+        "username": "JapanFanJacob",
+        "slug": "japan-fan-jacob"
+    },
+    {
+        "id": 15,
+        "username": "DarkAva",
+        "slug": "dark-ava"
+    },
+    {
+        "id": 16,
+        "username": "TribalNoah",
+        "slug": "tribal-noah"
+    },
+    {
+        "id": 17,
+        "username": "WatercolorLiam",
+        "slug": "watercolor-liam"
+    },
+    {
+        "id": 18,
+        "username": "FluidElla",
+        "slug": "fluid-ella"
+    },
+    {
+        "id": 19,
+        "username": "WildlifeInk",
+        "slug": "wildlife-ink"
+    },
+    {
+        "id": 20,
+        "username": "DynamicMason",
+        "slug": "dynamic-mason"
+    },
+    {
+        "id": 21,
+        "username": "FantasySophia",
+        "slug": "fantasy-sophia"
+    },
+    {
+        "id": 22,
+        "username": "CustomJackson",
+        "slug": "custom-jackson"
+    },
+    {
+        "id": 23,
+        "username": "BotanicalChar",
+        "slug": "botanical-char"
+    },
+    {
+        "id": 24,
+        "username": "BlackGreyAlex",
+        "slug": "black-grey-alex"
+    },
+    {
+        "id": 25,
+        "username": "BlendedAmelia",
+        "slug": "blended-amelia"
+    },
+    {
+        "id": 26,
+        "username": "TribalBen",
+        "slug": "tribal-ben"
+    },
+    {
+        "id": 27,
+        "username": "MandalaOlivia",
+        "slug": "mandala-olivia"
+    },
+    {
+        "id": 28,
+        "username": "WatercolorEmma",
+        "slug": "watercolor-emma"
+    },
+    {
+        "id": 29,
+        "username": "PortraitWill",
+        "slug": "portrait-will"
+    },
+    {
+        "id": 30,
+        "username": "SleeveMaster",
+        "slug": "sleeve-master"
+    },
+    {
+        "id": 31,
+        "username": "WatercolorsbyEmma",
+        "slug": "watercolors-by-emma"
+    },
+    {
+        "id": 32,
+        "username": "PortraitMagician",
+        "slug": "portrait-magician"
+    },
+    {
+        "id": 33,
+        "username": "SleeveIsabella",
+        "slug": "sleeve-isabella"
+    },
+    {
+        "id": 34,
+        "username": "TribalEthan",
+        "slug": "tribal-ethan"
+    },
+    {
+        "id": 35,
+        "username": "MandalaAva",
+        "slug": "mandala-ava"
+    },
+    {
+        "id": 36,
+        "username": "AbstractNoah",
+        "slug": "abstract-noah"
+    },
+    {
+        "id": 37,
+        "username": "BlackworkQueen",
+        "slug": "blackwork-queen"
+    },
+    {
+        "id": 38,
+        "username": "MandalaMia",
+        "slug": "mandala-mia"
+    },
+    {
+        "id": 39,
+        "username": "PortraitLiam",
+        "slug": "portrait-liam"
+    },
+    {
+        "id": 40,
+        "username": "TribalMason",
+        "slug": "tribal-mason"
+    },
+    {
+        "id": 41,
+        "username": "BlackworkSophia",
+        "slug": "blackwork-sophia"
+    },
+    {
+        "id": 42,
+        "username": "RealisticElijah",
+        "slug": "realistic-elijah"
+    },
+    {
+        "id": 43,
+        "username": "WatercolorAva",
+        "slug": "watercolor-ava"
+    },
+    {
+        "id": 44,
+        "username": "MandalaLiam",
+        "slug": "mandala-liam"
+    },
+    {
+        "id": 45,
+        "username": "PortraitMia",
+        "slug": "portrait-mia"
+    },
+    {
+        "id": 46,
+        "username": "TribalLegend",
+        "slug": "tribal-legend"
+    },
+    {
+        "id": 47,
+        "username": "AbstractElla",
+        "slug": "abstract-ella"
+    },
+    {
+        "id": 48,
+        "username": "PortraitWilliam",
+        "slug": "portrait-william"
+    },
+    {
+        "id": 49,
+        "username": "GreyMaster",
+        "slug": "grey-master"
+    },
+    {
+        "id": 50,
+        "username": "FloralOlivia",
+        "slug": "floral-olivia"
+    }
+]
