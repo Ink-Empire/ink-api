@@ -18,10 +18,12 @@ class ArtistResource extends JsonResource
             'name' => $this->name,
             'password' => $this->password,
             'phone' => $this->phone,
+            'slug' => $this->slug,
             'studio' => $this->studio->name ?? "",
             'type' => $this->type->name,
             'styles' => $this->styles,
             'isFavorite' => $this->getIsUserFavorite(),
+            'username' => $this->username,
         ];
     }
 

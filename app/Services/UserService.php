@@ -20,13 +20,24 @@ class UserService
     ];
 
     /**
-     * @param $id
-     * @return void|User
+     * Get a user by their ID or slug
+     *
+     * @param string|int $id The user ID or slug
+     * @return User|null
      */
     public function getById($id)
     {
         if ($id) {
-            return User::where('id', $id)->first();
+
+            if (is_numeric($id)) {
+                $user = User::where('id', $id)->first();
+                if ($user) {
+                    return $user;
+                }
+            }
+
+            // If not found by ID or ID isn't numeric, try to find by slug
+            return User::where('slug', $id)->first();
         }
 
         return null;

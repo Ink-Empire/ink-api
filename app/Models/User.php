@@ -32,7 +32,9 @@ class User extends Authenticatable
         'phone',
         'studio_id',
         'type_id',
-        'address_id'
+        'address_id',
+        'username',
+        'slug'
     ];
 
     /**

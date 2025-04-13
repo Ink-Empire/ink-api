@@ -38,7 +38,8 @@ class DatabaseSeeder extends Seeder
             UsersTattoosSeeder::class,
             UsersStudiosSeeder::class,
             BusinessDaysSeeder::class,
-            BusinessHoursSeeder::class
+            BusinessHoursSeeder::class,
+            UsernameSeeder::class
         ]);
 
         try {

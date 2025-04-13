@@ -18,11 +18,18 @@ class SearchService
 
     public function getById($id, $model)
     {
+        //if id is numeric:
+        if(!is_numeric($id)) {
+            $field = 'slug';
+        } else {
+            $field = 'id';
+        }
+
         $model = StringToModel::convert(ucfirst($model));
 
         $this->search = $model->search();
 
-        $response = $this->search->where('id', $id)->get();
+        $response = $this->search->where($field, $id)->get();
 
         if (!empty($response)) {
             return collect($response['response'])->first();
