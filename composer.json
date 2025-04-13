@@ -18,6 +18,7 @@
         "guzzlehttp/guzzle": "^7.2",
         "ink-empire/elastic": "dev-master",
         "intervention/image": "^3.1",
+        "jamesmills/laravel-timezone": "^1.13",
         "laravel/framework": "^10.0",
         "laravel/sanctum": "^3.3",
         "laravel/tinker": "^2.8",

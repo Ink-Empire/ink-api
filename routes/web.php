@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ArtistController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\TattooController;
@@ -42,6 +43,20 @@ Route::prefix('api')->group(function () {
         Route::post('/', [ArtistController::class, 'search']);
         Route::get('/{id}', [ArtistController::class, 'getById']);
         Route::put('/artist/{id}', [ArtistController::class, 'update']);
+
+
+        //post route to set working hours
+        Route::post('/{id}/working-hours', [ArtistController::class, 'setAvailability']);
+
+        Route::group(['prefix' => 'appointments'], function () {
+            //get available appointment times
+            Route::post('/', [AppointmentController::class, 'index']);
+            Route::post('/create', [AppointmentController::class, 'store']);
+            Route::put('/{id}', [AppointmentController::class, 'update']);
+            Route::get('/{id}', [AppointmentController::class, 'getById']);
+            Route::delete('/{id', [AppointmentController::class, 'delete']);
+
+        });
     });
 
     Route::group(['prefix' => 'studios'], function () {

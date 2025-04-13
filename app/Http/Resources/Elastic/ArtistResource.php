@@ -2,6 +2,8 @@
 
 namespace App\Http\Resources\Elastic;
 
+use App\Http\Resources\AppointmentResource;
+use App\Http\Resources\WorkingHoursResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 class ArtistResource extends JsonResource
@@ -24,6 +26,8 @@ class ArtistResource extends JsonResource
             'styles' => $this->styles,
             'isFavorite' => $this->getIsUserFavorite(),
             'username' => $this->username,
+            'working_hours' => WorkingHoursResource::collection($this->working_hours),
+            'appointments' => AppointmentResource::collection($this->appointments),
         ];
     }
 
