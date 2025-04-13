@@ -59,6 +59,16 @@ class Artist extends User
         return $this->belongsTo(Image::class, 'image_id', 'id');
     }
 
+    public function working_hours()
+    {
+        return $this->hasMany(ArtistAvailability::class, 'artist_id', 'id');
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'artist_id', 'id');
+    }
+
     /*
     * Elasticsearch
     */
