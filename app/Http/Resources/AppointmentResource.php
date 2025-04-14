@@ -17,8 +17,8 @@ class AppointmentResource extends JsonResource
             'title' => $this->title,
 //            'start' => Timezone::convertToLocal($this->start),
 //            'end' => Timezone::convertToLocal($this->end),
-            'start' => $this->start_time,
-            'end' => $this->end_time,
+            'start' => $this->getISODateTime($this->date, $this->start_time),
+            'end' => $this->getISODateTime($this->date, $this->end_time),
             'allDay' => $this->all_day,
             'extendedProps' => [
                 'status' => $this->status,
@@ -30,5 +30,10 @@ class AppointmentResource extends JsonResource
             'client' => new ClientResource($this->whenLoaded('client')),
             'artist' => new BriefArtistResource($this->whenLoaded('artist')),
         ];
+    }
+
+    private function getISODateTime($date, $time)
+    {
+        return date('Y-m-d\TH:i:s', strtotime($date . ' ' . $time));
     }
 }

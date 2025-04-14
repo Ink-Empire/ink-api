@@ -15,10 +15,19 @@ class AppointmentController extends Controller
         $status = $request->get('status');
 
         if (!$artist_id) {
-            return response()->json(['error' => 'Artist ID is required'], 400);
+            return response()->json(['error' => 'Artist ID or slug is required'], 400);
         }
 
-        $artist = Artist::find($artist_id);
+        //if artist_id is not a number, its a slug
+        if (!is_numeric($artist_id)) {
+            $artist = Artist::where('slug', $artist_id)->first();
+        } else {
+            $artist = Artist::find($artist_id);
+        }
+
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
 
         $appointments = $this->getAppointmentsByStatus($artist, $status);
 
