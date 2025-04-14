@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Resources\Elastic\ArtistResource;
+use App\Http\Resources\WorkingHoursResource;
 use App\Models\Artist;
 use App\Models\ArtistAvailability;
 use App\Models\User;
@@ -114,7 +115,16 @@ class ArtistController extends Controller
         return response()->json(['user' => $user]);
     }
 
-    public function setAvailability()
+    public function getAvailability(Request $request)
+    {
+        $artist = $request->user();
+
+        $availability = ArtistAvailability::where('artist_id', $artist->id)->get();
+
+        return WorkingHoursResource::collection($availability);
+    }
+
+    public function setAvailability(Request $request)
     {
         $artist = $request->user();
 
@@ -123,7 +133,7 @@ class ArtistController extends Controller
         foreach ($availabilityArray as $availability) {
             // create an object from ArtistAvailability
             $availabilityObj = new ArtistAvailability([
-                'artist_id' => $availability['artist_id'],
+                'artist_id' => $artist->id,
                 'day_of_week' => $availability['day_of_week'],
                 'start_time' => $availability['start_time'],
                 'end_time' => $availability['end_time'],
