@@ -115,9 +115,9 @@ class ArtistController extends Controller
         return response()->json(['user' => $user]);
     }
 
-    public function getAvailability(Request $request)
+    public function getAvailability(Request $request, $id)
     {
-        $artist = $request->user();
+        $artist = Artist::find($id);
 
         $availability = ArtistAvailability::where('artist_id', $artist->id)->get();
 

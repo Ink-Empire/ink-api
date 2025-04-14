@@ -46,7 +46,7 @@ Route::prefix('api')->group(function () {
 
 
         //post route to set working hours
-        Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability'])->middleware('auth:sanctum');
+        Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
         Route::post('/{id}/working-hours', [ArtistController::class, 'setAvailability'])->middleware('auth:sanctum');
 
         Route::group(['prefix' => 'appointments'], function () {

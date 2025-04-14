@@ -11,7 +11,7 @@ class WorkingHoursResource extends JsonResource
         return [
             'id' => $this->id,
             'artist_id' => $this->artist_id,
-            'day' => $this->day,
+            'day_of_week' => $this->day_of_week,
             'day_name' => $this->day_name,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
