@@ -58,9 +58,8 @@ class ArtistController extends Controller
     public function getById($id): JsonResponse
     {
         if (request()->query('db')) {
-            $artist = Artist::find($id);
+            $artist = $this->getBySlugOrID($id);
             return $this->returnResponse('artist', new ArtistResource($artist));
-
         }
         $artist = $this->searchService->getById($id, 'artist');
 
@@ -118,11 +117,7 @@ class ArtistController extends Controller
     public function getAvailability(Request $request, $id)
     {
         //id may be a slug, support this
-        if (is_numeric($id)) {
-            $artist = Artist::find($id);
-        } else {
-            $artist = Artist::where('slug', $id)->first();
-        }
+        $artist = $this->getBySlugOrID($id);
 
         $availability = ArtistAvailability::where('artist_id', $artist->id)->get();
 
@@ -166,5 +161,14 @@ class ArtistController extends Controller
     public function delete()
     {
 
+    }
+
+    private function getBySlugOrID($id)
+    {
+        if (is_numeric($id)) {
+            return Artist::find($id);
+        } else {
+            return Artist::where('slug', $id)->first();
+        }
     }
 }

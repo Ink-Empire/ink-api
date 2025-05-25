@@ -28,6 +28,7 @@ class ArtistResource extends JsonResource
             'username' => $this->username,
             'working_hours' => WorkingHoursResource::collection($this->working_hours),
             'appointments' => AppointmentResource::collection($this->appointments),
+            'settings' => $this->settings ?? [],
         ];
     }
 

@@ -70,13 +70,21 @@ class AppointmentController extends Controller
 
         $data = $request->validate([
             'title' => 'required|string',
-            'start' => 'required|date',
-            'end' => 'required|date',
+            'start_time' => 'required',
+            'end_time' => 'required',
             'all_day' => 'boolean',
             'description' => 'string',
             'type' => 'required|string|in:tattoo,consultation',
+            'client_id' => 'required|exists:users,id',
+            'date' => 'required|date',
         ]);
 
+        $data['status'] = AppointmentStatus::PENDING;
+        //date should be in the format YYYY-MM-DD
+        $data['date'] = date('Y-m-d', strtotime($request->get('date')));
+        //start_time and end_time should be in the format HH:MM:SS
+        $data['start_time'] = date('H:i:s', strtotime($request->get('start_time')));
+        $data['end_time'] = date('H:i:s', strtotime($request->get('end_time')));
 
         $appointment = $artist->appointments()->create($data);
         //TODO add an event here that will email both artist and client
