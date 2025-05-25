@@ -62,16 +62,17 @@ class TattooController extends Controller
     public function search(Request $request): JsonResponse
     {
         $params = $request->all();
+        $user = null;
 
+        // If user is authenticated, include user-specific preferences
         if ($request->user()) {
             $user = $request->user();
         }
 
         $response = $this->searchService->search_tattoo($params, $user);
 
-        //if response.items is empty, re-do searh without distance filters and return an error message
+        //if response.items is empty, re-do search without distance filters and return an error message
         if (count($response["response"]) == 0) {
-
             $response = $this->searchService->search_tattoo($params, $user);
             $response['none_found'] = "No results found for your search, here are some suggestions: \n" .
                 "1. Try searching for a different tattoo style or artist.\n" .
