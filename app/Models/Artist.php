@@ -39,6 +39,11 @@ class Artist extends User
         return $this->belongsToMany(User::class, 'users_artists', 'artist_id', 'user_id');
     }
 
+    public function settings()
+    {
+        return $this->hasOne(ArtistSettings::class, 'artist_id', 'id');
+    }
+
     public function studio()
     {
         return $this->belongsTo(Studio::class);
