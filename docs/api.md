@@ -57,32 +57,41 @@ The SearchService is the core component for creating and executing search querie
 
 ### Search
 
-- `GET /api/search`: General search endpoint with model parameter to specify what to search for
-- `GET /api/search/initial`: Initial search results personalized for a user
+- `POST /api/elastic`: General search endpoint with model parameter to specify what to search for (public access)
+- `POST /api/elastic/initial-search`: Initial search results (public access, personalized results for authenticated users)
 
 ### Artists
 
-- `GET /api/artists`: List artists
-- `GET /api/artists/search`: Search for artists with filters
-- `GET /api/artists/{id}`: Get artist by ID or slug
-- `GET /api/artists/{id}/portfolio`: Get artist's portfolio
-- `GET /api/artists/{id}/availability`: Get artist's availability schedule
+- `POST /api/artists`: Search for artists with filters (public access)
+- `GET /api/artists/{id}`: Get artist by ID or slug (public access)
+- `GET /api/artists/{id}/portfolio`: Get artist's portfolio (public access)
+- `GET /api/artists/{id}/working-hours`: Get artist's availability schedule (public access)
+- `PUT /api/artist/{id}`: Update artist information (requires authentication)
+- `POST /api/artists/{id}/working-hours`: Set artist's working hours (requires authentication)
 
 ### Tattoos
 
-- `GET /api/tattoos`: List tattoos
-- `GET /api/tattoos/search`: Search for tattoos with filters
-- `GET /api/tattoos/{id}`: Get tattoo by ID
-- `POST /api/tattoos`: Create a new tattoo (requires authentication)
+- `POST /api/tattoos`: Search for tattoos with filters (public access)
+- `GET /api/tattoos/{id}`: Get tattoo by ID (public access)
+- `POST /api/tattoos/create`: Create a new tattoo (requires authentication)
 - `PUT /api/tattoos/{id}`: Update a tattoo (requires authentication)
+
+### Studios
+
+- `GET /api/studios/{user_id?}`: List studios (public access)
+- `GET /api/studios/studio/{id}`: Get studio by ID (public access)
+- `GET /api/studios/{id}/{user_id?}`: Get studio details by ID (public access)
+- `POST /api/studios`: Create a new studio (requires authentication)
+- `PUT /api/studios/studio/{id}`: Update a studio (requires authentication)
+- `PUT /api/studios/studio-hours/{id}`: Update studio business hours (requires authentication)
 
 ### Appointments
 
-- `GET /api/appointments`: Get appointments (filtered by artist and status)
-- `GET /api/appointments/{id}`: Get a specific appointment
-- `POST /api/appointments`: Create a new appointment
-- `PUT /api/appointments/{id}`: Update an appointment
-- `DELETE /api/appointments/{id}`: Delete an appointment
+- `POST /api/artists/appointments`: Search for available appointments (requires authentication)
+- `GET /api/artists/appointments/{id}`: Get a specific appointment (requires authentication)
+- `POST /api/artists/appointments/create`: Create a new appointment (requires authentication)
+- `PUT /api/artists/appointments/{id}`: Update an appointment (requires authentication)
+- `DELETE /api/artists/appointments/{id}`: Delete an appointment (requires authentication)
 
 ### Styles
 
@@ -132,11 +141,28 @@ The application uses a custom implementation of Laravel Scout with Elasticsearch
 - Tag-based search
 - Nested queries for complex relationships
 
+## Authentication Implementation
+
+The API uses Laravel Sanctum for authentication:
+
+- Token-based authentication for API access
+- Session-based authentication for web access
+- Token expiration policies
+- Role-based permissions
+
+### Public vs. Authenticated Access
+
+The API now allows two levels of access:
+
+- **Public/Guest Access**: View and search functionality including searching for artists, tattoos, and studios, as well as viewing individual records. No authentication token is required for these operations.
+  
+- **Authenticated Access**: All operations that modify data, including creating or updating records, managing appointments, uploading images, and accessing user-specific functionality. These operations require a valid authentication token.
+
 ## Error Handling
 
 The API includes standardized error responses:
 
 - 400: Bad Request - Missing required parameters
 - 404: Not Found - Resource not found
-- 401: Unauthorized - Authentication required
+- 401: Unauthorized - Authentication required for protected endpoints
 - 500: Server Error - Unexpected errors with detailed logging

@@ -117,7 +117,12 @@ class ArtistController extends Controller
 
     public function getAvailability(Request $request, $id)
     {
-        $artist = Artist::find($id);
+        //id may be a slug, support this
+        if (is_numeric($id)) {
+            $artist = Artist::find($id);
+        } else {
+            $artist = Artist::where('slug', $id)->first();
+        }
 
         $availability = ArtistAvailability::where('artist_id', $artist->id)->get();
 
