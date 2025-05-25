@@ -37,6 +37,7 @@ class ArtistResource extends JsonResource
             'tattoos' => TattooResource::collection($this->tattoos),
             'primary_image' => $this->primary_image ?? null,
             'username' => $this->username,
+            'settings' => $this->settings ?? [],
         ];
     }
 }

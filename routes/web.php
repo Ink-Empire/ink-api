@@ -59,6 +59,8 @@ Route::prefix('api')->group(function () {
                 //get available appointment times
                 Route::post('/', [AppointmentController::class, 'index']);
                 Route::post('/create', [AppointmentController::class, 'store']);
+                Route::post('/inbox', [AppointmentController::class, 'inbox']);
+                Route::post('/history', [AppointmentController::class, 'history']);
                 Route::put('/{id}', [AppointmentController::class, 'update']);
                 Route::get('/{id}', [AppointmentController::class, 'getById']);
                 Route::delete('/{id', [AppointmentController::class, 'delete']);
