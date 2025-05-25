@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\AppointmentStatus;
 use App\Http\Resources\AppointmentResource;
+use App\Http\Resources\RawAppointmentResource;
+use App\Models\Appointment;
 use App\Models\Artist;
+use App\Util\ModelLookup;
 use Illuminate\Http\Request;
 
 class AppointmentController extends Controller
@@ -18,20 +21,62 @@ class AppointmentController extends Controller
             return response()->json(['error' => 'Artist ID or slug is required'], 400);
         }
 
-        //if artist_id is not a number, its a slug
-        if (!is_numeric($artist_id)) {
-            $artist = Artist::where('slug', $artist_id)->first();
-        } else {
-            $artist = Artist::find($artist_id);
-        }
+        $artist = ModelLookup::findArtist($artist_id);
 
         if (!$artist) {
             return response()->json(['error' => 'Artist not found'], 404);
         }
 
-        $appointments = $this->getAppointmentsByStatus($artist, $status);
+        $appointments = Appointment::forArtistWithStatus($artist->id, $status)->get();
 
         return AppointmentResource::collection($appointments);
+    }
+
+    public function inbox(Request $request)
+    {
+        $artist_id = $request->get('artist_id');
+        $status = $request->get('status', AppointmentStatus::PENDING);
+
+        if (!$artist_id) {
+            return response()->json(['error' => 'Artist ID is required'], 400);
+        }
+
+        $artist = ModelLookup::findArtist($artist_id);
+
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        $appointments = Appointment::forArtistWithStatus($artist->id, $status)->get();
+
+        return RawAppointmentResource::collection($appointments);
+    }
+
+    public function history(Request $request)
+    {
+        $artist_id = $request->get('artist_id');
+        $page = $request->get('page', 1);
+        $perPage = 25;
+
+        if (!$artist_id) {
+            return response()->json(['error' => 'Artist ID is required'], 400);
+        }
+
+        $artist = ModelLookup::findArtist($artist_id);
+
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        // Get all non-pending appointments (history) with pagination
+        $appointments = $artist->appointments()
+            ->with('client')
+            ->with('artist')
+            ->whereIn('status', [AppointmentStatus::BOOKED, AppointmentStatus::COMPLETED, AppointmentStatus::CANCELLED])
+            ->orderBy('created_at', 'desc')
+            ->paginate($perPage, ['*'], 'page', $page);
+
+        return RawAppointmentResource::collection($appointments);
     }
 
     public function getById($artist_id, $id)
@@ -47,16 +92,6 @@ class AppointmentController extends Controller
         }
 
         return new AppointmentResource($appointment);
-    }
-
-    private function getAppointmentsByStatus($artist, $status = AppointmentStatus::BOOKED)
-    {
-        return $artist->appointments()
-//            ->with('tattoo')
-            ->with('client')
-            ->with('artist')
-            ->where('status', '=', $status)
-            ->get();
     }
 
     public function store(Request $request)
@@ -99,16 +134,15 @@ class AppointmentController extends Controller
             return response()->json(['error' => 'Appointment not found'], 404);
         }
 
-        $data = $request->validate([
-            'title' => 'string',
-            'start' => 'date',
-            'end' => 'date',
-            'all_day' => 'boolean',
-            'description' => 'string',
-            'type' => 'string|in:tattoo,consultation',
-        ]);
+        $appointmentFields = $appointment->getFillable();
 
-        $appointment->update($data);
+        foreach ($appointmentFields as $field) {
+            if ($request->has($field)) {
+                $appointment->{$field} = $request->get($field);
+            }
+        }
+
+        $appointment->save();
 
         return new AppointmentResource($appointment);
     }

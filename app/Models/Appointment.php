@@ -5,6 +5,14 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
+    protected static function booted()
+    {
+        static::saved(function ($appointment) {
+            // Your logic here, e.g.:
+            //TODO if the appointment status is changed to booked, send a notification to the client
+        });
+    }
+
     protected $fillable = [
         'id',
         'title',
@@ -39,5 +47,12 @@ class Appointment extends Model
     public function tattoo()
     {
         return $this->belongsTo(Tattoo::class);
+    }
+
+    public function scopeForArtistWithStatus($query, $artistId, $status)
+    {
+        return $query->where('artist_id', $artistId)
+            ->where('status', $status)
+            ->with(['client', 'artist']);
     }
 }

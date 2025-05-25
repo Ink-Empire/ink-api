@@ -2,6 +2,189 @@
 
 This document provides an in-depth analysis of the Elasticsearch implementation used by the Inked In platform. The application leverages Elasticsearch to power its search functionality, providing fast and relevant results for tattoos, artists, and studios.
 
+## Getting Started with Elasticsearch Indices
+
+This section provides step-by-step instructions for setting up and managing Elasticsearch indices for the Inked In platform.
+
+### Prerequisites
+
+1. **Elasticsearch Server**: Ensure Elasticsearch is running and accessible
+2. **Environment Configuration**: Set up your `.env` file with proper Elasticsearch connection details:
+   ```
+   ELASTICSEARCH_HOST=localhost:9200
+   ELASTICSEARCH_USER=elastic
+   ELASTICSEARCH_PASS=your_password
+   ```
+
+### Initial Setup
+
+#### 1. Initialize Elasticsearch Indices
+
+To create both tattoos and artists indices and populate them with existing data:
+
+```bash
+# Create both indices and import all data
+php artisan elastic:migrate
+
+# Or create indices separately without importing data
+php artisan elasticsearch:init
+```
+
+**What this does:**
+- Creates the `tattoos` index with proper mappings
+- Creates the `artists` index with proper mappings  
+- Imports all existing tattoo and artist data from the database
+- Sets up read/write aliases for zero-downtime operations
+
+#### 2. Create Individual Indices
+
+To create specific indices only:
+
+```bash
+# Create only the tattoos index
+php artisan elasticsearch:init tattoos --model=Tattoo
+
+# Create only the artists index  
+php artisan elasticsearch:init artists --model=Artist
+
+# Create a specific index without importing data
+php artisan elastic:create-index-ifnotexists --model="App\Models\Tattoo"
+php artisan elastic:create-index-ifnotexists --model="App\Models\Artist"
+```
+
+### Index Management
+
+#### Rebuilding Indices
+
+When you need to update mappings or refresh all data:
+
+```bash
+# Rebuild the entire tattoos index
+php artisan elastic:rebuild "App\Models\Tattoo"
+
+# Rebuild the entire artists index
+php artisan elastic:rebuild "App\Models\Artist"
+```
+
+**Note:** Rebuild operations are queued as background jobs to prevent timeouts with large datasets.
+
+#### Deleting Indices
+
+To remove indices (useful for development/testing):
+
+```bash
+# Delete tattoos index
+php artisan elastic:delete-index --model="App\Models\Tattoo"
+
+# Delete artists index
+php artisan elastic:delete-index --model="App\Models\Artist"
+```
+
+### Common Workflows
+
+#### Fresh Development Setup
+
+For a clean development environment:
+
+```bash
+# 1. Delete existing indices (if any)
+php artisan elastic:delete-index --model="App\Models\Tattoo"
+php artisan elastic:delete-index --model="App\Models\Artist"
+
+# 2. Create fresh indices and import data
+php artisan elastic:migrate
+```
+
+#### Production Deployment
+
+For production deployments with zero downtime:
+
+```bash
+# 1. Create indices with updated mappings
+php artisan elastic:create-index-ifnotexists --model="App\Models\Tattoo"
+php artisan elastic:create-index-ifnotexists --model="App\Models\Artist"
+
+# 2. Rebuild indices (runs in background)
+php artisan elastic:rebuild "App\Models\Tattoo"
+php artisan elastic:rebuild "App\Models\Artist"
+```
+
+#### Data Synchronization
+
+To sync specific data after database changes:
+
+```bash
+# Import only new data without rebuilding
+php artisan elasticsearch:init --model=Tattoo
+php artisan elasticsearch:init --model=Artist
+```
+
+### Troubleshooting
+
+#### Common Issues
+
+1. **Index Already Exists Error**
+   ```bash
+   # Use the "if not exists" variant
+   php artisan elastic:create-index-ifnotexists --model="App\Models\Tattoo"
+   ```
+
+2. **Connection Refused**
+   - Check if Elasticsearch is running: `curl http://localhost:9200`
+   - Verify `.env` configuration
+   - Check firewall settings
+
+3. **Mapping Conflicts**
+   ```bash
+   # Delete and recreate with new mappings
+   php artisan elastic:delete-index --model="App\Models\Tattoo"
+   php artisan elastic:create-index-ifnotexists --model="App\Models\Tattoo"
+   php artisan elastic:rebuild "App\Models\Tattoo"
+   ```
+
+4. **Large Dataset Timeouts**
+   - Rebuild operations automatically use background jobs
+   - Monitor the queue: `php artisan queue:work`
+
+#### Monitoring Commands
+
+```bash
+# Check if indices exist
+curl -X GET "localhost:9200/_cat/indices?v"
+
+# Check index mappings
+curl -X GET "localhost:9200/tattoos/_mapping?pretty"
+curl -X GET "localhost:9200/artists/_mapping?pretty"
+
+# Check document count
+curl -X GET "localhost:9200/tattoos/_count"
+curl -X GET "localhost:9200/artists/_count"
+```
+
+### Best Practices
+
+1. **Always use background jobs for large operations**
+   - Rebuild commands automatically queue jobs
+   - Monitor with `php artisan queue:work`
+
+2. **Test mapping changes in development first**
+   ```bash
+   # Development workflow
+   php artisan elastic:delete-index --model="App\Models\Tattoo"
+   php artisan elastic:create-index-ifnotexists --model="App\Models\Tattoo"
+   # Test your changes, then apply to production
+   ```
+
+3. **Use aliases for zero-downtime updates**
+   - The system automatically manages read/write aliases
+   - Rebuild operations create new indices and swap aliases
+
+4. **Monitor index health regularly**
+   ```bash
+   # Check cluster health
+   curl -X GET "localhost:9200/_cluster/health?pretty"
+   ```
+
 ## Architecture Overview
 
 The Elasticsearch implementation follows a layered architecture:

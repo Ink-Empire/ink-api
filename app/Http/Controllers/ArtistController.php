@@ -10,6 +10,7 @@ use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
 use App\Services\SearchService;
+use App\Util\ModelLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -58,7 +59,7 @@ class ArtistController extends Controller
     public function getById($id): JsonResponse
     {
         if (request()->query('db')) {
-            $artist = $this->getBySlugOrID($id);
+            $artist = ModelLookup::findArtist($id);
             return $this->returnResponse('artist', new ArtistResource($artist));
         }
         $artist = $this->searchService->getById($id, 'artist');
@@ -117,7 +118,7 @@ class ArtistController extends Controller
     public function getAvailability(Request $request, $id)
     {
         //id may be a slug, support this
-        $artist = $this->getBySlugOrID($id);
+        $artist = ModelLookup::findArtist($id);
 
         $availability = ArtistAvailability::where('artist_id', $artist->id)->get();
 
@@ -163,12 +164,4 @@ class ArtistController extends Controller
 
     }
 
-    private function getBySlugOrID($id)
-    {
-        if (is_numeric($id)) {
-            return Artist::find($id);
-        } else {
-            return Artist::where('slug', $id)->first();
-        }
-    }
 }
