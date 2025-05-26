@@ -14,65 +14,74 @@ class AppointmentController extends Controller
 {
     public function index(Request $request)
     {
-        $artist_id = $request->get('artist_id');
+        $user_id = $request->get('user_id');
         $status = $request->get('status');
 
-        if (!$artist_id) {
-            return response()->json(['error' => 'Artist ID or slug is required'], 400);
+        if (!$user_id) {
+            return response()->json(['error' => 'User ID or slug is required'], 400);
         }
 
-        $artist = ModelLookup::findArtist($artist_id);
+        $user = ModelLookup::findUser($user_id);
 
-        if (!$artist) {
-            return response()->json(['error' => 'Artist not found'], 404);
-        }
-
-        $appointments = Appointment::forArtistWithStatus($artist->id, $status)->get();
+        $appointments = $user->appointmentsWithStatus([$status])
+            ->with('messages')
+            ->get();
 
         return AppointmentResource::collection($appointments);
     }
 
     public function inbox(Request $request)
     {
-        $artist_id = $request->get('artist_id');
+        $user_id = $request->get('user_id');
         $status = $request->get('status', AppointmentStatus::PENDING);
 
-        if (!$artist_id) {
-            return response()->json(['error' => 'Artist ID is required'], 400);
+        if (!$user_id) {
+            return response()->json(['error' => 'User ID is required'], 400);
         }
 
-        $artist = ModelLookup::findArtist($artist_id);
+        $user = ModelLookup::findUser($user_id);
 
-        if (!$artist) {
-            return response()->json(['error' => 'Artist not found'], 404);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
         }
 
-        $appointments = Appointment::forArtistWithStatus($artist->id, $status)->get();
+        $appointments = $user->appointmentsWithStatus([$status])
+            ->with('messages')
+            ->with(['client', 'artist'])
+            ->get();
 
         return RawAppointmentResource::collection($appointments);
     }
 
     public function history(Request $request)
     {
-        $artist_id = $request->get('artist_id');
+        $user_id = $request->get('user_id');
         $page = $request->get('page', 1);
         $perPage = 25;
 
-        if (!$artist_id) {
-            return response()->json(['error' => 'Artist ID is required'], 400);
+        if (!$user_id) {
+            return response()->json(['error' => 'User ID is required'], 400);
         }
 
-        $artist = ModelLookup::findArtist($artist_id);
+        $user = ModelLookup::findUser($user_id);
 
-        if (!$artist) {
-            return response()->json(['error' => 'Artist not found'], 404);
+        if (!$user) {
+            return response()->json(['error' => 'User not found'], 404);
         }
 
         // Get all non-pending appointments (history) with pagination
-        $appointments = $artist->appointments()
+//        $appointments = $artist->appointments()
+//            ->with('client')
+//            ->with('artist')
+//            ->with('messages')
+//            ->whereIn('status', [AppointmentStatus::BOOKED, AppointmentStatus::COMPLETED, AppointmentStatus::CANCELLED])
+//            ->orderBy('created_at', 'desc')
+//            ->paginate($perPage, ['*'], 'page', $page);
+
+        $appointments = $user->appointmentsWithStatus([AppointmentStatus::BOOKED, AppointmentStatus::COMPLETED, AppointmentStatus::CANCELLED])
             ->with('client')
             ->with('artist')
-            ->whereIn('status', [AppointmentStatus::BOOKED, AppointmentStatus::COMPLETED, AppointmentStatus::CANCELLED])
+            ->with('messages')
             ->orderBy('created_at', 'desc')
             ->paginate($perPage, ['*'], 'page', $page);
 

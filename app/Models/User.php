@@ -105,4 +105,15 @@ class User extends Authenticatable
     {
         return $this->belongsTo(Studio::class);
     }
+
+    public function appointmentsWithStatus($status)
+    {
+        if ($this->type_id === UserTypes::CLIENT_TYPE_ID) {
+            return Appointment::forClientWithStatus($this->id, $status);
+        } elseif ($this->type_id === UserTypes::ARTIST_TYPE_ID) {
+            return Appointment::forArtistWithStatus($this->id, $status);
+        }
+
+        return collect(); // fallback: no appointments
+    }
 }
