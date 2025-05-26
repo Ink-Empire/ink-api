@@ -59,11 +59,12 @@ class AuthController extends Controller
             'address_id' => $address->id ?? null
         ]);
 
-        $token = $user->createToken('authToken', ['*'], now()->addYears(10));
+        // For SPA authentication, log the user in using sessions
+        auth()->login($user);
 
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $token->plainTextToken,
+            'message' => 'User registered and logged in successfully'
         ], 201);
     }
 
@@ -90,7 +91,7 @@ class AuthController extends Controller
         $request->validate([
             'email' => 'required|email',
             'password' => 'required'
-            ]);
+        ]);
 
         $user = User::where('email', $request->email)->first();
 
@@ -100,14 +101,12 @@ class AuthController extends Controller
             ]);
         }
 
-        // Revoke previous tokens for this device if they exist
-        $user->tokens()->delete();
-
-        $token = $user->createToken('authToken', ['*'], now()->addYears(10));
+        // For SPA authentication, use Laravel's built-in session authentication
+        auth()->login($user);
 
         return response()->json([
             'user' => new UserResource($user),
-            'token' => $token->plainTextToken,
+            'message' => 'Logged in successfully'
         ]);
     }
 
@@ -116,7 +115,9 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        $request->user()->currentAccessToken()->delete();
+        auth()->logout();
+        $request->session()->invalidate();
+        $request->session()->regenerateToken();
 
         return response()->json(['message' => 'Logged out successfully']);
     }

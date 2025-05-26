@@ -28,5 +28,9 @@ class VerifyCsrfToken extends Middleware
         '/api/elastic/*',
         '/api/artists/appointments/*',
         '/api/artists/appointments',
+        '/api/login',
+        '/api/register',
+        '/api/logout',
+        '/api/username',
     ];
 }
