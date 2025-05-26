@@ -39,4 +39,8 @@ class EventServiceProvider extends ServiceProvider
     {
         return false;
     }
+
+    protected $observers = [
+        \App\Models\User::class => \App\Observers\UserObserver::class,
+    ];
 }

@@ -225,6 +225,8 @@ class ElasticsearchEngine extends Engine
             ->setIfNotEmpty('body', $query)
             ->get();
 
+        ray($payload)->blue();
+
         return Elastic::search($payload);
     }
 

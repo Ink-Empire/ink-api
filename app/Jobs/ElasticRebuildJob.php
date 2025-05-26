@@ -32,6 +32,11 @@ class ElasticRebuildJob implements ShouldQueue
      */
     public function handle(ElasticService $elasticService): void
     {
+        \Log::info("JOB LOG rebuilding elastic ids", [
+            'ids' => (array) $this->ids,
+            'model' => $this->model,
+        ]);
+
         if (!empty($this->ids)) {
             $elasticService->rebuild($this->ids, $this->model);
         }

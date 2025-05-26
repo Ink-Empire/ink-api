@@ -51,7 +51,7 @@ class Artist extends User
 
     public function styles()
     {
-        return $this->belongsToMany(Style::class, 'artists_styles', 'artist_id', 'style_id');
+        return $this->belongsToMany(Style::class, 'users_styles', 'user_id', 'style_id');
     }
 
     public function tattoos()

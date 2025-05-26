@@ -36,7 +36,7 @@ class ElasticRebuildCommand extends Command
             $this->info("Found " . count($ids) . " records to rebuild");
             
             // Use the ElasticRebuildJob to process the rebuild
-            ElasticRebuildJob::dispatch($model, $ids);
+            ElasticRebuildJob::dispatch($modelClass, $ids);
             
             $this->info("Rebuild job queued successfully for $modelClass");
             return Command::SUCCESS;

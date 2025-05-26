@@ -26,8 +26,8 @@ class ArtistResource extends JsonResource
             'styles' => $this->styles,
             'isFavorite' => $this->getIsUserFavorite(),
             'username' => $this->username,
-            'working_hours' => WorkingHoursResource::collection($this->working_hours),
-            'appointments' => AppointmentResource::collection($this->appointments),
+            'working_hours' => WorkingHoursResource::collection($this->working_hours ?? collect()),
+            'appointments' => AppointmentResource::collection($this->appointments ?? collect()),
             'settings' => $this->settings ?? [],
         ];
     }

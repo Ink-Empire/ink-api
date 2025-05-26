@@ -6,6 +6,7 @@ use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\WorkingHoursResource;
 use App\Models\Artist;
 use App\Models\ArtistAvailability;
+use App\Models\ArtistSettings;
 use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
@@ -154,6 +155,84 @@ class ArtistController extends Controller
             return response()->json($response->first()['tattoos']);
         }
 
+    }
+
+    /**
+     * Get artist settings
+     */
+    public function getSettings(Request $request, $id): JsonResponse
+    {
+        $artist = ModelLookup::findArtist($id);
+
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        $settings = ArtistSettings::where('artist_id', $artist->id)->first();
+
+        if (!$settings) {
+            // Return default settings if none exist
+            $defaultSettings = [
+                'books_open' => false,
+                'accepts_walk_ins' => false,
+                'accepts_deposits' => false,
+                'accepts_consultations' => false,
+                'accepts_appointments' => false,
+            ];
+
+            return response()->json(['data' => $defaultSettings]);
+        }
+
+        return response()->json(['data' => $settings->only([
+            'books_open',
+            'accepts_walk_ins',
+            'accepts_deposits',
+            'accepts_consultations',
+            'accepts_appointments'
+        ])]);
+    }
+
+    /**
+     * Update artist settings
+     */
+    public function updateSettings(Request $request, $id): JsonResponse
+    {
+        $artist = ModelLookup::findArtist($id);
+
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        // Validate that the authenticated user is the artist or has permission
+        $user = $request->user();
+        if (!$user || $user->id !== $artist->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $validSettings = [
+            'books_open',
+            'accepts_walk_ins',
+            'accepts_deposits',
+            'accepts_consultations',
+            'accepts_appointments'
+        ];
+
+        $settingsData = $request->only($validSettings);
+
+        // Convert values to boolean
+        foreach ($settingsData as $key => $value) {
+            $settingsData[$key] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
+        }
+
+        $settings = ArtistSettings::updateOrCreate(
+            ['artist_id' => $artist->id],
+            $settingsData
+        );
+
+        //we need to re-index the artist
+        $artist->searchable();
+
+        return response()->json(['data' => $settings->only($validSettings)]);
     }
 
     /**

@@ -19,11 +19,11 @@ class ElasticMigrateCommand extends Command
         try {
             // Create indices if they don't exist
             $this->call('elastic:create-index-ifnotexists', [
-                '--model' => 'App\\Models\\Tattoo'
+                'model' => 'App\\Models\\Tattoo'
             ]);
 
             $this->call('elastic:create-index-ifnotexists', [
-                '--model' => 'App\\Models\\Artist'
+                'model' => 'App\\Models\\Artist'
             ]);
 
             // Import data to Elasticsearch
