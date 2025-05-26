@@ -49,10 +49,47 @@ class Appointment extends Model
         return $this->belongsTo(Tattoo::class);
     }
 
-    public function scopeForArtistWithStatus($query, $artistId, $status)
+    public function messages()
+    {
+        return $this->hasMany(Message::class);
+    }
+
+    public function messageThreads()
+    {
+        return $this->hasMany(Message::class)->threads();
+    }
+
+    public function latestMessage()
+    {
+        return $this->hasOne(Message::class)->latest();
+    }
+
+    public function unreadMessagesFor($userId)
+    {
+        return $this->messages()->unreadFor($userId);
+    }
+
+    public function hasUnreadMessagesFor($userId)
+    {
+        return $this->unreadMessagesFor($userId)->exists();
+    }
+
+    public function scopeForArtistWithStatus($query, $artistId, array $status)
     {
         return $query->where('artist_id', $artistId)
+            ->whereIn('status', $status)
+            ->with(['client', 'artist']);
+    }
+
+    public function scopeForClientWithStatus($query, $clientId, $status)
+    {
+        return $query->where('client_id', $clientId)
             ->where('status', $status)
             ->with(['client', 'artist']);
+    }
+
+    public function scopeWithMessages($query)
+    {
+        return $query->with(['messages.sender', 'messages.recipient', 'latestMessage']);
     }
 }

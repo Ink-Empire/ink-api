@@ -61,15 +61,17 @@ Route::prefix('api')->group(function () {
             Route::post('/{id}/working-hours', [ArtistController::class, 'setAvailability']);
             Route::get('/{id}/settings', [ArtistController::class, 'getSettings']);
             Route::put('/{id}/settings', [ArtistController::class, 'updateSettings']);
+        });
+    });
 
-            Route::group(['prefix' => 'appointments'], function () {
-                Route::post('/create', [AppointmentController::class, 'store']);
-                Route::post('/inbox', [AppointmentController::class, 'inbox']);
-                Route::post('/history', [AppointmentController::class, 'history']);
-                Route::put('/{id}', [AppointmentController::class, 'update']);
-                Route::get('/{id}', [AppointmentController::class, 'getById']);
-                Route::delete('/{id', [AppointmentController::class, 'delete']);
-            });
+    Route::middleware('auth:sanctum')->group(function () {
+        Route::group(['prefix' => 'appointments'], function () {
+            Route::post('/create', [AppointmentController::class, 'store']);
+            Route::post('/inbox', [AppointmentController::class, 'inbox']);
+            Route::post('/history', [AppointmentController::class, 'history']);
+            Route::put('/{id}', [AppointmentController::class, 'update']);
+            Route::get('/{id}', [AppointmentController::class, 'getById']);
+            Route::delete('/{id', [AppointmentController::class, 'delete']);
         });
     });
 
