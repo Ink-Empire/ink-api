@@ -14,8 +14,12 @@ class VerifyCsrfToken extends Middleware
     protected $except = [
         '/tattoos/*',
         'tattoos',
+        '/api/tattoos/*',
+        '/api/tattoos',
         'elastic',
         'artists',
+        '/api/artists',
+        '/api/artists/*',
         '/users/*',
         '/artists/*',
         '/images/*',

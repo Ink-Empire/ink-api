@@ -172,7 +172,27 @@ class ElasticsearchService
         }
 
         try {
-            return $this->client->bulk($params);
+            $response = $this->client->bulk($params);
+            
+            // Check for bulk indexing errors
+            if (isset($response['errors']) && $response['errors']) {
+                Log::error('Bulk indexing had errors', [
+                    'items' => $response['items'] ?? [],
+                    'errors' => $response['errors']
+                ]);
+                
+                // Log specific errors for each item
+                foreach ($response['items'] as $item) {
+                    if (isset($item['index']['error'])) {
+                        Log::error('Document indexing failed', [
+                            'id' => $item['index']['_id'] ?? 'unknown',
+                            'error' => $item['index']['error']
+                        ]);
+                    }
+                }
+            }
+            
+            return $response;
         } catch (\Exception $e) {
             Log::error('Failed to bulk index documents in Elasticsearch: ' . $e->getMessage());
             throw $e;

@@ -15,6 +15,16 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+//    protected static function booted()
+//    {
+//        static::saved(function ($user) {
+//            if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
+//                $artist = Artist::find($user->id);
+//                $artist->searchable();
+//            }
+//        });
+//    }
+
     /**
      * The attributes that are mass assignable.
      *

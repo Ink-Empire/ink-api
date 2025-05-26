@@ -35,8 +35,14 @@ class RebuildElasticItem extends Command
         $model = StringToModel::convert($type);
         $itemToRebuild = $model::find($this->argument('id'));
 
+        \Log::info($itemToRebuild);
+
         $this->info("Rebuilding $type with ID {$this->argument('id')}...");
 
-        $itemToRebuild->searchable();
+        try {
+            $itemToRebuild->searchable();
+        } catch (\Exception $e) {
+            \Log::info("Error rebuilding item: {$e->getMessage()}");
+        }
     }
 }

@@ -167,14 +167,22 @@ class ElasticService
      * @param $ids
      * @return array
      */
-    public function rebuild($ids, Model $model): array
+    public function rebuild($ids, $model): array
     {
         set_time_limit(1500);
         try {
             $count = count((array)$ids);
 
             Log::debug("rebuilding $count products");
-            $results = $model::whereIn('id', $ids)->get();
+            
+            // Handle both string class names and Model instances
+            if (is_string($model)) {
+                $modelClass = $model;
+            } else {
+                $modelClass = get_class($model);
+            }
+            
+            $results = $modelClass::whereIn('id', $ids)->get();
 
             if ($results) {
                 $results->searchable();

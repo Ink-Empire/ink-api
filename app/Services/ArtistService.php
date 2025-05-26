@@ -46,7 +46,14 @@ class ArtistService
         }
 
         if (isset($this->filters['styles'])) {
-            $this->buildStylesParam();
+            // Ensure styles is always an array
+            if (!is_array($this->filters['styles'])) {
+                $this->filters['styles'] = [$this->filters['styles']];
+            }
+            // Only build styles param if array is not empty
+            if (!empty($this->filters['styles'])) {
+                $this->buildStylesParam();
+            }
         }
 
         if (isset($this->filters['near_me'])) {
@@ -117,10 +124,10 @@ class ArtistService
             if ($style) {
                 $clauses[] = ['styles.id', '=', $style];
             }
+        }
 
-            if (count($clauses) > 0) {
-                $this->search->orWhere($clauses, $minMatch);
-            }
+        if (count($clauses) > 0) {
+            $this->search->orWhere($clauses, $minMatch);
         }
     }
 

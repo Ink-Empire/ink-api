@@ -19,6 +19,11 @@ class ArtistSettings extends Model
 
     protected $casts = [
         'settings' => 'array',
+        'books_open' => 'boolean',
+        'accepts_walk_ins' => 'boolean',
+        'accepts_deposits' => 'boolean',
+        'accepts_consultations' => 'boolean',
+        'accepts_appointments' => 'boolean',
     ];
 
     public function artist()

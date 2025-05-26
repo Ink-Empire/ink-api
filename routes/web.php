@@ -19,7 +19,9 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/test', function () {
-    return "hello";
+    $artist = \App\Models\Artist::find(4);
+
+    $artist->searchable();
 });
 
 Route::prefix('api')->group(function () {
@@ -28,7 +30,7 @@ Route::prefix('api')->group(function () {
         Route::post('/', [TattooController::class, 'search']);
         Route::get('/{id}', [TattooController::class, 'getById']);
     });
-    
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::group(['prefix' => 'users'], function () {
             Route::post('profile-photo', [UserController::class, 'upload']);
@@ -49,15 +51,18 @@ Route::prefix('api')->group(function () {
         Route::get('/{id}', [ArtistController::class, 'getById']);
         Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
         Route::get('/{id}/portfolio', [ArtistController::class, 'portfolio']);
-        
+
+        // Public appointment viewing - for guests to see availability
+        Route::post('/appointments', [AppointmentController::class, 'index']);
+
         // Protected artist routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
             Route::put('/artist/{id}', [ArtistController::class, 'update']);
             Route::post('/{id}/working-hours', [ArtistController::class, 'setAvailability']);
+            Route::get('/{id}/settings', [ArtistController::class, 'getSettings']);
+            Route::put('/{id}/settings', [ArtistController::class, 'updateSettings']);
 
             Route::group(['prefix' => 'appointments'], function () {
-                //get available appointment times
-                Route::post('/', [AppointmentController::class, 'index']);
                 Route::post('/create', [AppointmentController::class, 'store']);
                 Route::post('/inbox', [AppointmentController::class, 'inbox']);
                 Route::post('/history', [AppointmentController::class, 'history']);
@@ -73,7 +78,7 @@ Route::prefix('api')->group(function () {
         Route::get('/{user_id?}', 'StudioController@get');
         Route::get('/studio/{id}', 'StudioController@getById');
         Route::get('/{id}/{user_id?}', 'StudioController@getById');
-        
+
         // Protected studio routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', 'StudioController@create');
@@ -98,7 +103,7 @@ Route::prefix('api')->group(function () {
         Route::post('/', 'SearchController@index');
         Route::get('/{id}', 'ElasticController@getById');
         Route::post('/initial-search', 'SearchController@getInitialSearch');
-        
+
         // Protected elastic routes - require authentication (admin operations)
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/rebuild', 'ElasticController@rebuild');
