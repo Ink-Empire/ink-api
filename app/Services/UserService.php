@@ -7,6 +7,7 @@ use App\Models\Image;
 use App\Models\Style;
 use App\Models\Tattoo;
 use App\Models\User;
+use App\Util\ModelLookup;
 
 /**
  *
@@ -20,24 +21,15 @@ class UserService
     ];
 
     /**
-     * Get a user by their ID or slug
+     * Get a user by their ID or username
      *
-     * @param string|int $id The user ID or slug
+     * @param string|int $id The user ID or username
      * @return User|null
      */
     public function getById($id)
     {
         if ($id) {
-
-            if (is_numeric($id)) {
-                $user = User::where('id', $id)->first();
-                if ($user) {
-                    return $user;
-                }
-            }
-
-            // If not found by ID or ID isn't numeric, try to find by slug
-            return User::where('slug', $id)->first();
+            return ModelLookup::findUser($id);
         }
 
         return null;

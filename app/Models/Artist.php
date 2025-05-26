@@ -39,6 +39,11 @@ class Artist extends User
         return $this->belongsToMany(User::class, 'users_artists', 'artist_id', 'user_id');
     }
 
+    public function settings()
+    {
+        return $this->hasOne(ArtistSettings::class, 'artist_id', 'id');
+    }
+
     public function studio()
     {
         return $this->belongsTo(Studio::class);
@@ -57,6 +62,16 @@ class Artist extends User
     public function primary_image()
     {
         return $this->belongsTo(Image::class, 'image_id', 'id');
+    }
+
+    public function working_hours()
+    {
+        return $this->hasMany(ArtistAvailability::class, 'artist_id', 'id');
+    }
+
+    public function appointments()
+    {
+        return $this->hasMany(Appointment::class, 'artist_id', 'id');
     }
 
     /*
