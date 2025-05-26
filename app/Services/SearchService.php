@@ -81,20 +81,22 @@ class SearchService
         }
 
         /* distance related params */
-        if (isset($this->filters['useAnyLocation']) && !$this->filters['useAnyLocation']) {
-            if (isset($this->filters['useMyLocation']) && $this->filters['useMyLocation']) {
-                $this->latLongString = $this->user->location_lat_long;
-            } else {
-                $this->latLongString = $this->filters['locationCoords'];
-            }
+        if($this->user) {
+            if (isset($this->filters['useAnyLocation']) && !$this->filters['useAnyLocation']) {
+                if (isset($this->filters['useMyLocation']) && $this->filters['useMyLocation']) {
+                    $this->latLongString = $this->user->location_lat_long;
+                } else {
+                    $this->latLongString = $this->filters['locationCoords'];
+                }
 
-            if (isset($this->filters['subject']) && $this->filters['subject'] == 'studio') {
-                $distanceParam = 'studio.location_lat_long';
-            } else {
-                $distanceParam = 'artist.location_lat_long';
-            }
+                if (isset($this->filters['subject']) && $this->filters['subject'] == 'studio') {
+                    $distanceParam = 'studio.location_lat_long';
+                } else {
+                    $distanceParam = 'artist.location_lat_long';
+                }
 
-            $this->buildDistanceParam($distanceParam, $this->latLongString);
+                $this->buildDistanceParam($distanceParam, $this->latLongString);
+            }
         }
 
         return $this->search->get();
