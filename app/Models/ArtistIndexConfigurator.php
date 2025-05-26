@@ -146,6 +146,16 @@ class ArtistIndexConfigurator extends IndexConfigurator
         ]
     ];
 
+    const SETTINGS = [
+        'type' => 'nested',
+        'properties' => [
+            'books_open' => Datatypes::BOOLEAN,
+            'accepts_walk_ins' => Datatypes::BOOLEAN,
+            'accepts_consultations' => Datatypes::BOOLEAN,
+            'accepts_appointments' => Datatypes::BOOLEAN,
+            'accepts_deposits' => Datatypes::BOOLEAN,
+        ]
+    ];
 
     /** @var array */
     protected $mappings = [
@@ -165,6 +175,7 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'primary_image' => self::IMAGE,
             'tattoos' => self::TATTOOS,
             'username' => Datatypes::KEYWORD,
+            'settings' => self::SETTINGS,
         ]
     ];
 

@@ -23,7 +23,8 @@ class SelfUserResource extends JsonResource
             'artists' => $this->artists->pluck('id')->toArray(),
             'styles' => $this->styles->pluck('id')->toArray(),
             'studios' => $this->studios,
-            'tattoos' => $this->tattoos->pluck('id')->toArray()
+            'tattoos' => $this->tattoos->pluck('id')->toArray(),
+            'username' => $this->username,
         ];
     }
 }

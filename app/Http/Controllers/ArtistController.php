@@ -2,11 +2,15 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\Elastic\Primary\ArtistResource;
+use App\Http\Resources\Elastic\ArtistResource;
+use App\Http\Resources\WorkingHoursResource;
+use App\Models\Artist;
+use App\Models\ArtistAvailability;
 use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
 use App\Services\SearchService;
+use App\Util\ModelLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -15,7 +19,6 @@ use Illuminate\Http\Request;
  */
 class ArtistController extends Controller
 {
-
     public function __construct(
         protected ArtistService $artistService,
         protected ImageService  $imageService,
@@ -55,6 +58,10 @@ class ArtistController extends Controller
      */
     public function getById($id): JsonResponse
     {
+        if (request()->query('db')) {
+            $artist = ModelLookup::findArtist($id);
+            return $this->returnResponse('artist', new ArtistResource($artist));
+        }
         $artist = $this->searchService->getById($id, 'artist');
 
         return $this->returnResponse('artist', $artist);
@@ -108,6 +115,37 @@ class ArtistController extends Controller
         return response()->json(['user' => $user]);
     }
 
+    public function getAvailability(Request $request, $id)
+    {
+        //id may be a slug, support this
+        $artist = ModelLookup::findArtist($id);
+
+        $availability = ArtistAvailability::where('artist_id', $artist->id)->get();
+
+        return WorkingHoursResource::collection($availability);
+    }
+
+    public function setAvailability(Request $request)
+    {
+        $artist = $request->user();
+
+        $availabilityArray = $request->get('availability');
+
+        foreach ($availabilityArray as $availability) {
+            // create an object from ArtistAvailability
+            $availabilityObj = new ArtistAvailability([
+                'artist_id' => $artist->id,
+                'day_of_week' => $availability['day_of_week'],
+                'start_time' => $availability['start_time'],
+                'end_time' => $availability['end_time'],
+                'is_day_off' => $availability['is_day_off']
+            ]);
+
+            // save the object to the database
+            $availabilityObj->save();
+        }
+    }
+
     public function portfolio(Request $request, $id): JsonResponse
     {
         $response = $this->artistService->getById($id);
@@ -125,4 +163,5 @@ class ArtistController extends Controller
     {
 
     }
+
 }
