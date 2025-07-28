@@ -101,13 +101,34 @@ class TattooController extends Controller
             if(count($images) > 0) {
                $primaryImage = $images[0];
 
+                // Handle style IDs
+                $styleIds = [];
+                if ($request->has('style_ids')) {
+                    $styleIds = json_decode($request->input('style_ids'), true);
+                    if (!is_array($styleIds)) {
+                        $styleIds = [];
+                    }
+                }
+                
+                // Get primary style from explicit field or first style
+                $primaryStyleId = $request->input('primary_style_id') 
+                    ?: (!empty($styleIds) ? $styleIds[0] : null);
+
                 $tattoo = Tattoo::create([
                     'artist_id' => $user->id,
                     'primary_image_id' => $primaryImage->id,
                     'studio_id' => $user->studio_id ?? null,
+                    'description' => $request->input('description'),
+                    'placement' => $request->input('placement'),
+                    'primary_style_id' => $primaryStyleId,
                 ]);
 
                 $tattoo->images()->attach(collect($images)->pluck('id'));
+
+                // Attach all selected styles to the tattoo
+                if (!empty($styleIds)) {
+                    $tattoo->styles()->attach($styleIds);
+                }
 
                 $tattoo->searchable(); //this is likely unnecessary, but we will need to re-index the tattoo
                 Artist::find($user->id)->searchable(); //re-index the artist
