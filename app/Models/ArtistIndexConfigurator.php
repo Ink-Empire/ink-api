@@ -174,7 +174,7 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'styles' => self::STYLE,
             'primary_image' => self::IMAGE,
             'tattoos' => self::TATTOOS,
-            'username' => Datatypes::KEYWORD,
+            'username' => Datatypes::TEXT,
             'settings' => self::SETTINGS,
         ]
     ];

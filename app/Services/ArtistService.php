@@ -72,6 +72,30 @@ class ArtistService
             $this->buildGeoParam('studio.location_lat_long', $this->filters['studio_near_location']);
         }
 
+        if (isset($this->filters['searchString'])) {
+            $string = $this->filters['searchString'];
+
+            //get array of OR conditions for us to search artist name, studio_name or artist username
+            $query = Artist::search(); //generic search object to construct clauses we need
+
+            $orFields = [
+                'name',
+                'studio_name',
+            ];
+
+            //todo fix username
+
+            foreach ($orFields as $field) {
+                $query->wherePrefix($field, $string, 'all_of', true);
+            }
+
+            //todo do we want fuzzy search on the name?
+
+            $this->search->orWhere(
+                $query, 1
+            );
+        }
+
         //TODO in future let user decide their preference, always closest?
         // $this->search->geoSort('studio.id', 'desc');
 
@@ -87,18 +111,21 @@ class ArtistService
         //we need the current User's location to get this
         try {
             if (empty($latLongString)) {
-                $latLongArray = explode(",", $this->user->location_lat_long);
+                $latLongArray = explode(",", $this->user?->location_lat_long);
             } else {
                 $latLongArray = explode(",", $latLongString);
             }
 
-            $data = [
-                'field' => $field,
-                'lat' => $latLongArray[0],
-                'lon' => $latLongArray[1]
-            ];
+            if (count($latLongArray) > 1) {
 
-            $this->search->geoSort($data);
+                $data = [
+                    'field' => $field,
+                    'lat' => $latLongArray[0],
+                    'lon' => $latLongArray[1]
+                ];
+
+                $this->search->geoSort($data);
+            }
 
         } catch (\Exception $e) {
             \Log::error("Unable to build geo param", [
