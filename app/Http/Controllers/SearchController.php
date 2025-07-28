@@ -2,14 +2,16 @@
 
 namespace App\Http\Controllers;
 
-use App\Services\SearchService;
+use App\Services\TattooService;
+use App\Services\ArtistService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 
 class SearchController extends Controller
 {
     public function __construct(
-        protected SearchService $searchService,
+        protected TattooService $tattooService,
+        protected ArtistService $artistService,
         protected UserService   $userService
     )
     {
@@ -20,7 +22,7 @@ class SearchController extends Controller
         //home page initial search will return tattoo results
 
         //either tattoos in saved styles OR artists user has saved OR artists near location, sorted by new
-        $response = $this->searchService->initialUserResults($request->get('user_id'));
+        $response = $this->tattooService->initialUserResults($request->get('user_id'));
 
         return $this->returnElasticResponse($response['response']);
     }
@@ -31,9 +33,9 @@ class SearchController extends Controller
         $filters = $request->except('model');
 
         if ($model == 'tattoo') {
-            $response = $this->checkResponse($this->searchService->search_tattoo($filters), $model);
+            $response = $this->checkResponse($this->tattooService->search_tattoo($filters), $model);
         } else {
-            $response = $this->checkResponse($this->searchService->search_artist($filters), $model);
+            $response = $this->checkResponse($this->artistService->search_artist($filters), $model);
         }
 
         return $this->returnElasticResponse($response);
@@ -48,10 +50,13 @@ class SearchController extends Controller
                 $params['artist_near_me'] = false;
                 $params['search_again'] = true;
 
-                $method = "search" . "_" . $model;
-
                 \Log::info("no search results returned, searching again for generic response");
-                return $this->searchService->{$method}($params);
+                
+                if ($model == 'tattoo') {
+                    return $this->tattooService->search_tattoo($params);
+                } else {
+                    return $this->artistService->search_artist($params);
+                }
             }
         }
         return $response['response'];
