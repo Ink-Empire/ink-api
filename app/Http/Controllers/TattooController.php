@@ -12,7 +12,6 @@ use App\Models\Tag;
 use App\Models\Tattoo;
 use App\Models\User;
 use App\Services\ImageService;
-use App\Services\SearchService;
 use App\Services\TattooService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
@@ -30,8 +29,7 @@ class TattooController extends Controller
     public function __construct(
         protected TattooService $tattooService,
         protected ImageService  $imageService,
-        protected UserService   $userService,
-        protected SearchService $searchService
+        protected UserService   $userService
     )
     {
     }
@@ -62,18 +60,12 @@ class TattooController extends Controller
     public function search(Request $request): JsonResponse
     {
         $params = $request->all();
-        $user = null;
 
-        // If user is authenticated, include user-specific preferences
-        if ($request->user()) {
-            $user = $request->user();
-        }
-
-        $response = $this->searchService->search_tattoo($params, $user);
+        $response = $this->tattooService->search($params);
 
         //if response.items is empty, re-do search without distance filters and return an error message
         if (count($response["response"]) == 0) {
-            $response = $this->searchService->search_tattoo($params, $user);
+            $response = $this->tattooService->search($params);
             $response['none_found'] = "No results found for your search, here are some suggestions: \n" .
                 "1. Try searching for a different tattoo style or artist.\n" .
                 "2. Check your spelling and try again.\n" .
@@ -109,9 +101,9 @@ class TattooController extends Controller
                         $styleIds = [];
                     }
                 }
-                
+
                 // Get primary style from explicit field or first style
-                $primaryStyleId = $request->input('primary_style_id') 
+                $primaryStyleId = $request->input('primary_style_id')
                     ?: (!empty($styleIds) ? $styleIds[0] : null);
 
                 $tattoo = Tattoo::create([

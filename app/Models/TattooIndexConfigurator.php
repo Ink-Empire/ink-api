@@ -144,10 +144,11 @@ class TattooIndexConfigurator extends IndexConfigurator
             'image' => self::IMAGE,
             'location' => Datatypes::KEYWORD,
             'location_lat_long' => Datatypes::GEO_POINT,
-            'name' => Datatypes::KEYWORD,
-            'studio' => Datatypes::KEYWORD,
+            'name' => Datatypes::TEXT,
+            'studio' => Datatypes::TEXT,
             'type' => Datatypes::KEYWORD,
             'styles' => self::STYLE,
+            'username' => Datatypes::TEXT,
         ],
     ];
 

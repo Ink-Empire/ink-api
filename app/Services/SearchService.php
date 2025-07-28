@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\SearchContext;
 use App\Models\Artist;
 use App\Models\Tattoo;
 use App\Models\User;
@@ -9,17 +10,28 @@ use App\Util\StringToModel;
 use Illuminate\Support\Collection;
 use Larelastic\Elastic\Facades\Elastic;
 
-class SearchService
+abstract class SearchService
 {
+    protected $filters = [];
+    protected $search;
+    protected $user;
+    protected $latLongString;
+    protected $searchContext;
 
     public function __construct(protected UserService $userService)
     {
+        $this->searchContext = $this->getSearchContext();
     }
+
+    /**
+     * Get the search context (tattoo, artist, etc.) - to be implemented by child classes
+     */
+    abstract protected function getSearchContext(): string;
 
     public function getById($id, $model)
     {
         //if id is numeric:
-        if(!is_numeric($id)) {
+        if (!is_numeric($id)) {
             $field = 'slug';
         } else {
             $field = 'id';
@@ -36,24 +48,42 @@ class SearchService
         }
     }
 
-    public function search_tattoo($filters, ?User $user = null)
+    /**
+     * Common search method that child classes can extend
+     */
+    public function search($params)
     {
-        $this->search = Tattoo::search();
-        $this->filters = $filters;
-        $this->user = $user;
+        $this->filters = $params;
+        $this->initializeSearch();
 
-        if (isset($this->filters['search_text'])) {
-
-            $query = Tattoo::search();
-
-            $query->wherePrefix('description', $this->filters['search_text']);
-            $query->where('tags', 'in', [$this->filters['search_text']]);
-
-            $this->search->orWhere(
-                $query, 1
-            );
+        if (isset($this->filters['user_id'])) {
+            $this->user = $this->userService->getById($this->filters['user_id']);
         }
 
+        $this->applyCommonFilters();
+        $this->applySpecificFilters();
+
+        return $this->search->get();
+    }
+
+    /**
+     * Initialize the search object - to be implemented by child classes
+     */
+    abstract protected function initializeSearch();
+
+    /**
+     * Apply filters specific to the model - to be implemented by child classes
+     */
+    protected function applySpecificFilters()
+    {
+        // Default implementation - can be overridden by child classes
+    }
+
+    /**
+     * Apply common filters that work across models
+     */
+    protected function applyCommonFilters()
+    {
         if (isset($this->filters['studio_id'])) {
             $this->buildStudioParam();
         }
@@ -62,93 +92,113 @@ class SearchService
             $this->buildStylesParam();
         }
 
-        if (isset($this->filters['saved_artists'])) {
-
-            $favoriteArtistIds = $this->userService->getFavoriteArtistIds($this->user->id);
-
-            $this->search->where('artist_id', 'in', $favoriteArtistIds);
+        if (isset($this->filters['near_me'])) {
+            $this->buildGeoParam();
         }
 
-        if (isset($this->filters['studio_id'])) {
-            $this->search->where('studio.id', $this->filters['studio_id']);
+        if (isset($this->filters['near_location'])) {
+            $this->buildGeoParam('location_lat_long', $this->filters['near_location']);
         }
 
-        if (isset($this->filters['saved_tattoos'])) {
-
-            $favoriteTattooIds = $this->userService->getFavoriteTattooIds($this->user->id);
-
-            $this->search->where('id', 'in', $favoriteTattooIds);
+        if (isset($this->filters['studio_near_me'])) {
+            $this->buildGeoParam('studio.location_lat_long');
         }
 
-        /* distance related params */
-        if($this->user) {
-            if (isset($this->filters['useAnyLocation']) && !$this->filters['useAnyLocation']) {
-                if (isset($this->filters['useMyLocation']) && $this->filters['useMyLocation']) {
-                    $this->latLongString = $this->user->location_lat_long;
-                } else {
-                    $this->latLongString = $this->filters['locationCoords'];
-                }
+        if (isset($this->filters['studio_near_location'])) {
+            $this->buildGeoParam('studio.location_lat_long', $this->filters['studio_near_location']);
+        }
 
-                if (isset($this->filters['subject']) && $this->filters['subject'] == 'studio') {
-                    $distanceParam = 'studio.location_lat_long';
-                } else {
-                    $distanceParam = 'artist.location_lat_long';
-                }
+        // Handle distance-based filtering with coordinates
+        // Skip distance filtering if user wants "anywhere" (useAnyLocation: true)
+        if ($this->user && !(isset($this->filters['useAnyLocation']) && $this->filters['useAnyLocation'])) {
+            if (isset($this->filters['useMyLocation']) && $this->filters['useMyLocation']) {
+                $this->latLongString = $this->user->location_lat_long;
+            } elseif (isset($this->filters['locationCoords'])) {
+                $this->latLongString = $this->filters['locationCoords'];
+            }
 
+            if ($this->latLongString) {
+                $distanceParam = $this->getDistanceField();
                 $this->buildDistanceParam($distanceParam, $this->latLongString);
             }
         }
-
-        return $this->search->get();
     }
 
-    public function search_artist($filters)
+    /**
+     * Get the field to use for distance calculations - can be overridden by child classes
+     */
+    protected function getDistanceField(): string
     {
-        $this->search = Artist::search();
-        $this->filters = $filters;
-
-        if (isset($this->filters['user_id'])) {
-            $this->user = $this->userService->getById($filters['user_id']);
+        if ($this->searchContext === SearchContext::TATTOO) {
+            return 'artist.location_lat_long';
         }
-
-        if (isset($this->filters['search_text'])) {
-            $this->search->whereMulti(['name', 'about', 'studio_name'], 'or', $this->filters['search_text']);
-        }
-
-        if (isset($this->filters['studio_id'])) {
-            $this->buildStudioParam();
-        }
-
-        if (isset($this->filters['styles'])) {
-            $this->buildStylesParam();
-        }
-
-        if (isset($this->filters['saved_artists'])) {
-
-            $favoriteArtistIds = $this->userService->getFavoriteArtistIds($this->user->id);
-
-            $this->search->where('id', 'in', $favoriteArtistIds);
-        }
-
-        if (isset($this->filters['artist_near_me']) && $this->filters['artist_near_me']) {
-            $distanceParam = 'location_lat_long';
-            $this->buildDistanceParam($distanceParam);
-        }
-
-        if (isset($this->filters['artist_near_location']) && $this->filters['artist_near_location']) {
-            $this->buildDistanceParam('location_lat_long', $this->filters['location_lat_long']);
-        }
-
-        if (isset($this->filters['studio_near_me']) && $this->filters['studio_near_me']) {
-            $this->buildDistanceParam('studio.location_lat_long');
-        }
-
-        if (isset($this->filters['studio_near_location']) && $this->filters['studio_near_location']) {
-            $this->buildDistanceParam('studio.location_lat_long', $this->filters['location_lat_long']);
-        }
-
-        return $this->search->get();
+        return 'location_lat_long';
     }
+
+    /**
+     * Build geo sorting parameter
+     */
+    protected function buildGeoParam($field = 'location_lat_long', string $latLongString = null): void
+    {
+        try {
+            if (empty($latLongString) && isset($this->user)) {
+                $latLongArray = explode(",", $this->user->location_lat_long);
+            } else {
+                $latLongArray = explode(",", $latLongString);
+            }
+
+            if (count($latLongArray) >= 2) {
+                $data = [
+                    'field' => $field,
+                    'lat' => $latLongArray[0],
+                    'lon' => $latLongArray[1]
+                ];
+
+                $this->search->geoSort($data);
+            }
+        } catch (\Exception $e) {
+            \Log::error("Unable to build geo param", [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+                'user_id' => $this->user->id ?? "user not found",
+            ]);
+        }
+    }
+
+    /**
+     * Build studio parameter filter
+     */
+    protected function buildStudioParam(): void
+    {
+        $this->search->where('studio.id', $this->filters['studio_id']);
+    }
+
+    /**
+     * Build styles parameter filter
+     */
+    protected function buildStylesParam($minMatch = 1): void
+    {
+        $clauses = [];
+        $styles = $this->filters['styles'];
+
+        // Ensure styles is always an array
+        if (!is_array($styles)) {
+            $styles = [$styles];
+        }
+
+        // Build clauses for each style
+        foreach ($styles as $style) {
+            if ($style) {
+                $clauses[] = ['styles.id', '=', $style];
+            }
+        }
+
+        if (count($clauses) > 0) {
+            $this->search->orWhere($clauses, $minMatch);
+        }
+    }
+
 
     private function buildDistanceParam($field = 'location_lat_long', string $latLongString = null): void
     {
@@ -167,23 +217,6 @@ class SearchService
         }
     }
 
-    public function initialUserResults($user_id)
-    {
-        //home page initial search will return tattoo results
-        //either tattoos in saved styles OR artists user has saved OR artists near location, sorted by new
-        $this->search = Tattoo::search();
-
-        $this->user = $this->userService->getById($user_id);
-
-        $this->getInitialNestedUserQuery();
-
-        //TODO get some pagination in here
-        $this->search->size($this->search->count());
-
-        //TODO add sort for newest posted
-        return $this->search->get();
-
-    }
 
     private function buildGeoSort($field = 'location_lat_long', string $latLongString = null)
     {
@@ -214,29 +247,6 @@ class SearchService
         }
     }
 
-    protected function buildStudioParam()
-    {
-        $this->search->where('studio.id', $this->filters['studio_id']);
-    }
-
-    protected function buildStylesParam($minMatch = 1): void
-    {
-        $clauses = [];
-
-        $styles = $this->filters['styles'];
-
-        $styles = !is_array($styles) ? [$styles] : $styles;
-
-        //if exact, can set minMatch to count of styles
-        foreach ($styles as $style) {
-            if ($style) {
-                $clauses[] = ['styles.id', '=', $style];
-            }
-        }
-        if (count($clauses) > 0) {
-            $this->search->orWhere($clauses, $minMatch);
-        }
-    }
 
     private function buildDistanceOrSavedArtists()
     {
@@ -326,6 +336,38 @@ class SearchService
         $response['bool']['must'] = $this->search->whereDistanceSyntax('artist.location_lat_long', $latLongArray[0], $latLongArray[1], '25mi');
 
         return $response;
+    }
+
+    /**
+     * Build search string filter for specified model and fields
+     *
+     * @param string $modelClass The model class name (e.g., 'Artist', 'Tattoo')
+     * @param array $fields Array of field names to search in
+     * @param string $searchString The search string to filter by (optional, uses $this->filters['searchString'] if not provided)
+     * @param int $minMatch Minimum number of matches required (default: 1)
+     */
+    protected function buildSearchStringFilter(string $modelClass, array $fields, string $searchString = null, int $minMatch = 1): void
+    {
+        // Use provided search string or get from filters
+        $searchText = $searchString ?? ($this->filters['searchString'] ?? null);
+
+        if (empty($searchText) || empty($fields)) {
+            return;
+        }
+
+        // Get the full model class with namespace
+        $fullModelClass = "App\\Models\\{$modelClass}";
+
+        // Create a generic search object to construct clauses we need
+        $query = $fullModelClass::search();
+
+        // Build OR conditions for each field
+        foreach ($fields as $field) {
+            $query->wherePrefix($field, $searchText, 'all_of', true);
+        }
+
+        // Add the OR query to the main search with minimum match
+        $this->search->orWhere($query, $minMatch);
     }
 
 }
