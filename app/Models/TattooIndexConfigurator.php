@@ -148,6 +148,7 @@ class TattooIndexConfigurator extends IndexConfigurator
             'studio' => Datatypes::KEYWORD,
             'type' => Datatypes::KEYWORD,
             'styles' => self::STYLE,
+            'username' => Datatypes::TEXT,
         ],
     ];
 
@@ -157,7 +158,9 @@ class TattooIndexConfigurator extends IndexConfigurator
         'properties' => [
             'id' => Datatypes::INTEGER,
             'artist_id' => Datatypes::KEYWORD,
+            'artist_name' => Datatypes::TEXT,
             'studio_id' => Datatypes::KEYWORD,
+            'studio_name' => Datatypes::TEXT,
             'title' => Datatypes::KEYWORD,
             'description' => Datatypes::TEXT,
             'placement' => Datatypes::KEYWORD,
@@ -168,6 +171,7 @@ class TattooIndexConfigurator extends IndexConfigurator
             'primary_image' => self::IMAGE,
             'images' => self::IMAGE,
             'styles' => self::STYLE,
+            'artist_username' => Datatypes::TEXT,
 
             'tags' => [
                 'type' => 'keyword',

@@ -9,17 +9,12 @@ use App\Models\Image;
 /**
  *
  */
-class ArtistService
+class ArtistService extends SearchService
 {
-
-    private $filters = [];
-    private $search;
-    private $user;
-
     public function __construct(
         protected UserService $userService
-    )
-    {
+    ) {
+        parent::__construct($userService);
     }
 
     /**
@@ -30,151 +25,56 @@ class ArtistService
         return Artist::paginate(25);
     }
 
-    public function search($params)
+    /**
+     * Get the search context for this service
+     */
+    protected function getSearchContext(): string
     {
-        $this->filters = $params;
+        return 'artist';
+    }
 
-        if (isset($this->filters['user_id'])) {
-            $this->user = $this->userService->getById($this->filters['user_id']);
-        }
-
-        //initialize the elastic query
+    /**
+     * Initialize the search object for artists
+     */
+    protected function initializeSearch()
+    {
         $this->search = Artist::search();
+    }
 
-        if (isset($this->filters['studio_id'])) {
-            $this->buildStudioParam();
-        }
-
-        if (isset($this->filters['styles'])) {
-            // Ensure styles is always an array
-            if (!is_array($this->filters['styles'])) {
-                $this->filters['styles'] = [$this->filters['styles']];
-            }
-            // Only build styles param if array is not empty
-            if (!empty($this->filters['styles'])) {
-                $this->buildStylesParam();
-            }
-        }
-
-        if (isset($this->filters['near_me'])) {
-            $this->buildGeoParam();
-        }
-
-        if (isset($this->filters['near_location'])) {
-            $this->buildGeoParam('location_lat_long', $this->filters['near_location']);
-        }
-
-        if (isset($this->filters['studio_near_me'])) {
-            $this->buildGeoParam('studio.location_lat_long');
-        }
-
-        if (isset($this->filters['studio_near_location'])) {
-            $this->buildGeoParam('studio.location_lat_long', $this->filters['studio_near_location']);
-        }
-
+    /**
+     * Apply artist-specific filters
+     */
+    protected function applySpecificFilters()
+    {
         if (isset($this->filters['searchString'])) {
-            $string = $this->filters['searchString'];
-
-            //get array of OR conditions for us to search artist name, studio_name or artist username
-            $query = Artist::search(); //generic search object to construct clauses we need
-
-            $orFields = [
-                'name',
-                'studio_name',
-            ];
-
-            //todo fix username
-
-            foreach ($orFields as $field) {
-                $query->wherePrefix($field, $string, 'all_of', true);
-            }
-
-            //todo do we want fuzzy search on the name?
-
-            $this->search->orWhere(
-                $query, 1
-            );
-        }
-
-        //TODO in future let user decide their preference, always closest?
-        // $this->search->geoSort('studio.id', 'desc');
-
-        $response = $this->search->get();
-
-        return $response;
-
-    }
-
-    private function buildGeoParam($field = 'location_lat_long', string $latLongString = null): void
-    {
-        //TODO add filter on distances
-        //we need the current User's location to get this
-        try {
-            if (empty($latLongString)) {
-                $latLongArray = explode(",", $this->user?->location_lat_long);
-            } else {
-                $latLongArray = explode(",", $latLongString);
-            }
-
-            if (count($latLongArray) > 1) {
-
-                $data = [
-                    'field' => $field,
-                    'lat' => $latLongArray[0],
-                    'lon' => $latLongArray[1]
-                ];
-
-                $this->search->geoSort($data);
-            }
-
-        } catch (\Exception $e) {
-            \Log::error("Unable to build geo param", [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'user_id' => $this->user->id ?? "user not found",
-            ]);
-        }
-    }
-
-    protected function buildStudioParam(): void
-    {
-        $this->search->where('studio.id', $this->filters['studio_id']);
-    }
-
-    private function buildStylesParam($minMatch = 1): void
-    {
-        $clauses = [];
-
-        //if exact, can set minMatch to count of styles
-        foreach ($this->filters['styles'] as $style) {
-            if ($style) {
-                $clauses[] = ['styles.id', '=', $style];
-            }
-        }
-
-        if (count($clauses) > 0) {
-            $this->search->orWhere($clauses, $minMatch);
+            $this->buildArtistSearchStringFilter();
         }
     }
 
     /**
+     * Build search string filter for artist-specific fields
+     */
+    private function buildArtistSearchStringFilter()
+    {
+        $searchFields = [
+            'name',
+            'studio_name',
+            // 'username' // TODO: fix username field when available
+        ];
+
+        // Use the shared method from base class
+        $this->buildSearchStringFilter('Artist', $searchFields);
+    }
+
+
+    /**
      * @param int $id
+     * @param string $model
      * @return void|Artist
      */
-    public function getById($id)
+    public function getById($id, $model = 'artist')
     {
-        if ($id) {
-            $this->search = Artist::search();
-
-            $this->search->where('id', $id);
-
-            $response = $this->search->get();
-
-            return collect($response)->first();
-        }
-
-        return null;
+        return parent::getById($id, $model);
     }
 
     /**
