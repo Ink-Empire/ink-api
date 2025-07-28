@@ -78,8 +78,8 @@ class TattooService extends SearchService
         $searchFields = [
             'description',
            // 'tags',
-            'artist.name',  // Search in artist name
-            'artist.studio'   // Search in studio name
+            'artist_name',  // Search in artist name
+            'studio_name'   // Search in studio name
         ];
 
         // Use the shared method from base class

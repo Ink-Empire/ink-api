@@ -3,12 +3,8 @@
 namespace App\Services;
 
 use App\Enums\SearchContext;
-use App\Models\Artist;
 use App\Models\Tattoo;
-use App\Models\User;
 use App\Util\StringToModel;
-use Illuminate\Support\Collection;
-use Larelastic\Elastic\Facades\Elastic;
 
 abstract class SearchService
 {
