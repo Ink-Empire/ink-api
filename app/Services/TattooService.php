@@ -2,7 +2,6 @@
 
 namespace App\Services;
 
-
 use App\Exceptions\TattooNotFoundException;
 use App\Models\Tattoo;
 use App\Models\User;
@@ -10,15 +9,13 @@ use App\Models\User;
 /**
  *
  */
-class TattooService
+class TattooService extends SearchService
 {
-    private $filters = [];
-    private $search;
-    private $user;
-
-
-    public function __construct(public ImageService $imageService)
-    {
+    public function __construct(
+        protected UserService $userService,
+        public ImageService $imageService
+    ) {
+        parent::__construct($userService);
     }
 
     public function upload(array $files, User $user): Array
@@ -43,54 +40,91 @@ class TattooService
         return $images;
     }
 
-    public function search($params)
+    /**
+     * Get the search context for this service
+     */
+    protected function getSearchContext(): string
     {
-        $this->filters = $params;
+        return 'tattoo';
+    }
 
-        //initialize the elastic query
+    /**
+     * Initialize the search object for tattoos
+     */
+    protected function initializeSearch()
+    {
         $this->search = Tattoo::search();
+    }
 
-        if (isset($this->filters['studio_id'])) {
-            $this->buildStudioParam();
+    /**
+     * Apply tattoo-specific filters
+     */
+    protected function applySpecificFilters()
+    {
+        if (isset($this->filters['searchString'])) {
+            $this->buildTattooSearchStringFilter();
         }
 
-        if (isset($this->filters['styles'])) {
-            $this->buildStylesParam();
+        if (isset($this->filters['search_text'])) {
+            $this->buildTattooSearchTextFilter();
+        }
+    }
+
+    /**
+     * Build search string filter for tattoo-specific fields
+     */
+    private function buildTattooSearchStringFilter()
+    {
+        $searchFields = [
+            'description',
+           // 'tags',
+            'artist_name',  // Search in artist name
+            'studio_name'   // Search in studio name
+        ];
+
+        // Use the shared method from base class
+        $this->buildSearchStringFilter('Tattoo', $searchFields);
+    }
+
+    /**
+     * Build search text filter (legacy support for existing functionality)
+     */
+    private function buildTattooSearchTextFilter()
+    {
+        $searchText = $this->filters['search_text'];
+
+        if (empty($searchText)) {
+            return;
         }
 
-        if (isset($this->filters['near_me'])) {
-            $this->buildGeoParam();
-        }
+        $query = Tattoo::search();
+        $query->wherePrefix('description', $searchText);
+        $query->where('tags', 'in', [$searchText]);
 
-        if (isset($this->filters['near_location'])) {
-            $this->buildGeoParam('location_lat_long', $this->filters['near_location']);
-        }
-
-        if (isset($this->filters['studio_near_me'])) {
-            $this->buildGeoParam('studio.location_lat_long');
-        }
-
-        if (isset($this->filters['studio_near_location'])) {
-            $this->buildGeoParam('studio.location_lat_long', $this->filters['studio_near_location']);
-        }
-
-        //TODO in future let user decide their preference, always closest?
-        // $this->search->geoSort('studio.id', 'desc');
-
-        return $this->search->get();
+        $this->search->orWhere($query, 1);
     }
 
     /**
      * @param int $id
+     * @param string $model
      * @return void|Tattoo
      */
-    public function getById(int $id)
+    public function getById($id, $model = 'tattoo')
     {
+        // Use Eloquent for simple ID lookups, Elasticsearch for more complex queries
         if ($id) {
             return Tattoo::where('id', $id)->first();
         }
 
         return null;
+    }
+
+    /**
+     * Get tattoo by ID using Elasticsearch (for consistency with search functionality)
+     */
+    public function getByIdElastic(int $id)
+    {
+        return parent::getById($id, 'tattoo');
     }
 
     public function setPrimaryImage($id, $image)
@@ -107,53 +141,4 @@ class TattooService
         return $tattoo;
     }
 
-    //todo move to either trait or searchService
-    private function buildGeoParam($field = 'location_lat_long', string $latLongString = null): void
-    {
-        //TODO add filter on distances
-        //we need the current User's location to get this
-        try {
-            if (empty($latLongString)) {
-                $latLongArray = explode(",", $this->user->location_lat_long);
-            } else {
-                $latLongArray = explode(",", $latLongString);
-            }
-
-            $data = [
-                'field' => $field,
-                'lat' => $latLongArray[0],
-                'lon' => $latLongArray[1]
-            ];
-
-            $this->search->geoSort($data);
-
-        } catch (\Exception $e) {
-            \Log::error("Unable to build geo param", [
-                'error' => $e->getMessage(),
-                'line' => $e->getLine(),
-                'file' => $e->getFile(),
-                'user_id' => $this->user->id ?? "user not found",
-            ]);
-        }
-    }
-
-    protected function buildStudioParam(): void
-    {
-        $this->search->where('studio.id', $this->filters['studio_id']);
-    }
-
-    private function buildStylesParam($minMatch = 1): void
-    {
-        $clauses = [];
-
-        //if exact, can set minMatch to count of styles
-        foreach ($this->filters['styles'] as $style) {
-            if ($style) {
-                $clauses[] = ['styles.id', '=', $style];
-            }
-        }
-        if (count($clauses) > 0) {
-            $this->search->orWhere($clauses, $minMatch);
-        }
-    }
 }

@@ -10,7 +10,6 @@ use App\Models\ArtistSettings;
 use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
-use App\Services\SearchService;
 use App\Util\ModelLookup;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,8 +21,7 @@ class ArtistController extends Controller
 {
     public function __construct(
         protected ArtistService $artistService,
-        protected ImageService  $imageService,
-        protected SearchService $searchService
+        protected ImageService  $imageService
     )
     {
     }
@@ -63,7 +61,7 @@ class ArtistController extends Controller
             $artist = ModelLookup::findArtist($id);
             return $this->returnResponse('artist', new ArtistResource($artist));
         }
-        $artist = $this->searchService->getById($id, 'artist');
+        $artist = $this->artistService->getById($id);
 
         return $this->returnResponse('artist', $artist);
     }
