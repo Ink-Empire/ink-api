@@ -45,9 +45,14 @@ class AppointmentController extends Controller
             return response()->json(['error' => 'User not found'], 404);
         }
 
+        // Only show appointments where the user has unread messages as a recipient
         $appointments = $user->appointmentsWithStatus([$status])
             ->with('messages')
             ->with(['client', 'artist'])
+            ->whereHas('messages', function($query) use ($user_id) {
+                $query->where('recipient_id', $user_id)
+                      ->whereNull('read_at');
+            })
             ->get();
 
         return RawAppointmentResource::collection($appointments);
