@@ -40,5 +40,6 @@ class VerifyCsrfToken extends Middleware
         '/api/register',
         '/api/logout',
         '/api/username',
+        '/api/users/favorites/tattoo'
     ];
 }

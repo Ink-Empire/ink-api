@@ -127,25 +127,31 @@ class UserController extends Controller
     /**
      * @return JsonResponse
      */
-    public function updateFavorite(Request $request, $type)
+    public function addFavorite(Request $request, $type)
     {
         $ids = collect($request->get('ids'))->toArray();
         $user = $request->user();
 
-        //get relationship to user from class name
+        //is this a tattoo or artist?
         $relationship = UserRelationships::getRelationship($type);
 
-        //existing favorites
-        $favorites = $user->{$relationship}()->pluck('artist_id')->toArray();
-
-        //find any that are in both array
-        $existingIds = array_intersect($ids, $favorites);
-        //detach them if they've been sent again
-        $user->{$relationship}()->detach($existingIds);
-
         //sync the new ones
-        $ids = array_diff($ids, $existingIds);
         $user->{$relationship}()->syncWithoutDetaching($ids);
+
+        $user->save();
+
+        return $this->returnResponse(UserTypes::USER, new UserResource($user));
+    }
+
+    public function removeFavorite(Request $request, $type)
+    {
+        $id = $request->route('id');
+        $user = $request->user();
+
+        $relationship = UserRelationships::getRelationship($type);
+
+        //detach the item
+        $user->{$relationship}()->detach($id);
 
         $user->save();
 
