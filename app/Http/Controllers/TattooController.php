@@ -13,6 +13,7 @@ use App\Models\Tattoo;
 use App\Models\User;
 use App\Services\ImageService;
 use App\Services\TattooService;
+use App\Services\TagService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -29,7 +30,8 @@ class TattooController extends Controller
     public function __construct(
         protected TattooService $tattooService,
         protected ImageService  $imageService,
-        protected UserService   $userService
+        protected UserService   $userService,
+        protected TagService $tattooTagService
     )
     {
     }
@@ -75,6 +77,61 @@ class TattooController extends Controller
         return $this->returnElasticResponse($response);
     }
 
+    /**
+     * Generate AI tags for a specific tattoo
+     */
+    public function generateTags(Request $request, $id): JsonResponse
+    {
+        try {
+            $tattoo = Tattoo::with(['images', 'tags'])->find($id);
+
+            if (!$tattoo) {
+                return $this->returnErrorResponse('Tattoo not found', 'The specified tattoo does not exist.');
+            }
+
+            if ($tattoo->images->count() === 0) {
+                return $this->returnErrorResponse('No images', 'This tattoo has no images to analyze.');
+            }
+
+            // Check if user owns this tattoo or is admin
+            $user = $request->user();
+            if ($user->id !== $tattoo->artist_id && $user->type_id !== 1) { // Assuming type_id 1 is admin
+                return $this->returnErrorResponse('Unauthorized', 'You can only generate tags for your own tattoos.');
+            }
+
+            $regenerate = $request->boolean('regenerate', false);
+
+            $tags = $regenerate
+                ? $this->tattooTagService->regenerateTagsForTattoo($tattoo)
+                : $this->tattooTagService->generateTagsForTattoo($tattoo);
+
+            if (count($tags) === 0 && !$regenerate && $tattoo->tags->count() > 0) {
+                return $this->returnResponse('tags', [
+                    'message' => 'Tattoo already has tags. Use regenerate=true to create new ones.',
+                    'existing_tags' => $tattoo->tags->pluck('tag')->toArray()
+                ]);
+            }
+
+            // Re-index the tattoo for search
+            $tattoo->searchable();
+
+            return $this->returnResponse('tags', [
+                'message' => 'Tags generated successfully',
+                'tags' => collect($tags)->pluck('tag')->toArray(),
+                'count' => count($tags)
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate tags for tattoo', [
+                'tattoo_id' => $id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            return $this->returnErrorResponse('Tag generation failed', $e->getMessage());
+        }
+    }
+
     public function create(Request $request): JsonResponse|TattooResource
     {
         try {
@@ -115,11 +172,32 @@ class TattooController extends Controller
                     'primary_style_id' => $primaryStyleId,
                 ]);
 
-                $tattoo->images()->attach(collect($images)->pluck('id'));
+                // Attach ALL images to the pivot table (including the primary image)
+                $imageIds = collect($images)->pluck('id')->toArray();
+                
+                // Ensure primary image is definitely included in the pivot table
+                if (!in_array($primaryImage->id, $imageIds)) {
+                    $imageIds[] = $primaryImage->id;
+                }
+                
+                $tattoo->images()->attach($imageIds);
 
                 // Attach all selected styles to the tattoo
                 if (!empty($styleIds)) {
                     $tattoo->styles()->attach($styleIds);
+                }
+
+                // Generate AI tags for the tattoo images
+                try {
+                    $tattoo->load('images');
+                    $this->tattooTagService->generateTagsForTattoo($tattoo);
+                    \Log::info("AI tags generated for tattoo", ['tattoo_id' => $tattoo->id]);
+                } catch (\Exception $e) {
+                    // Don't fail the entire request if tag generation fails
+                    \Log::error("Failed to generate AI tags for tattoo", [
+                        'tattoo_id' => $tattoo->id,
+                        'error' => $e->getMessage()
+                    ]);
                 }
 
                 $tattoo->searchable(); //this is likely unnecessary, but we will need to re-index the tattoo

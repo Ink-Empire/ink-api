@@ -64,10 +64,6 @@ class TattooService extends SearchService
         if (isset($this->filters['searchString'])) {
             $this->buildTattooSearchStringFilter();
         }
-
-        if (isset($this->filters['search_text'])) {
-            $this->buildTattooSearchTextFilter();
-        }
     }
 
     /**
@@ -77,31 +73,12 @@ class TattooService extends SearchService
     {
         $searchFields = [
             'description',
-           // 'tags',
             'artist_name',  // Search in artist name
             'studio_name'   // Search in studio name
         ];
 
         // Use the shared method from base class
         $this->buildSearchStringFilter('Tattoo', $searchFields);
-    }
-
-    /**
-     * Build search text filter (legacy support for existing functionality)
-     */
-    private function buildTattooSearchTextFilter()
-    {
-        $searchText = $this->filters['search_text'];
-
-        if (empty($searchText)) {
-            return;
-        }
-
-        $query = Tattoo::search();
-        $query->wherePrefix('description', $searchText);
-        $query->where('tags', 'in', [$searchText]);
-
-        $this->search->orWhere($query, 1);
     }
 
     /**

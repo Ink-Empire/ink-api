@@ -362,8 +362,10 @@ abstract class SearchService
             $query->wherePrefix($field, $searchText, 'all_of', true);
         }
 
+        //now check tags
+        $query->where('tags', 'in', [$searchText]);
+
         // Add the OR query to the main search with minimum match
         $this->search->orWhere($query, $minMatch);
     }
-
 }
