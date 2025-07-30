@@ -83,7 +83,8 @@ class Tattoo extends Model
             'studio',
             'images',
             'primary_style',
-            'styles'
+            'styles',
+            'tags'
         ]);
 
         return $query;
@@ -102,6 +103,7 @@ class Tattoo extends Model
             'images',
             'primary_style',
             'styles',
+            'tags',
         ];
 
         $this->loadMissing($with);
