@@ -35,7 +35,8 @@ Route::prefix('api')->group(function () {
         Route::group(['prefix' => 'users'], function () {
             Route::post('profile-photo', [UserController::class, 'upload']);
             Route::put('/{id}', [UserController::class, 'update']);
-            Route::post('/favorites/{type}', [UserController::class, 'updateFavorite']);
+            Route::post('/favorites/{type}', [UserController::class, 'addFavorite']);
+            Route::delete('/favorites/{type}/{id}', [UserController::class, 'removeFavorite']);
             Route::get('/{id}', [UserController::class, 'getById']);
         });
 
