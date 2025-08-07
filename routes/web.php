@@ -19,9 +19,7 @@ use Illuminate\Support\Facades\Route;
 */
 
 Route::get('/test', function () {
-    $artist = \App\Models\Artist::find(4);
-
-    $artist->searchable();
+   return "hello";
 });
 
 Route::prefix('api')->group(function () {
