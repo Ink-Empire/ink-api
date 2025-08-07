@@ -3,6 +3,20 @@
 use Illuminate\Support\Facades\Facade;
 use Illuminate\Support\ServiceProvider;
 
+/**
+ * Conditionally load service providers based on environment
+ */
+function conditional_providers() {
+    $providers = [];
+    
+    // Load Telescope only in local environment
+    if (env('APP_ENV') === 'local') {
+        $providers[] = App\Providers\TelescopeServiceProvider::class;
+    }
+    
+    return $providers;
+}
+
 return [
 
     /*
@@ -169,7 +183,7 @@ return [
         // App\Providers\BroadcastServiceProvider::class,
         App\Providers\EventServiceProvider::class,
         App\Providers\RouteServiceProvider::class,
-        App\Providers\TelescopeServiceProvider::class
+        ...conditional_providers()
     ])->toArray(),
 
     /*
