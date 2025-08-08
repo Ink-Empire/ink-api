@@ -4,6 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Elasticsearch\ClientBuilder;
+use App\Services\AwsElasticsearchService;
 use Exception;
 
 class TestElasticsearchConnection extends Command
@@ -31,29 +32,15 @@ class TestElasticsearchConnection extends Command
         $this->newLine();
         
         try {
-            // Create client with debug logging
-            $clientBuilder = ClientBuilder::create()
-                ->setHosts($hosts)
-                ->setConnectionParams([
-                    'timeout' => $timeout,
-                    'connect_timeout' => $connectTimeout,
-                ])
-                ->setSSLVerification(false)
-                ->setLogger(\Illuminate\Support\Facades\Log::getLogger());
-                
-            $client = $clientBuilder->build();
+            $this->info('Testing with AWS IAM authentication...');
+            $awsService = new AwsElasticsearchService();
             
-            $this->info('Testing cluster health...');
             $startTime = microtime(true);
-            
-            $response = $client->cluster()->health([
-                'timeout' => $timeout . 's'
-            ]);
-            
+            $response = $awsService->testConnection();
             $endTime = microtime(true);
             $duration = round(($endTime - $startTime) * 1000, 2);
             
-            $this->info("✅ Connection successful! ({$duration}ms)");
+            $this->info("✅ AWS Connection successful! ({$duration}ms)");
             $this->line('Response: ' . json_encode($response, JSON_PRETTY_PRINT));
             
         } catch (Exception $e) {
