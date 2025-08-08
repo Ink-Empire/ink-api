@@ -3,14 +3,11 @@
 return [
     'client' => [
         'hosts' => [
-            [
-                'host' => str_replace(['http://', 'https://'], '', env('ELASTICSEARCH_HOST', 'localhost')),
-                'port' => env('ELASTICSEARCH_PORT', 9200),
-                'scheme' => env('ELASTICSEARCH_SCHEME', 'http'),
-                'user' => env('ELASTICSEARCH_USERNAME'),
-                'pass' => env('ELASTICSEARCH_PASSWORD'),
-            ]
+            env('ELASTICSEARCH_SCHEME', 'http') . '://' . str_replace(['http://', 'https://'], '', env('ELASTICSEARCH_HOST', 'localhost')) . ':' . env('ELASTICSEARCH_PORT', 9200)
         ],
+        'host' => str_replace(['http://', 'https://'], '', env('ELASTICSEARCH_HOST', 'localhost')),
+        'port' => env('ELASTICSEARCH_PORT', 9200),
+        'scheme' => env('ELASTICSEARCH_SCHEME', 'http'),
         'auth_string' => env('ELASTICSEARCH_USERNAME') && env('ELASTICSEARCH_PASSWORD')
             ? env('ELASTICSEARCH_SCHEME', 'https') . '://' . env('ELASTICSEARCH_USERNAME') . ":" . env('ELASTICSEARCH_PASSWORD') . "@" . str_replace(['http://', 'https://'], '', env('ELASTICSEARCH_HOST', 'localhost')) . ":" . env('ELASTICSEARCH_PORT', '443')
             : null,
