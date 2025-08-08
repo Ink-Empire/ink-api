@@ -4,7 +4,7 @@ namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
 use Elasticsearch\ClientBuilder;
-use App\Services\AwsElasticsearchService;
+use App\Services\ElasticsearchService;
 use Exception;
 
 class TestElasticsearchConnection extends Command
@@ -22,9 +22,17 @@ class TestElasticsearchConnection extends Command
         $password = config('elastic.client.password');
         $timeout = config('elastic.client.timeout_in_seconds', 30);
         $connectTimeout = config('elastic.client.connect_timeout_in_seconds', 10);
+        $awsKey = config('services.aws.key');
+        
+        // Debug host parsing
+        $host = config('elastic.client.host', 'localhost');
+        $isAws = $awsKey && strpos($host, 'amazonaws.com') !== false;
         
         $this->info('Configuration:');
-        $this->line('Hosts: ' . json_encode($hosts));
+        $this->line('Raw Hosts: ' . json_encode($hosts));
+        $this->line('Parsed Host: ' . $host);
+        $this->line('AWS Key: ' . ($awsKey ? 'Set (' . substr($awsKey, 0, 8) . '...)' : 'Not set'));
+        $this->line('Is AWS: ' . ($isAws ? 'Yes' : 'No'));
         $this->line('Username: ' . ($username ? 'Set' : 'Not set'));
         $this->line('Password: ' . ($password ? 'Set' : 'Not set'));
         $this->line('Timeout: ' . $timeout . 's');
@@ -32,15 +40,18 @@ class TestElasticsearchConnection extends Command
         $this->newLine();
         
         try {
-            $this->info('Testing with AWS IAM authentication...');
-            $awsService = new AwsElasticsearchService();
+            $this->info('Testing Elasticsearch connection (auto-detects AWS vs standard)...');
+            $service = app(ElasticsearchService::class);
             
             $startTime = microtime(true);
-            $response = $awsService->testConnection();
+            
+            // Test cluster health
+            $response = $service->getClient()->cluster()->health();
+            
             $endTime = microtime(true);
             $duration = round(($endTime - $startTime) * 1000, 2);
             
-            $this->info("✅ AWS Connection successful! ({$duration}ms)");
+            $this->info("✅ Connection successful! ({$duration}ms)");
             $this->line('Response: ' . json_encode($response, JSON_PRETTY_PRINT));
             
         } catch (Exception $e) {

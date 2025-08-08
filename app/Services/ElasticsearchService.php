@@ -12,13 +12,32 @@ class ElasticsearchService
 
     public function __construct()
     {
-        // Get hosts configuration
-        $hosts = config('elastic.client.hosts');
+        $this->index = config('elastic.client.index', 'tattoos');
+        
+        // Check if we're using AWS OpenSearch (has AWS credentials and proper host)
+        $host = config('elastic.client.host', 'localhost');
+        $isAws = config('services.aws.key') && strpos($host, 'amazonaws.com') !== false;
+        
+        if ($isAws) {
+            $this->initializeAwsClient();
+        } else {
+            $this->initializeStandardClient();
+        }
+    }
+    
+    private function initializeAwsClient()
+    {
+        $host = config('elastic.client.host');
+        $region = config('services.aws.region', 'us-east-1');
+        
+        // Use AWS credentials
+        $provider = \Aws\Credentials\CredentialProvider::defaultProvider();
+        $credentials = $provider()->wait();
         
         $clientBuilder = ClientBuilder::create()
-            ->setHosts($hosts);
+            ->setHosts(['https://' . $host])
+            ->setHandler($this->createAwsHandler($credentials, $region));
             
-        // Set timeout values
         if ($timeout = config('elastic.client.timeout_in_seconds')) {
             $clientBuilder->setConnectionParams([
                 'timeout' => $timeout,
@@ -26,13 +45,62 @@ class ElasticsearchService
             ]);
         }
         
-        // For AWS OpenSearch, add SSL verification settings
+        $this->client = $clientBuilder->build();
+    }
+    
+    private function initializeStandardClient()
+    {
+        $hosts = config('elastic.client.hosts');
+        
+        $clientBuilder = ClientBuilder::create()
+            ->setHosts($hosts);
+            
+        if ($timeout = config('elastic.client.timeout_in_seconds')) {
+            $clientBuilder->setConnectionParams([
+                'timeout' => $timeout,
+                'connect_timeout' => config('elastic.client.connect_timeout_in_seconds', 10)
+            ]);
+        }
+        
         if (config('elastic.client.username') && config('elastic.client.password')) {
-            $clientBuilder->setSSLVerification(false); // May be needed for AWS OpenSearch
+            $clientBuilder->setSSLVerification(false);
         }
         
         $this->client = $clientBuilder->build();
-        $this->index = config('elastic.client.index', 'default');
+    }
+    
+    private function createAwsHandler($credentials, $region)
+    {
+        return function (array $request) use ($credentials, $region) {
+            $signer = new \Aws\Signature\SignatureV4('es', $region);
+            $guzzleClient = new \GuzzleHttp\Client();
+            
+            $psrRequest = new \GuzzleHttp\Psr7\Request(
+                $request['http_method'],
+                $request['uri'],
+                $request['headers'] ?? [],
+                $request['body'] ?? ''
+            );
+            
+            $signedRequest = $signer->signRequest($psrRequest, $credentials);
+            
+            try {
+                $response = $guzzleClient->send($signedRequest, [
+                    'timeout' => config('elastic.client.timeout_in_seconds', 30),
+                    'connect_timeout' => config('elastic.client.connect_timeout_in_seconds', 10)
+                ]);
+                
+                return [
+                    'status' => $response->getStatusCode(),
+                    'reason' => $response->getReasonPhrase(),
+                    'body' => (string) $response->getBody(),
+                    'headers' => $response->getHeaders(),
+                ];
+            } catch (\Exception $e) {
+                Log::error('AWS OpenSearch request failed: ' . $e->getMessage());
+                throw $e;
+            }
+        };
     }
 
     public function createIndex($indexName = null)
@@ -209,5 +277,10 @@ class ElasticsearchService
             Log::error('Failed to bulk index documents in Elasticsearch: ' . $e->getMessage());
             throw $e;
         }
+    }
+    
+    public function getClient()
+    {
+        return $this->client;
     }
 }
