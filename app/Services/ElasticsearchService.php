@@ -12,14 +12,26 @@ class ElasticsearchService
 
     public function __construct()
     {
-        $hosts = [
-            config('elastic.client.hosts')[0] . ':' . config('elastic.client.port', 9200),
-        ];
-
-        $this->client = ClientBuilder::create()
-            ->setHosts($hosts)
-            ->build();
-
+        // Get hosts configuration
+        $hosts = config('elastic.client.hosts');
+        
+        $clientBuilder = ClientBuilder::create()
+            ->setHosts($hosts);
+            
+        // Set timeout values
+        if ($timeout = config('elastic.client.timeout_in_seconds')) {
+            $clientBuilder->setConnectionParams([
+                'timeout' => $timeout,
+                'connect_timeout' => config('elastic.client.connect_timeout_in_seconds', 10)
+            ]);
+        }
+        
+        // For AWS OpenSearch, add SSL verification settings
+        if (config('elastic.client.username') && config('elastic.client.password')) {
+            $clientBuilder->setSSLVerification(false); // May be needed for AWS OpenSearch
+        }
+        
+        $this->client = $clientBuilder->build();
         $this->index = config('elastic.client.index', 'default');
     }
 
