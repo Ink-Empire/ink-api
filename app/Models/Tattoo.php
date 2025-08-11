@@ -26,7 +26,7 @@ class Tattoo extends Model
 
     public function artist()
     {
-        return $this->belongsTo(User::class);
+        return $this->belongsTo(Artist::class)->with(['settings']);
     }
 
     public function studio()

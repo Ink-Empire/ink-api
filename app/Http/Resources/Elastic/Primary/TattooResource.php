@@ -16,6 +16,7 @@ class TattooResource extends JsonResource
             'artist_id' => $this->artist->id,
             'artist_name' => $this->artist->name ?? "",
             'artist_username' => $this->artist->username ?? "",
+            'artist_books_open' => $this->artist->settings->books_open ?? false,
             'studio_id' => $this->studio->id ?? null,
             'studio_name' => $this->studio->name ?? "",
             'title' => $this->title,

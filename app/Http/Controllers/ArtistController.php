@@ -59,6 +59,11 @@ class ArtistController extends Controller
     {
         if (request()->query('db')) {
             $artist = ModelLookup::findArtist($id);
+
+            if (!$artist) {
+                return response()->json(['error' => 'Artist not found'], 404);
+            }
+
             return $this->returnResponse('artist', new ArtistResource($artist));
         }
         $artist = $this->artistService->getById($id);
