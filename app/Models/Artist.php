@@ -13,6 +13,8 @@ class Artist extends User
 {
     public $table = 'users';
 
+    public $with = ['settings'];
+
     /**
      * The "booted" method of the model.
      *
@@ -72,6 +74,11 @@ class Artist extends User
     public function appointments()
     {
         return $this->hasMany(Appointment::class, 'artist_id', 'id');
+    }
+
+    public function getBooksOpenAttribute()
+    {
+        return $this->settings?->books_open ?? false;
     }
 
     /*
