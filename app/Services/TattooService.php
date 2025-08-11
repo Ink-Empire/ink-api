@@ -74,7 +74,7 @@ class TattooService extends SearchService
     private function checkBooksOpen()
     {
         // Check if the artist's books are open
-        $this->search->where('artist.settings.books_open', true);
+        $this->search->where('artist_books_open', true);
     }
 
     /**
