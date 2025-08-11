@@ -65,16 +65,9 @@ class TattooService extends SearchService
             $this->buildTattooSearchStringFilter();
         }
 
-        if(isset($this->filters['booksOpen'])) {
-            // Filter tattoos by whether the artist's books are open
-            $this->checkBooksOpen();
+        if(isset($this->filters['booksOpen']) && $this->filters['booksOpen'] === true) {
+            $this->search->where('artist_books_open', '=', true);
         }
-    }
-
-    private function checkBooksOpen()
-    {
-        // Check if the artist's books are open
-        $this->search->where('artist_books_open', true);
     }
 
     /**
