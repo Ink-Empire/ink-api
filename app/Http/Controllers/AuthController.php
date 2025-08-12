@@ -115,9 +115,16 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        auth()->logout();
-        $request->session()->invalidate();
-        $request->session()->regenerateToken();
+        // Check if user is authenticated before attempting logout
+        if (auth('web')->check()) {
+            auth('web')->logout();
+        }
+        
+        // Always invalidate session and regenerate token for security
+        if ($request->hasSession()) {
+            $request->session()->invalidate();
+            $request->session()->regenerateToken();
+        }
 
         return response()->json(['message' => 'Logged out successfully']);
     }
