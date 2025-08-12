@@ -28,12 +28,10 @@ Route::get('/countries', [CountryController::class, 'index']);
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/username', [AuthController::class, 'checkUsername']);
 Route::post('/login', [AuthController::class, 'login']);
+Route::post('/logout', [AuthController::class, 'logout']);
 
 // Protected routes
 Route::middleware('auth:sanctum')->group(function () {
-    // Auth
-    Route::post('/logout', [AuthController::class, 'logout']);
-
     Route::prefix('users')->group(function () {
         Route::get('/me', [UserController::class, 'me']);
     });
