@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TattooCreateRequest;
-use App\Http\Resources\Elastic\Primary\ArtistResource;
-use App\Http\Resources\Elastic\Primary\TattooResource;
+use App\Http\Resources\Elastic\TattooResource;
 use App\Models\Artist;
 use App\Models\Image;
 use App\Models\Style;

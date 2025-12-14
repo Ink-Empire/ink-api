@@ -21,6 +21,7 @@ class UserResource extends JsonResource
             'studio_name' => $this->studio_name ?? "",
             'slug' => $this->slug,
             'type' => $this->type->name,
+            'is_featured' => $this->is_featured,
             'artists' => $this->artists->pluck('id')->toArray(),
             'styles' => $this->styles->pluck('id')->toArray(),
             'studios' => $this->studios,
