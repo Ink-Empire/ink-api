@@ -15,6 +15,11 @@ class ArtistSettings extends Model
         'accepts_deposits',
         'accepts_consultations',
         'accepts_appointments',
+        'hourly_rate',
+        'deposit_amount',
+        'consultation_fee',
+        'minimum_session'
+
     ];
 
     protected $casts = [
@@ -24,6 +29,10 @@ class ArtistSettings extends Model
         'accepts_deposits' => 'boolean',
         'accepts_consultations' => 'boolean',
         'accepts_appointments' => 'boolean',
+        'hourly_rate' => 'integer',
+        'deposit_amount' => 'integer',
+        'consultation_fee' => 'integer',
+        'minimum_session' => 'integer',
     ];
 
     public function artist()

@@ -1,24 +1,25 @@
 <?php
 
-namespace App\Http\Resources\Elastic\Primary;
+namespace App\Http\Resources\Elastic;
 
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\StyleResource;
 use Illuminate\Http\Resources\Json\JsonResource;
-use App\Http\Resources\Elastic\TattooResource as TattooResource;
 
-class ArtistResource extends JsonResource
+/**
+ * Resource for indexing Artists into Elasticsearch.
+ *
+ * This resource is used by the Artist model's toSearchableArray() method
+ * to define the document structure stored in the Elasticsearch index.
+ *
+ * Note: Uses TattooResource (not TattooIndexResource) for nested tattoos
+ * to avoid circular references.
+ *
+ * @see \App\Models\Artist::toSearchableArray()
+ * @see \App\Http\Resources\Elastic\TattooResource
+ */
+class ArtistIndexResource extends JsonResource
 {
-//    protected $user_id;
-//
-//    public function user_id($value): static
-//    {
-//        if ($value) {
-//            $this->user_id = $value;
-//            return $this;
-//        }
-//    }
-
     public function toArray($request)
     {
         return [
@@ -33,6 +34,7 @@ class ArtistResource extends JsonResource
             'studio' => new StudioResource($this->studio),
             'studio_name' => $this->studio?->name,
             'type' => $this->type->name,
+            'is_featured' => (bool) $this->is_featured,
             'styles' => StyleResource::collection($this->styles),
             'tattoos' => TattooResource::collection($this->tattoos),
             'primary_image' => $this->primary_image ?? null,

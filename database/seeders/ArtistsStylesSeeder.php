@@ -19,8 +19,8 @@ class ArtistsStylesSeeder extends Seeder
 
         if (Schema::hasTable('artists_styles')) {
             foreach ($artists_styles as $key => $value) {
-                DB::table('users__styles')->insert(
-                    ['user_id' => $value->artist_id, 'style_id' => $value->style_id]
+                DB::table('artists_styles')->insert(
+                    ['artist_id' => $value->artist_id, 'style_id' => $value->style_id]
                 );
             }
         }

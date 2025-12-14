@@ -136,18 +136,20 @@ class ArtistController extends Controller
         $availabilityArray = $request->get('availability');
 
         foreach ($availabilityArray as $availability) {
-            // create an object from ArtistAvailability
-            $availabilityObj = new ArtistAvailability([
-                'artist_id' => $artist->id,
-                'day_of_week' => $availability['day_of_week'],
-                'start_time' => $availability['start_time'],
-                'end_time' => $availability['end_time'],
-                'is_day_off' => $availability['is_day_off']
-            ]);
-
-            // save the object to the database
-            $availabilityObj->save();
+            ArtistAvailability::updateOrCreate(
+                [
+                    'artist_id' => $artist->id,
+                    'day_of_week' => $availability['day_of_week']
+                ],
+                [
+                    'start_time' => $availability['start_time'],
+                    'end_time' => $availability['end_time'],
+                    'is_day_off' => $availability['is_day_off']
+                ]
+            );
         }
+
+        return response()->json(['success' => true]);
     }
 
     public function portfolio(Request $request, $id): JsonResponse
@@ -181,6 +183,10 @@ class ArtistController extends Controller
                 'accepts_deposits' => false,
                 'accepts_consultations' => false,
                 'accepts_appointments' => false,
+                'hourly_rate' => 0,
+                'deposit_amount' => 0,
+                'consultation_fee' => 0,
+                'minimum_session' => null
             ];
 
             return response()->json(['data' => $defaultSettings]);
@@ -191,7 +197,11 @@ class ArtistController extends Controller
             'accepts_walk_ins',
             'accepts_deposits',
             'accepts_consultations',
-            'accepts_appointments'
+            'accepts_appointments',
+            'hourly_rate',
+            'deposit_amount',
+            'consultation_fee',
+            'minimum_session'
         ])]);
     }
 
@@ -217,7 +227,11 @@ class ArtistController extends Controller
             'accepts_walk_ins',
             'accepts_deposits',
             'accepts_consultations',
-            'accepts_appointments'
+            'accepts_appointments',
+            'hourly_rate',
+            'deposit_amount',
+            'consultation_fee',
+            'minimum_session'
         ];
 
         $settingsData = $request->only($validSettings);
