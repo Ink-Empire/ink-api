@@ -236,11 +236,6 @@ class ArtistController extends Controller
 
         $settingsData = $request->only($validSettings);
 
-        // Convert values to boolean
-        foreach ($settingsData as $key => $value) {
-            $settingsData[$key] = filter_var($value, FILTER_VALIDATE_BOOLEAN);
-        }
-
         $settings = ArtistSettings::updateOrCreate(
             ['artist_id' => $artist->id],
             $settingsData
