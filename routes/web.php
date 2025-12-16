@@ -5,6 +5,7 @@ use App\Http\Controllers\ArtistController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\TattooController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\StudioController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -77,15 +78,16 @@ Route::prefix('api')->group(function () {
 
     Route::group(['prefix' => 'studios'], function () {
         // Public studio routes - for guests to view
-        Route::get('/{user_id?}', 'StudioController@get');
-        Route::get('/studio/{id}', 'StudioController@getById');
-        Route::get('/{id}/{user_id?}', 'StudioController@getById');
+//        Route::get('/{user_id?}', 'StudioController@get');
+          Route::get('/{id}', [StudioController::class, 'getById']);
+//        Route::get('/{id}/{user_id?}', 'StudioController@getById');
 
         // Protected studio routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
-            Route::post('/', 'StudioController@create');
-            Route::put('/studio/{id}', 'StudioController@update');
-            Route::put('/studios/studio-hours/{id}', 'StudioController@updateBusinessHours');
+            Route::post('/', [StudioController::class, 'create']);
+            Route::post('/{id}/image', [StudioController::class, 'uploadImage']);
+            Route::put('/studio/{id}', [StudioController::class, 'update']);
+            Route::put('/studios/studio-hours/{id}', [StudioController::class, 'updateBusinessHours']);
         });
     });
 

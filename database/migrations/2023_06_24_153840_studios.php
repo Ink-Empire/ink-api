@@ -16,10 +16,10 @@ return new class extends Migration
         Schema::create('studios', function (Blueprint $table) {
             $table->id();
             $table->string('name');
-            $table->string('email');
+            $table->string('email')->nullable();
             $table->string('phone')->nullable();
             $table->text('about')->nullable();
-            $table->foreignId('address_id')->constrained();
+            $table->foreignId('address_id')->nullable()->constrained();
             $table->string('location')->nullable();
             $table->string('location_lat_long')->nullable();
             $table->foreignId('image_id')->nullable()->constrained()->onDelete('cascade')->onUpdate('cascade');

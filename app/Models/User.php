@@ -15,6 +15,8 @@ class User extends Authenticatable
 {
     use HasApiTokens, HasFactory, Notifiable;
 
+    protected $with = ['ownedStudio'];
+
 //    protected static function booted()
 //    {
 //        static::saved(function ($user) {
@@ -104,6 +106,11 @@ class User extends Authenticatable
     public function studio()
     {
         return $this->belongsTo(Studio::class);
+    }
+
+    public function ownedStudio()
+    {
+        return $this->hasOne(Studio::class, 'owner_id');
     }
 
     public function appointmentsWithStatus($status)
