@@ -7,14 +7,17 @@ use App\Http\Resources\StudioResource;
 use App\Models\Studio;
 use App\Models\User;
 use App\Services\AddressService;
+use App\Services\ImageService;
 use App\Services\StudioService;
 use App\Services\UserService;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
 class StudioController extends Controller
 {
     public function __construct(
         protected AddressService $addressService,
+        protected ImageService   $imageService,
         protected StudioService  $studioService,
         protected UserService    $userService,
     )
@@ -48,27 +51,31 @@ class StudioController extends Controller
         try {
             $data = $request->all();
 
-            if ($data['address']) {
-                $address = $this->addressService->create(
-                    [
-                        'address1' => $data['address']['address1'],
-                        'address2' => $data['address']['address2'] ?? null,
-                        'city' => $data['address']['city'],
-                        'state' => $data['address']['state'],
-                        'postal_code' => $data['address']['postal_code'],
-                        'country_code' => $data['address']['country_code'] ?? "US"
-                    ]
-                );
-            }
+            $address = null;
+
+//            if ($data['address']) {
+//                $address = $this->addressService->create(
+//                    [
+//                        'address1' => $data['address']['address1'],
+//                        'address2' => $data['address']['address2'] ?? null,
+//                        'city' => $data['address']['city'],
+//                        'state' => $data['address']['state'],
+//                        'postal_code' => $data['address']['postal_code'],
+//                        'country_code' => $data['address']['country_code'] ?? "US"
+//                    ]
+//                );
+//            }
 
             $studio = new Studio([
                 'name' => $data['name'],
-                'email' => $data['email'],
-                'password' => bcrypt($data['password']),
+                'slug' => $data['slug'] ?? null,
+                'email' => $data['email'] ?? null,
+                'about' => $data['about'] ?? null,
                 'phone' => $data['phone'] ?? null,
                 'location' => $data['location'] ?? null,
                 'location_lat_long' => $data['location_lat_long'] ?? null,
-                'address_id' => $address->id ?? null
+                'address_id' => $address->id ?? null,
+                'owner_id' => $data['owner_id'] ?? null,
             ]);
 
             $studio->save();
@@ -130,5 +137,47 @@ class StudioController extends Controller
         }
 
         return $this->returnResponse('studio', new StudioResource($studio));
+    }
+
+    public function uploadImage(Request $request, $id): JsonResponse
+    {
+        try {
+            $studio = $this->studioService->getById($id);
+
+            if (!$studio) {
+                return $this->returnErrorResponse('Studio not found');
+            }
+
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $date = date('Ymdi');
+                $extension = $file->getClientOriginalExtension() ?: 'jpeg';
+                $filename = "studio_" . $id . "_" . $date . "." . $extension;
+
+                $fileData = base64_encode(file_get_contents($file->getRealPath()));
+                $image = $this->imageService->processImage($fileData, $filename);
+            } elseif ($request->has('image')) {
+                $file = $request->image;
+                $date = date('Ymdi');
+                $filename = "studio_" . $id . "_" . $date . ".jpeg";
+
+                $image = $this->imageService->processImage($file, $filename);
+            } else {
+                return $this->returnErrorResponse('No image provided');
+            }
+
+            $studio = $this->studioService->setStudioImage($id, $image);
+
+            return $this->returnResponse('studio', new StudioResource($studio));
+
+        } catch (\Exception $e) {
+            \Log::error('Unable to upload studio image', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
+            return $this->returnErrorResponse($e->getMessage());
+        }
     }
 }

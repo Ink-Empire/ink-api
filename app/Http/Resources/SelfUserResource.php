@@ -17,6 +17,7 @@ class SelfUserResource extends JsonResource
             'name' => $this->name,
             'password' => $this->password,
             'phone' => $this->phone,
+            'slug' => $this->slug,
             'studio' => $this->studio,
             'studio_name' => $this->studio_name ?? "",
             'type' => $this->type->name,
@@ -25,6 +26,13 @@ class SelfUserResource extends JsonResource
             'studios' => $this->studios,
             'tattoos' => $this->tattoos->pluck('id')->toArray(),
             'username' => $this->username,
+            // Studio admin fields
+            'is_studio_admin' => $this->ownedStudio !== null,
+            'owned_studio' => $this->ownedStudio ? [
+                'id' => $this->ownedStudio->id,
+                'name' => $this->ownedStudio->name,
+                'slug' => $this->ownedStudio->slug,
+            ] : null,
         ];
     }
 }
