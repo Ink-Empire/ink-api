@@ -49,6 +49,7 @@ class AuthController extends Controller
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
+            'about' => $request->about ?? null,
             'username' => $request->username,
             'slug' => $request->slug,
             'password' => Hash::make($request->password),
@@ -119,7 +120,7 @@ class AuthController extends Controller
         if (auth('web')->check()) {
             auth('web')->logout();
         }
-        
+
         // Always invalidate session and regenerate token for security
         if ($request->hasSession()) {
             $request->session()->invalidate();

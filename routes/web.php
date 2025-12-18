@@ -2,9 +2,11 @@
 
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ArtistController;
+use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\TattooController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\StudioController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -42,6 +44,7 @@ Route::prefix('api')->group(function () {
             Route::post('/create', [TattooController::class, 'create']);
             Route::put('/tattoos/{id}', [TattooController::class, 'update']);
             Route::post('/{id}/generate-tags', [TattooController::class, 'generateTags']);
+            Route::put('/{id}/featured', [TattooController::class, 'toggleFeatured']);
         });
     });
 
@@ -61,6 +64,8 @@ Route::prefix('api')->group(function () {
             Route::post('/{id}/working-hours', [ArtistController::class, 'setAvailability']);
             Route::get('/{id}/settings', [ArtistController::class, 'getSettings']);
             Route::put('/{id}/settings', [ArtistController::class, 'updateSettings']);
+            Route::get('/{id}/dashboard-stats', [ArtistController::class, 'getDashboardStats']);
+            Route::get('/{id}/upcoming-schedule', [ArtistController::class, 'getUpcomingSchedule']);
         });
     });
 
@@ -73,19 +78,49 @@ Route::prefix('api')->group(function () {
             Route::get('/{id}', [AppointmentController::class, 'getById']);
             Route::delete('/{id', [AppointmentController::class, 'delete']);
         });
+
+        // Conversations / Messages
+        Route::group(['prefix' => 'conversations'], function () {
+            Route::get('/', [ConversationController::class, 'index']);
+            Route::post('/', [ConversationController::class, 'store']);
+            Route::get('/unread-count', [ConversationController::class, 'getUnreadCount']);
+            Route::get('/{id}', [ConversationController::class, 'show']);
+            Route::put('/{id}/read', [ConversationController::class, 'markAsRead']);
+            Route::get('/{id}/messages', [ConversationController::class, 'getMessages']);
+            Route::post('/{id}/messages', [ConversationController::class, 'sendMessage']);
+            Route::post('/{id}/messages/booking-card', [ConversationController::class, 'sendBookingCard']);
+            Route::post('/{id}/messages/deposit-request', [ConversationController::class, 'sendDepositRequest']);
+            Route::post('/{id}/messages/design-share', [ConversationController::class, 'sendDesignShare']);
+            Route::post('/{id}/messages/price-quote', [ConversationController::class, 'sendPriceQuote']);
+        });
     });
 
     Route::group(['prefix' => 'studios'], function () {
         // Public studio routes - for guests to view
-        Route::get('/{user_id?}', 'StudioController@get');
-        Route::get('/studio/{id}', 'StudioController@getById');
-        Route::get('/{id}/{user_id?}', 'StudioController@getById');
+        Route::get('/{id}', [StudioController::class, 'getById']);
+        Route::get('/{id}/announcements', [StudioController::class, 'getAnnouncements']);
+        Route::get('/{id}/spotlights', [StudioController::class, 'getSpotlights']);
+        Route::get('/{id}/artists', [StudioController::class, 'getArtists']);
 
         // Protected studio routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
-            Route::post('/', 'StudioController@create');
-            Route::put('/studio/{id}', 'StudioController@update');
-            Route::put('/studios/studio-hours/{id}', 'StudioController@updateBusinessHours');
+            Route::post('/', [StudioController::class, 'create']);
+            Route::post('/{id}/image', [StudioController::class, 'uploadImage']);
+            Route::put('/studio/{id}', [StudioController::class, 'update']);
+            Route::put('/studios/studio-hours/{id}', [StudioController::class, 'updateBusinessHours']);
+
+            // Artist management
+            Route::post('/{id}/artists', [StudioController::class, 'addArtist']);
+            Route::delete('/{id}/artists/{userId}', [StudioController::class, 'removeArtist']);
+
+            // Announcements
+            Route::post('/{id}/announcements', [StudioController::class, 'createAnnouncement']);
+            Route::put('/{id}/announcements/{announcementId}', [StudioController::class, 'updateAnnouncement']);
+            Route::delete('/{id}/announcements/{announcementId}', [StudioController::class, 'deleteAnnouncement']);
+
+            // Spotlights
+            Route::post('/{id}/spotlights', [StudioController::class, 'addSpotlight']);
+            Route::delete('/{id}/spotlights/{spotlightId}', [StudioController::class, 'removeSpotlight']);
         });
     });
 

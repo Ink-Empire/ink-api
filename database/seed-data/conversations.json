@@ -1,0 +1,136 @@
+[
+  {
+    "id": 1,
+    "type": "booking",
+    "appointment_id": null,
+    "participants": [1, 21],
+    "messages": [
+      {"sender_id": 21, "content": "Hey! I love your neo-traditional work. I've been thinking about getting a rose piece on my forearm.", "type": "text"},
+      {"sender_id": 1, "content": "Thanks! I'd love to work on that. Do you have any reference images or specific ideas in mind?", "type": "text"},
+      {"sender_id": 21, "content": "I've been saving some references! Something with bold lines and vibrant colors.", "type": "text"},
+      {"sender_id": 1, "content": "Love that style! I can definitely do something similar. Let me sketch out a quick concept.", "type": "text"},
+      {"sender_id": 21, "content": "That design looks perfect! I'd love to book a session. Do you have anything available before the new year?", "type": "text"},
+      {"sender_id": 1, "content": "I have Dec 28th at 2pm available! Here's the booking details:", "type": "booking_card", "metadata": {"date": "Dec 28, 2025", "time": "2:00 PM", "duration": "3-4 hours", "deposit": "$150 NZD"}}
+    ]
+  },
+  {
+    "id": 2,
+    "type": "consultation",
+    "appointment_id": null,
+    "participants": [1, 22],
+    "messages": [
+      {"sender_id": 22, "content": "Hi! I'm interested in getting a floral sleeve piece. I've seen your work and love your style!", "type": "text"},
+      {"sender_id": 22, "content": "Would you be available for a consultation to discuss ideas?", "type": "text"}
+    ]
+  },
+  {
+    "id": 3,
+    "type": "guest-spot",
+    "appointment_id": null,
+    "participants": [1, 3],
+    "messages": [
+      {"sender_id": 3, "content": "Hey! I'll be visiting your city in March and would love to do a guest spot at your studio.", "type": "text"}
+    ]
+  },
+  {
+    "id": 4,
+    "type": "design",
+    "appointment_id": null,
+    "participants": [1, 23],
+    "messages": [
+      {"sender_id": 23, "content": "Hi! I wanted to follow up on the design we discussed last week.", "type": "text"},
+      {"sender_id": 1, "content": "Here's the updated sketch with the changes we discussed. Let me know what you think!", "type": "text"},
+      {"sender_id": 23, "content": "This is exactly what I was hoping for! The shading looks amazing.", "type": "text"}
+    ]
+  },
+  {
+    "id": 5,
+    "type": "booking",
+    "appointment_id": null,
+    "participants": [1, 24],
+    "messages": [
+      {"sender_id": 24, "content": "Thanks for the session! The tattoo healed perfectly. Really happy with how it turned out.", "type": "text"},
+      {"sender_id": 1, "content": "So glad to hear that! It was a pleasure working with you. Feel free to reach out if you want to add to it!", "type": "text"}
+    ]
+  },
+  {
+    "id": 6,
+    "type": "booking",
+    "appointment_id": null,
+    "participants": [1, 25],
+    "messages": [
+      {"sender_id": 1, "content": "Your deposit has been confirmed. See you on the 15th!", "type": "text"},
+      {"sender_id": 25, "content": "Perfect, thank you! Looking forward to it. Should I bring anything specific?", "type": "text"},
+      {"sender_id": 1, "content": "Just make sure to stay hydrated and eat a good meal before the session. See you soon!", "type": "text"}
+    ]
+  },
+  {
+    "id": 7,
+    "type": "consultation",
+    "appointment_id": null,
+    "participants": [2, 26],
+    "messages": [
+      {"sender_id": 26, "content": "Hi Jane! I've been admiring your geometric work. Would you be interested in designing a piece for my back?", "type": "text"},
+      {"sender_id": 2, "content": "I'd love to! Geometric back pieces are some of my favorites. What size are you thinking?", "type": "text"},
+      {"sender_id": 26, "content": "I'm thinking full back, something really bold and symmetrical.", "type": "text"},
+      {"sender_id": 2, "content": "That sounds amazing! Let's schedule a consultation to go over ideas. I have availability next week.", "type": "text"}
+    ]
+  },
+  {
+    "id": 8,
+    "type": "booking",
+    "appointment_id": null,
+    "participants": [2, 27],
+    "messages": [
+      {"sender_id": 27, "content": "Hey! I saw your availability opened up for next month. Would love to finally get that piece we talked about!", "type": "text"},
+      {"sender_id": 2, "content": "Yes! I was just thinking about that design. I still have it saved. Want me to send you the updated version?", "type": "text"},
+      {"sender_id": 27, "content": "Please! I'm so excited to finally make this happen.", "type": "text"}
+    ]
+  },
+  {
+    "id": 9,
+    "type": "guest-spot",
+    "appointment_id": null,
+    "participants": [3, 5],
+    "messages": [
+      {"sender_id": 5, "content": "Hi Alice! I'm planning a guest spot tour through the US. Would your studio be interested in hosting?", "type": "text"},
+      {"sender_id": 3, "content": "We'd love to have you! When were you thinking?", "type": "text"},
+      {"sender_id": 5, "content": "I was looking at April or May. I can bring my own equipment and clientele.", "type": "text"},
+      {"sender_id": 3, "content": "April would work great for us. Let me check with the team and get back to you with dates.", "type": "text"}
+    ]
+  },
+  {
+    "id": 10,
+    "type": "design",
+    "appointment_id": null,
+    "participants": [4, 28],
+    "messages": [
+      {"sender_id": 28, "content": "Michael, I love the initial sketch but was wondering if we could make the lines a bit thicker?", "type": "text"},
+      {"sender_id": 4, "content": "Absolutely! Thicker lines will hold up better over time too. I'll revise and send you version 2.", "type": "text"},
+      {"sender_id": 28, "content": "You're the best! No rush, whenever you have time.", "type": "text"}
+    ]
+  },
+  {
+    "id": 11,
+    "type": "booking",
+    "appointment_id": null,
+    "participants": [5, 29],
+    "messages": [
+      {"sender_id": 29, "content": "Hi Levvy! Just confirming our appointment for tomorrow at 10am?", "type": "text"},
+      {"sender_id": 5, "content": "Confirmed! See you then. Remember to get a good night's sleep!", "type": "text"},
+      {"sender_id": 29, "content": "Will do! Can't wait!", "type": "text"}
+    ]
+  },
+  {
+    "id": 12,
+    "type": "consultation",
+    "appointment_id": null,
+    "participants": [6, 30],
+    "messages": [
+      {"sender_id": 30, "content": "William! Your colorful work is incredible. I want something tropical for my leg.", "type": "text"},
+      {"sender_id": 6, "content": "Thank you! Tropical themes are so fun to work on. Are you thinking flowers, birds, or a mix?", "type": "text"},
+      {"sender_id": 30, "content": "A mix! Maybe hibiscus flowers with a bird of paradise?", "type": "text"},
+      {"sender_id": 6, "content": "Perfect combination! The colors will pop beautifully together. Let's book a consultation!", "type": "text"}
+    ]
+  }
+]

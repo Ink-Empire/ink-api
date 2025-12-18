@@ -4,7 +4,7 @@ namespace App\Models;
 
 
 use App\Enums\UserTypes;
-use App\Http\Resources\Elastic\Primary\ArtistResource;
+use App\Http\Resources\Elastic\ArtistIndexResource;
 use App\Scopes\ArtistScope;
 use Larelastic\Elastic\Traits\Migratable;
 use Larelastic\Elastic\Traits\Searchable;
@@ -53,7 +53,7 @@ class Artist extends User
 
     public function styles()
     {
-        return $this->belongsToMany(Style::class, 'users_styles', 'user_id', 'style_id');
+        return $this->belongsToMany(Style::class, 'artists_styles', 'artist_id', 'style_id');
     }
 
     public function tattoos()
@@ -120,9 +120,9 @@ class Artist extends User
         $this->loadMissing($with);
 
         if ($this instanceof Artist) {
-            return (new ArtistResource($this))->jsonSerialize();
+            return (new ArtistIndexResource($this))->jsonSerialize();
         } else {
-            return ArtistResource::collection($this)->jsonSerialize();
+            return ArtistIndexResource::collection($this)->jsonSerialize();
         }
     }
 }

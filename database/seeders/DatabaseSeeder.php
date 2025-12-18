@@ -23,25 +23,27 @@ class DatabaseSeeder extends Seeder
         Artisan::call('elastic:delete-index "App\\\\Models\\\\Artist"');
 
         $this->call([
-//            AddressSeeder::class,
-//            StyleSeeder::class,
-//            ImageSeeder::class,
-//            StudioSeeder::class,
-//            UserSeeder::class,
-//            SubjectSeeder::class,
-//            TattooSeeder::class,
-//            TattoosStylesSeeder::class,
-//            UsersStylesSeeder::class,
-//            UsersArtistsSeeder::class,
-//            ArtistsStylesSeeder::class,
-//            StudiosStylesSeeder::class,
-//            UsersTattoosSeeder::class,
-//            UsersStudiosSeeder::class,
-//            BusinessDaysSeeder::class,
-//            BusinessHoursSeeder::class,
-//            UsernameSeeder::class,
-//            AppointmentSeeder::class,
-            ArtistAvailabilitySeeder::class
+            AddressSeeder::class,
+            StyleSeeder::class,
+            ImageSeeder::class,
+            StudioSeeder::class,
+            UserSeeder::class,
+            SubjectSeeder::class,
+            TattooSeeder::class,
+            TattoosStylesSeeder::class,
+            UsersStylesSeeder::class,
+            UsersArtistsSeeder::class,
+            ArtistsStylesSeeder::class,
+            StudiosStylesSeeder::class,
+            UsersTattoosSeeder::class,
+            UsersStudiosSeeder::class,
+            BusinessDaysSeeder::class,
+            BusinessHoursSeeder::class,
+            UsernameSeeder::class,
+            AppointmentSeeder::class,
+            ArtistAvailabilitySeeder::class,
+            ProfileViewSeeder::class,
+            ConversationSeeder::class
         ]);
 
         try {

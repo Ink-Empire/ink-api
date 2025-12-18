@@ -24,6 +24,7 @@ class TattooResource extends JsonResource
             'images' => $this->images,
             'styles' => $this->styles,
             'tags' => $this->tags,
+            'is_featured' => (int) $this->is_featured
         ];
     }
 }

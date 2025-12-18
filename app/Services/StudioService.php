@@ -5,6 +5,9 @@ namespace App\Services;
 use App\Exceptions\StudioNotFoundException;
 use App\Models\Image;
 use App\Models\Studio;
+use App\Models\StudioAnnouncement;
+use App\Models\StudioSpotlight;
+use App\Models\User;
 
 /**
  *
@@ -81,7 +84,86 @@ class StudioService
 
     public function updateArtists(?Studio $studio, mixed $fieldVal): void
     {
-        //
+        if ($studio && is_array($fieldVal)) {
+            $studio->artists()->sync($fieldVal);
+        }
     }
 
+    public function addArtistByUsername(Studio $studio, string $username): ?User
+    {
+        $user = User::where('username', $username)
+            ->where('type_id', 2) // Artist type
+            ->first();
+
+        if ($user) {
+            $studio->artists()->syncWithoutDetaching([$user->id]);
+            return $user;
+        }
+
+        return null;
+    }
+
+    public function removeArtist(Studio $studio, int $userId): bool
+    {
+        return $studio->artists()->detach($userId) > 0;
+    }
+
+    public function getStudioArtists(Studio $studio)
+    {
+        return $studio->artists()->with(['image', 'styles'])->get();
+    }
+
+    public function createAnnouncement(Studio $studio, array $data): StudioAnnouncement
+    {
+        return $studio->announcements()->create([
+            'title' => $data['title'],
+            'content' => $data['content'],
+            'is_active' => $data['is_active'] ?? true,
+        ]);
+    }
+
+    public function updateAnnouncement(StudioAnnouncement $announcement, array $data): StudioAnnouncement
+    {
+        $announcement->update($data);
+        return $announcement->fresh();
+    }
+
+    public function deleteAnnouncement(StudioAnnouncement $announcement): bool
+    {
+        return $announcement->delete();
+    }
+
+    public function addSpotlight(Studio $studio, string $type, int $itemId, int $order = 0): StudioSpotlight
+    {
+        return $studio->spotlights()->updateOrCreate(
+            [
+                'spotlightable_type' => $type,
+                'spotlightable_id' => $itemId,
+            ],
+            [
+                'display_order' => $order,
+            ]
+        );
+    }
+
+    public function removeSpotlight(StudioSpotlight $spotlight): bool
+    {
+        return $spotlight->delete();
+    }
+
+    public function getSpotlightsWithData(Studio $studio)
+    {
+        $spotlights = $studio->spotlights;
+
+        return $spotlights->map(function ($spotlight) {
+            $item = $spotlight->spotlighted_item;
+            return [
+                'id' => $spotlight->id,
+                'type' => $spotlight->spotlightable_type,
+                'item_id' => $spotlight->spotlightable_id,
+                'display_order' => $spotlight->display_order,
+                'item' => $item,
+            ];
+        });
+    }
 }
