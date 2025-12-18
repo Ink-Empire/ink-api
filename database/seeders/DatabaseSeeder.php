@@ -41,7 +41,9 @@ class DatabaseSeeder extends Seeder
             BusinessHoursSeeder::class,
             UsernameSeeder::class,
             AppointmentSeeder::class,
-            ArtistAvailabilitySeeder::class
+            ArtistAvailabilitySeeder::class,
+            ProfileViewSeeder::class,
+            ConversationSeeder::class
         ]);
 
         try {

@@ -65,6 +65,14 @@ class Tattoo extends Model
         return $this->hasMany(Tag::class);
     }
 
+    /**
+     * Get all profile views for this tattoo.
+     */
+    public function profileViews()
+    {
+        return $this->morphMany(ProfileView::class, 'viewable');
+    }
+
     public function getIsFeaturedAttribute()
     {
 

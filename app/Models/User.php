@@ -66,6 +66,7 @@ class User extends Authenticatable
      */
     protected $casts = [
         'email_verified_at' => 'datetime',
+        'last_seen_at' => 'datetime',
     ];
 
     public function scopeArtist(Builder $query): void
@@ -111,6 +112,52 @@ class User extends Authenticatable
     public function ownedStudio()
     {
         return $this->hasOne(Studio::class, 'owner_id');
+    }
+
+    /**
+     * Get all profile views for this user (as an artist).
+     */
+    public function profileViews()
+    {
+        return $this->morphMany(ProfileView::class, 'viewable');
+    }
+
+    /**
+     * Get all conversations for this user.
+     */
+    public function conversations()
+    {
+        return $this->belongsToMany(Conversation::class, 'conversation_participants')
+            ->withPivot('last_read_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get conversation participants for this user.
+     */
+    public function conversationParticipants()
+    {
+        return $this->hasMany(ConversationParticipant::class);
+    }
+
+    /**
+     * Check if user is online (seen in last 5 minutes).
+     */
+    public function isOnline(): bool
+    {
+        if (!$this->last_seen_at) {
+            return false;
+        }
+
+        return $this->last_seen_at->gt(now()->subMinutes(5));
+    }
+
+    /**
+     * Update the user's last seen timestamp.
+     */
+    public function updateLastSeen(): bool
+    {
+        return $this->update(['last_seen_at' => now()]);
     }
 
     public function appointmentsWithStatus($status)

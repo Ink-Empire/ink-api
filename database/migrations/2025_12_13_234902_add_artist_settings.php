@@ -15,7 +15,7 @@ return new class extends Migration
             $table->integer('hourly_rate')->after('accepts_appointments')->default(0);
             $table->integer('deposit_amount')->after('hourly_rate')->default(0);
             $table->integer('consultation_fee')->after('deposit_amount')->default(0);
-            $table->integer('minimum_session')->after('consultation_fee')->default(null);
+            $table->integer('minimum_session')->nullable()->after('consultation_fee')->default(0);
         });
     }
 
