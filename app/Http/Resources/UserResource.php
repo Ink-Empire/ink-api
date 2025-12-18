@@ -21,11 +21,14 @@ class UserResource extends JsonResource
             'studio_name' => $this->studio_name ?? "",
             'slug' => $this->slug,
             'type' => $this->type->name,
+            'is_featured' => $this->is_featured,
             'artists' => $this->artists->pluck('id')->toArray(),
             'styles' => $this->styles->pluck('id')->toArray(),
             'studios' => $this->studios,
             'tattoos' => $this->tattoos->pluck('id')->toArray(),
             'username' => $this->username,
+            'is_studio_admin' => $this->ownedStudio !== null,
+            'owned_studio_id' => $this->ownedStudio?->id,
         ];
     }
 }

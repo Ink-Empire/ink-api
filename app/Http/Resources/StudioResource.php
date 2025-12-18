@@ -12,6 +12,7 @@ class StudioResource extends JsonResource
         return [
             'id' => $this->id,
             'name' => $this->name,
+            'slug' => $this->slug,
             'about' => $this->about,
             'location' => $this->location,
             'location_lat_long' => $this->location_lat_long,
@@ -20,6 +21,11 @@ class StudioResource extends JsonResource
             'image' => $this->getImage(),
             'is_verified' => $this->is_verified,
             'business_hours' => $this->business_hours,
+            'owner_id' => $this->owner_id,
+            'seeking_guest_artists' => (bool) $this->seeking_guest_artists,
+            'guest_spot_details' => $this->guest_spot_details,
+            'announcements' => $this->whenLoaded('activeAnnouncements'),
+            'artists' => UserResource::collection($this->whenLoaded('artists')),
         ];
     }
 

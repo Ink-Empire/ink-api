@@ -23,6 +23,7 @@ class ArtistResource extends JsonResource
             'slug' => $this->slug,
             'studio' => $this->studio->name ?? "",
             'type' => $this->type->name,
+            'is_featured' => (int) $this->is_featured,
             'styles' => $this->styles,
             'isFavorite' => $this->getIsUserFavorite(),
             'username' => $this->username,

@@ -3,8 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\TattooCreateRequest;
-use App\Http\Resources\Elastic\Primary\ArtistResource;
-use App\Http\Resources\Elastic\Primary\TattooResource;
+use App\Http\Resources\Elastic\TattooResource;
 use App\Models\Artist;
 use App\Models\Image;
 use App\Models\Style;
@@ -264,6 +263,44 @@ class TattooController extends Controller
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile()
+            ]);
+
+            return $this->returnErrorResponse($e->getMessage());
+        }
+    }
+
+    public function toggleFeatured(Request $request, $id): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $tattoo = $this->tattooService->getById($id);
+
+            if (!$tattoo) {
+                return $this->returnErrorResponse('Tattoo not found');
+            }
+
+            // Verify the user owns this tattoo
+            if ($tattoo->artist_id !== $user->id) {
+                return $this->returnErrorResponse('You can only update your own tattoos', 403);
+            }
+
+            // Toggle or set featured status
+            $featured = $request->has('is_featured')
+                ? (bool) $request->input('is_featured')
+                : !$tattoo->is_featured;
+
+            $tattoo->is_featured = $featured;
+            $tattoo->save();
+
+            // Re-index for search
+            $tattoo->searchable();
+
+            return $this->returnResponse('tattoo', new TattooResource($tattoo));
+
+        } catch (\Exception $e) {
+            \Log::error("Unable to update tattoo featured status", [
+                'error' => $e->getMessage(),
+                'tattoo_id' => $id
             ]);
 
             return $this->returnErrorResponse($e->getMessage());

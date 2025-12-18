@@ -25,6 +25,7 @@ class StudioSeeder extends Seeder
                 Studio::create([
                     "name" => $value->name,
                     "email" => $value->email,
+                    'slug' => $value->slug,
                     "password" => "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
                     "phone" => $value->phone,
                     "about" => $value->about,

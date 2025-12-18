@@ -2,7 +2,7 @@
 
 namespace App\Models;
 
-use App\Http\Resources\Elastic\Primary\TattooResource;
+use App\Http\Resources\Elastic\TattooIndexResource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Larelastic\Elastic\Traits\Migratable;
@@ -65,6 +65,19 @@ class Tattoo extends Model
         return $this->hasMany(Tag::class);
     }
 
+    /**
+     * Get all profile views for this tattoo.
+     */
+    public function profileViews()
+    {
+        return $this->morphMany(ProfileView::class, 'viewable');
+    }
+
+    public function getIsFeaturedAttribute()
+    {
+
+    }
+
     /*
     * Elasticsearch
     */
@@ -109,9 +122,9 @@ class Tattoo extends Model
         $this->loadMissing($with);
 
         if ($this instanceof Tattoo) {
-            return (new TattooResource($this))->jsonSerialize();
+            return (new TattooIndexResource($this))->jsonSerialize();
         } else {
-            return TattooResource::collection($this)->jsonSerialize();
+            return TattooIndexResource::collection($this)->jsonSerialize();
         }
     }
 
