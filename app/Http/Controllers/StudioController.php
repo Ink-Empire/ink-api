@@ -4,7 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserTypes;
 use App\Http\Resources\StudioResource;
+use App\Http\Resources\UserResource;
 use App\Models\Studio;
+use App\Models\StudioAnnouncement;
+use App\Models\StudioSpotlight;
 use App\Models\User;
 use App\Services\AddressService;
 use App\Services\ImageService;
@@ -179,5 +182,155 @@ class StudioController extends Controller
 
             return $this->returnErrorResponse($e->getMessage());
         }
+    }
+
+    // Artist Management
+    public function getArtists($id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $artists = $this->studioService->getStudioArtists($studio);
+        return $this->returnResponse('artists', UserResource::collection($artists));
+    }
+
+    public function addArtist(Request $request, $id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $username = $request->input('username');
+        if (!$username) {
+            return $this->returnErrorResponse('Username is required', 422);
+        }
+
+        $artist = $this->studioService->addArtistByUsername($studio, $username);
+        if (!$artist) {
+            return $this->returnErrorResponse('Artist not found with that username', 404);
+        }
+
+        return $this->returnResponse('artist', new UserResource($artist));
+    }
+
+    public function removeArtist($id, $userId): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $removed = $this->studioService->removeArtist($studio, $userId);
+        if (!$removed) {
+            return $this->returnErrorResponse('Artist was not associated with this studio', 404);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    // Announcements
+    public function getAnnouncements($id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        return $this->returnResponse('announcements', $studio->announcements);
+    }
+
+    public function createAnnouncement(Request $request, $id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $request->validate([
+            'title' => 'required|string|max:255',
+            'content' => 'required|string',
+        ]);
+
+        $announcement = $this->studioService->createAnnouncement($studio, $request->all());
+        return $this->returnResponse('announcement', $announcement);
+    }
+
+    public function updateAnnouncement(Request $request, $id, $announcementId): JsonResponse
+    {
+        $announcement = StudioAnnouncement::where('studio_id', $id)
+            ->where('id', $announcementId)
+            ->first();
+
+        if (!$announcement) {
+            return $this->returnErrorResponse('Announcement not found', 404);
+        }
+
+        $updated = $this->studioService->updateAnnouncement($announcement, $request->all());
+        return $this->returnResponse('announcement', $updated);
+    }
+
+    public function deleteAnnouncement($id, $announcementId): JsonResponse
+    {
+        $announcement = StudioAnnouncement::where('studio_id', $id)
+            ->where('id', $announcementId)
+            ->first();
+
+        if (!$announcement) {
+            return $this->returnErrorResponse('Announcement not found', 404);
+        }
+
+        $this->studioService->deleteAnnouncement($announcement);
+        return response()->json(['success' => true]);
+    }
+
+    // Spotlights
+    public function getSpotlights($id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $spotlights = $this->studioService->getSpotlightsWithData($studio);
+        return $this->returnResponse('spotlights', $spotlights);
+    }
+
+    public function addSpotlight(Request $request, $id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $request->validate([
+            'type' => 'required|in:artist,tattoo',
+            'item_id' => 'required|integer',
+        ]);
+
+        $spotlight = $this->studioService->addSpotlight(
+            $studio,
+            $request->input('type'),
+            $request->input('item_id'),
+            $request->input('display_order', 0)
+        );
+
+        return $this->returnResponse('spotlight', $spotlight);
+    }
+
+    public function removeSpotlight($id, $spotlightId): JsonResponse
+    {
+        $spotlight = StudioSpotlight::where('studio_id', $id)
+            ->where('id', $spotlightId)
+            ->first();
+
+        if (!$spotlight) {
+            return $this->returnErrorResponse('Spotlight not found', 404);
+        }
+
+        $this->studioService->removeSpotlight($spotlight);
+        return response()->json(['success' => true]);
     }
 }

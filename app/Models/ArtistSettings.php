@@ -18,8 +18,9 @@ class ArtistSettings extends Model
         'hourly_rate',
         'deposit_amount',
         'consultation_fee',
-        'minimum_session'
-
+        'minimum_session',
+        'seeking_guest_spots',
+        'guest_spot_regions',
     ];
 
     protected $casts = [
@@ -33,6 +34,8 @@ class ArtistSettings extends Model
         'deposit_amount' => 'integer',
         'consultation_fee' => 'integer',
         'minimum_session' => 'integer',
+        'seeking_guest_spots' => 'boolean',
+        'guest_spot_regions' => 'array',
     ];
 
     public function artist()
