@@ -19,9 +19,12 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => explode(',', env('CORS_ALLOWED_ORIGINS', 'http://localhost:3000,http://localhost:4000')),
 
-    'allowed_origins_patterns' => [],
+    'allowed_origins_patterns' => [
+        // Allow all Vercel preview deployments
+        '#^https://.*\.vercel\.app$#',
+    ],
 
     'allowed_headers' => ['*'],
 

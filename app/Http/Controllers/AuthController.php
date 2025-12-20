@@ -60,11 +60,12 @@ class AuthController extends Controller
             'address_id' => $address->id ?? null
         ]);
 
-        // For SPA authentication, log the user in using sessions
-        auth()->login($user);
+        // Create token for API authentication
+        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
             'user' => new UserResource($user),
+            'token' => $token,
             'message' => 'User registered and logged in successfully'
         ], 201);
     }
@@ -102,11 +103,13 @@ class AuthController extends Controller
             ]);
         }
 
-        // For SPA authentication, use Laravel's built-in session authentication
-        auth()->login($user);
+        // Delete old tokens and create a new one for API authentication
+        $user->tokens()->delete();
+        $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
             'user' => new UserResource($user),
+            'token' => $token,
             'message' => 'Logged in successfully'
         ]);
     }
@@ -116,15 +119,9 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Check if user is authenticated before attempting logout
-        if (auth('web')->check()) {
-            auth('web')->logout();
-        }
-
-        // Always invalidate session and regenerate token for security
-        if ($request->hasSession()) {
-            $request->session()->invalidate();
-            $request->session()->regenerateToken();
+        // Revoke the current access token
+        if ($request->user()) {
+            $request->user()->currentAccessToken()->delete();
         }
 
         return response()->json(['message' => 'Logged out successfully']);
