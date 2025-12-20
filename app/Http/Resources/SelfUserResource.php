@@ -21,6 +21,7 @@ class SelfUserResource extends JsonResource
             'studio' => $this->studio,
             'studio_name' => $this->studio_name ?? "",
             'type' => $this->type->name,
+            'type_id' => $this->type_id,
             'artists' => $this->artists->pluck('id')->toArray(),
             'styles' => $this->styles->pluck('id')->toArray(),
             'studios' => $this->studios,
