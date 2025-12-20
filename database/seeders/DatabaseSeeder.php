@@ -16,8 +16,8 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-//        Artisan::call("db:wipe");
-//        Artisan::call("migrate");
+        Artisan::call("db:wipe");
+        Artisan::call("migrate");
 
         Artisan::call('elastic:delete-index "App\\\\Models\\\\Tattoo"');
         Artisan::call('elastic:delete-index "App\\\\Models\\\\Artist"');
@@ -26,6 +26,7 @@ class DatabaseSeeder extends Seeder
             AddressSeeder::class,
             StyleSeeder::class,
             ImageSeeder::class,
+            LocationSeeder::class,
             StudioSeeder::class,
             UserSeeder::class,
             SubjectSeeder::class,
