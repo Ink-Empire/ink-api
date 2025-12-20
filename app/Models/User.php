@@ -99,6 +99,24 @@ class User extends Authenticatable
         return $this->belongsToMany(User::class, 'users_artists', 'user_id', 'artist_id');
     }
 
+    /**
+     * Artists on the user's wishlist (for booking notifications).
+     */
+    public function wishlistArtists()
+    {
+        return $this->belongsToMany(User::class, 'artist_wishlists', 'user_id', 'artist_id')
+            ->withPivot('notify_booking_open', 'notified_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Wishlist entries for this user.
+     */
+    public function artistWishlists()
+    {
+        return $this->hasMany(ArtistWishlist::class, 'user_id');
+    }
+
     public function address()
     {
         return $this->belongsTo(Address::class);

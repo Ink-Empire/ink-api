@@ -7,6 +7,8 @@ use App\Models\Tattoo;
 use App\Models\Image;
 use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Str;
 use Exception;
 
 class TagService
@@ -51,14 +53,16 @@ class TagService
 
             $uniqueTags = array_unique($allTags);
 
-            $storedTags = $this->storeTags($tattoo, $uniqueTags);
+            // Match AI-suggested tags to master list and attach to tattoo
+            $attachedTags = $this->attachTagsToTattoo($tattoo, $uniqueTags);
 
-            Log::info("Generated {count} tags for tattoo ID: {$tattoo->id}", [
-                'count' => count($storedTags),
-                'tags' => $uniqueTags
+            Log::info("Generated tags for tattoo ID: {$tattoo->id}", [
+                'count' => count($attachedTags),
+                'tags' => $uniqueTags,
+                'matched_tags' => array_map(fn($t) => $t->name, $attachedTags)
             ]);
 
-            return $storedTags;
+            return $attachedTags;
 
         } catch (Exception $e) {
             Log::error("Failed to generate tags for tattoo ID: {$tattoo->id}", [
@@ -141,14 +145,17 @@ class TagService
         // Split by commas and clean each tag
         $tags = array_map('trim', explode(',', $cleaned));
 
-        // Filter out empty tags and ensure they're single words
+        // Filter out empty tags and clean them
         $validTags = [];
         foreach ($tags as $tag) {
-            // Remove any non-alphabetic characters and convert to lowercase
-            $cleanTag = strtolower(preg_replace('/[^a-zA-Z]/', '', $tag));
+            // Convert to lowercase and trim
+            $cleanTag = strtolower(trim($tag));
 
-            // Only keep tags that are 3-20 characters long
-            if (strlen($cleanTag) >= 3 && strlen($cleanTag) <= 20) {
+            // Remove extra whitespace but allow multi-word tags (e.g., "cherry blossom")
+            $cleanTag = preg_replace('/\s+/', ' ', $cleanTag);
+
+            // Only keep tags that are 2-30 characters long
+            if (strlen($cleanTag) >= 2 && strlen($cleanTag) <= 30) {
                 $validTags[] = $cleanTag;
             }
         }
@@ -158,29 +165,104 @@ class TagService
     }
 
     /**
-     * Store tags in the database
+     * Attach tags to a tattoo by matching against master list
      */
-    private function storeTags(Tattoo $tattoo, array $tags): array
+    public function attachTagsToTattoo(Tattoo $tattoo, array $tagNames): array
     {
-        $storedTags = [];
+        $attachedTags = [];
+        $tagIds = [];
 
-        foreach ($tags as $tagName) {
-            try {
-                $tag = Tag::create([
+        foreach ($tagNames as $tagName) {
+            // Try to find an exact match in the master list
+            $tag = $this->findMatchingTag($tagName);
+
+            if ($tag) {
+                $tagIds[] = $tag->id;
+                $attachedTags[] = $tag;
+            } else {
+                // Log unmatched tags for potential admin review
+                Log::info("Unmatched AI tag suggestion", [
                     'tattoo_id' => $tattoo->id,
-                    'tag' => $tagName
-                ]);
-
-                $storedTags[] = $tag;
-
-            } catch (Exception $e) {
-                Log::error("Failed to store tag '{$tagName}' for tattoo ID: {$tattoo->id}", [
-                    'error' => $e->getMessage()
+                    'suggested_tag' => $tagName
                 ]);
             }
         }
 
-        return $storedTags;
+        // Sync tags to tattoo (replaces existing)
+        if (!empty($tagIds)) {
+            $tattoo->tags()->sync($tagIds);
+        }
+
+        return $attachedTags;
+    }
+
+    /**
+     * Find a matching tag in the master list
+     * Uses fuzzy matching to find similar tags
+     */
+    public function findMatchingTag(string $tagName): ?Tag
+    {
+        $tagName = strtolower(trim($tagName));
+        $slug = Str::slug($tagName);
+
+        // First try exact match by slug
+        $tag = Tag::where('slug', $slug)->first();
+        if ($tag) {
+            return $tag;
+        }
+
+        // Try exact match by name
+        $tag = Tag::where('name', $tagName)->first();
+        if ($tag) {
+            return $tag;
+        }
+
+        // Try partial match (tag name contains the search term or vice versa)
+        $tag = Tag::where('name', 'like', '%' . $tagName . '%')
+                  ->orWhere(DB::raw('LOWER(?)'), 'like', DB::raw("CONCAT('%', name, '%')"))
+                  ->first();
+
+        return $tag;
+    }
+
+    /**
+     * Set tags for a tattoo by tag IDs
+     */
+    public function setTagsForTattoo(Tattoo $tattoo, array $tagIds): array
+    {
+        // Filter to only valid tag IDs
+        $validTags = Tag::whereIn('id', $tagIds)->get();
+        $validIds = $validTags->pluck('id')->toArray();
+
+        // Sync tags to tattoo
+        $tattoo->tags()->sync($validIds);
+
+        return $validTags->toArray();
+    }
+
+    /**
+     * Add a single tag to a tattoo
+     */
+    public function addTagToTattoo(Tattoo $tattoo, int $tagId): ?Tag
+    {
+        $tag = Tag::find($tagId);
+        if (!$tag) {
+            return null;
+        }
+
+        // Attach without detaching existing
+        $tattoo->tags()->syncWithoutDetaching([$tagId]);
+
+        return $tag;
+    }
+
+    /**
+     * Remove a tag from a tattoo
+     */
+    public function removeTagFromTattoo(Tattoo $tattoo, int $tagId): bool
+    {
+        $tattoo->tags()->detach($tagId);
+        return true;
     }
 
     /**
@@ -188,19 +270,19 @@ class TagService
      */
     public function getTagsForTattoo(Tattoo $tattoo): array
     {
-        return $tattoo->tags->pluck('tag')->toArray();
+        return $tattoo->tags->toArray();
     }
 
     /**
-     * Delete all tags for a tattoo
+     * Clear all tags for a tattoo (detach from pivot, don't delete from master)
      */
-    public function deleteTagsForTattoo(Tattoo $tattoo): bool
+    public function clearTagsForTattoo(Tattoo $tattoo): bool
     {
         try {
-            $tattoo->tags()->delete();
+            $tattoo->tags()->detach();
             return true;
         } catch (Exception $e) {
-            Log::error("Failed to delete tags for tattoo ID: {$tattoo->id}", [
+            Log::error("Failed to clear tags for tattoo ID: {$tattoo->id}", [
                 'error' => $e->getMessage()
             ]);
             return false;
@@ -208,14 +290,56 @@ class TagService
     }
 
     /**
-     * Regenerate tags for a tattoo (delete existing and create new ones)
+     * Regenerate tags for a tattoo (clear existing and generate new ones)
      */
     public function regenerateTagsForTattoo(Tattoo $tattoo): array
     {
-        // Delete existing tags
-        $this->deleteTagsForTattoo($tattoo);
+        // Clear existing tags
+        $this->clearTagsForTattoo($tattoo);
 
         // Generate new tags
         return $this->generateTagsForTattoo($tattoo);
+    }
+
+    /**
+     * Get all available tags (for autocomplete/listing)
+     */
+    public function getAllTags(): array
+    {
+        return Tag::orderBy('name')->get()->toArray();
+    }
+
+    /**
+     * Search tags by name (for autocomplete)
+     */
+    public function searchTags(string $query, int $limit = 10): array
+    {
+        return Tag::search($query)
+                  ->limit($limit)
+                  ->get()
+                  ->toArray();
+    }
+
+    /**
+     * Get featured/popular tags (for homepage)
+     */
+    public function getFeaturedTags(int $limit = 15): array
+    {
+        return Tag::withCount('tattoos')
+                  ->orderBy('tattoos_count', 'desc')
+                  ->limit($limit)
+                  ->get()
+                  ->toArray();
+    }
+
+    /**
+     * Get AI tag suggestions for review (tags that were suggested but not in master list)
+     * This could be used for admin interface to approve new tags
+     */
+    public function getUnmatchedSuggestions(): array
+    {
+        // This would require logging unmatched tags to a separate table
+        // For now, these are just logged to the application log
+        return [];
     }
 }
