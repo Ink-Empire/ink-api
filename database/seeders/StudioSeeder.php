@@ -4,7 +4,6 @@ namespace Database\Seeders;
 
 use App\Models\Studio;
 use Illuminate\Database\Seeder;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use File;
 
@@ -25,13 +24,14 @@ class StudioSeeder extends Seeder
                 Studio::create([
                     "name" => $value->name,
                     "email" => $value->email,
-                    'slug' => $value->slug,
-                    "password" => "$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi", // password
                     "phone" => $value->phone,
                     "about" => $value->about,
                     "location" => $value->location,
                     "location_lat_long" => $value->location_lat_long,
-                    "address_id" => $value->address_id
+                    "address_id" => $value->address_id ?? null,
+                    "owner_id" => $value->owner_id ?? null,
+                    "seeking_guest_artists" => $value->seeking_guest_artists ?? false,
+                    "guest_spot_details" => $value->guest_spot_details ?? null,
                 ]);
             }
         }
