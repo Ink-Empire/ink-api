@@ -48,7 +48,7 @@ class TattooIndexResource extends JsonResource
     private function getTags()
     {
         if (isset($this->tags)) {
-            return $this->tags->pluck('tag')->toArray();
+            return $this->tags->pluck('name')->toArray();
         }
 
         return [];

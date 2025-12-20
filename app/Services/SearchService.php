@@ -88,6 +88,10 @@ abstract class SearchService
             $this->buildStylesParam();
         }
 
+        if (isset($this->filters['tags']) && !empty($this->filters['tags'])) {
+            $this->buildTagsParam();
+        }
+
         if (isset($this->filters['near_me'])) {
             $this->buildGeoParam();
         }
@@ -106,14 +110,16 @@ abstract class SearchService
 
         // Handle distance-based filtering with coordinates
         // Skip distance filtering if user wants "anywhere" (useAnyLocation: true)
-        if ($this->user && !(isset($this->filters['useAnyLocation']) && $this->filters['useAnyLocation'])) {
-            if (isset($this->filters['useMyLocation']) && $this->filters['useMyLocation']) {
+        if (!(isset($this->filters['useAnyLocation']) && $this->filters['useAnyLocation'])) {
+            // Determine the location coordinates to use
+            if (isset($this->filters['useMyLocation']) && $this->filters['useMyLocation'] && $this->user) {
                 $this->latLongString = $this->user->location_lat_long;
             } elseif (isset($this->filters['locationCoords'])) {
                 $this->latLongString = $this->filters['locationCoords'];
             }
 
-            if ($this->latLongString) {
+            // Apply distance filter if we have coordinates AND distance settings
+            if ($this->latLongString && isset($this->filters['distance']) && isset($this->filters['distanceUnit'])) {
                 $distanceParam = $this->getDistanceField();
                 $this->buildDistanceParam($distanceParam, $this->latLongString);
             }
@@ -192,6 +198,34 @@ abstract class SearchService
 
         if (count($clauses) > 0) {
             $this->search->orWhere($clauses, $minMatch);
+        }
+    }
+
+    /**
+     * Build tags parameter filter - requires ALL selected tags to match
+     */
+    protected function buildTagsParam(): void
+    {
+        $tagIds = $this->filters['tags'];
+
+        // Ensure tags is always an array
+        if (!is_array($tagIds)) {
+            $tagIds = [$tagIds];
+        }
+
+        // Filter out empty values
+        $tagIds = array_filter($tagIds);
+
+        if (count($tagIds) > 0) {
+            // Look up tag names from IDs (tags are indexed as name strings, not objects)
+            $tagNames = \App\Models\Tag::whereIn('id', $tagIds)->pluck('name')->toArray();
+
+            if (count($tagNames) > 0) {
+                // Each tag must match (AND logic) - use where for each tag name
+                foreach ($tagNames as $tagName) {
+                    $this->search->where('tags', '=', $tagName);
+                }
+            }
         }
     }
 
