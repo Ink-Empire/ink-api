@@ -2,11 +2,13 @@
 
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ArtistController;
+use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\ConversationController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\TattooController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\StudioController;
+use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
 
 /*
@@ -93,6 +95,16 @@ Route::prefix('api')->group(function () {
             Route::post('/{id}/messages/design-share', [ConversationController::class, 'sendDesignShare']);
             Route::post('/{id}/messages/price-quote', [ConversationController::class, 'sendPriceQuote']);
         });
+
+        // Client Dashboard
+        Route::group(['prefix' => 'client'], function () {
+            Route::get('/dashboard', [ClientDashboardController::class, 'index']);
+            Route::get('/wishlist', [ClientDashboardController::class, 'getWishlist']);
+            Route::post('/wishlist', [ClientDashboardController::class, 'addToWishlist']);
+            Route::put('/wishlist/{artistId}', [ClientDashboardController::class, 'updateWishlistItem']);
+            Route::delete('/wishlist/{artistId}', [ClientDashboardController::class, 'removeFromWishlist']);
+            Route::get('/suggested-artists', [ClientDashboardController::class, 'getSuggestedArtistsEndpoint']);
+        });
     });
 
     Route::group(['prefix' => 'studios'], function () {
@@ -129,6 +141,24 @@ Route::prefix('api')->group(function () {
         Route::post('/create', 'StyleController@create');
         Route::put('/style/{id}', 'StyleController@update');
         Route::get('/{id}', 'StyleController@getById');
+    });
+
+    // Tags routes
+    Route::group(['prefix' => 'tags'], function () {
+        // Public routes
+        Route::get('/', [TagController::class, 'index']);
+        Route::get('/search', [TagController::class, 'search']);
+        Route::get('/featured', [TagController::class, 'featured']);
+        Route::get('/{slug}', [TagController::class, 'show']);
+
+        // Protected routes for managing tattoo tags
+        Route::middleware('auth:sanctum')->group(function () {
+            Route::get('/tattoo/{tattooId}', [TagController::class, 'getTattooTags']);
+            Route::post('/tattoo/{tattooId}', [TagController::class, 'setTattooTags']);
+            Route::post('/tattoo/{tattooId}/add', [TagController::class, 'addTattooTag']);
+            Route::delete('/tattoo/{tattooId}/{tagId}', [TagController::class, 'removeTattooTag']);
+            Route::post('/tattoo/{tattooId}/generate', [TagController::class, 'generateTattooTags']);
+        });
     });
 
     Route::group(['prefix' => 'images'], function () {
