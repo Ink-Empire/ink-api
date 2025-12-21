@@ -15,7 +15,6 @@ class UserResource extends JsonResource
             'location' => $this->location,
             'location_lat_long' => $this->location_lat_long,
             'name' => $this->name,
-            'password' => $this->password,
             'phone' => $this->phone,
             'studio' => $this->studio,
             'studio_name' => $this->studio_name ?? "",
