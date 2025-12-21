@@ -2,17 +2,21 @@
 
 namespace App\Http\Controllers;
 
+use App\Actions\Fortify\PasswordValidationRules;
 use App\Enums\UserTypes;
+use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Services\AddressService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
 class AuthController extends Controller
 {
+    use PasswordValidationRules;
 
     public function __construct(
         protected UserService $userService,
@@ -28,7 +32,7 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
-            'password' => 'required|string|min:8|confirmed',
+            'password' => $this->passwordRules(),
             'username' => [
                 'required',
                 'string',
@@ -37,7 +41,6 @@ class AuthController extends Controller
                 'regex:/^[a-zA-Z0-9._]+$/' // Only letters, numbers, periods, and underscores
             ],
             'slug' => 'required|string|max:30|unique:users',
-            //'device_name' => 'required|string',
         ]);
 
         if (isset($request->address)) {
@@ -46,18 +49,25 @@ class AuthController extends Controller
             );
         }
 
+        $hashedPassword = Hash::make($request->password);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
             'about' => $request->about ?? null,
             'username' => $request->username,
             'slug' => $request->slug,
-            'password' => Hash::make($request->password),
+            'password' => $hashedPassword,
             'phone' => $request->phone ?? null,
             'location' => $request->location ?? null,
             'location_lat_long' => $request->location_lat_long ?? null,
             'type_id' => $request->type == UserTypes::USER ? 1 : 2,
             'address_id' => $address->id ?? null
+        ]);
+
+        // Store password in history
+        $user->passwords()->create([
+            'password' => $hashedPassword,
         ]);
 
         // Create token for API authentication
@@ -88,20 +98,25 @@ class AuthController extends Controller
     /**
      * Login and return a token
      */
-    public function login(Request $request)
+    public function login(LoginRequest $request)
     {
-        $request->validate([
-            'email' => 'required|email',
-            'password' => 'required'
-        ]);
+        // Check rate limiting
+        $request->ensureIsNotRateLimited();
 
         $user = User::where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
+            RateLimiter::hit($request->throttleKey());
+
             throw ValidationException::withMessages([
                 'email' => ['The provided credentials are incorrect.'],
             ]);
         }
+
+        RateLimiter::clear($request->throttleKey());
+
+        // Update last login timestamp
+        $user->update(['last_login_at' => now()]);
 
         // Delete old tokens and create a new one for API authentication
         $user->tokens()->delete();

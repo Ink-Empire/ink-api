@@ -2,8 +2,10 @@
 
 namespace App\Models;
 
-// use Illuminate\Contracts\Auth\MustVerifyEmail;
+use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserTypes;
+use App\Notifications\VerifyEmailNotification;
+use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
@@ -11,7 +13,7 @@ use Laravel\Sanctum\HasApiTokens;
 use Illuminate\Database\Eloquent\Builder;
 
 
-class User extends Authenticatable
+class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
@@ -46,7 +48,8 @@ class User extends Authenticatable
         'type_id',
         'address_id',
         'username',
-        'slug'
+        'slug',
+        'last_login_at',
     ];
 
     /**
@@ -67,6 +70,7 @@ class User extends Authenticatable
     protected $casts = [
         'email_verified_at' => 'datetime',
         'last_seen_at' => 'datetime',
+        'last_login_at' => 'datetime',
     ];
 
     public function scopeArtist(Builder $query): void
@@ -130,6 +134,21 @@ class User extends Authenticatable
     public function ownedStudio()
     {
         return $this->hasOne(Studio::class, 'owner_id');
+    }
+
+    public function passwords()
+    {
+        return $this->hasMany(Password::class);
+    }
+
+    public function sendEmailVerificationNotification()
+    {
+        $this->notify(new VerifyEmailNotification);
+    }
+
+    public function sendPasswordResetNotification($token)
+    {
+        $this->notify(new ResetPasswordNotification($token));
     }
 
     /**
