@@ -7,11 +7,13 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\UpdatePasswordController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\StyleController;
 use App\Http\Controllers\CountryController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\AppointmentController;
+use App\Http\Controllers\StudioController;
 
 /*
 |--------------------------------------------------------------------------
@@ -27,10 +29,12 @@ use App\Http\Controllers\AppointmentController;
 // Public routes
 Route::get('/styles', [StyleController::class, 'index']);
 Route::get('/countries', [CountryController::class, 'index']);
+Route::post('/studios/check-availability', [StudioController::class, 'checkAvailability']);
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/username', [AuthController::class, 'checkUsername']);
+Route::post('/check-availability', [AuthController::class, 'checkAvailability']);
 Route::post('/login', [AuthController::class, 'login']);
 Route::post('/logout', [AuthController::class, 'logout']);
 
@@ -49,6 +53,7 @@ Route::post('/email/verification-notification', [EmailVerificationNotificationCo
 Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('users')->group(function () {
         Route::get('/me', [UserController::class, 'me']);
+        Route::put('/password', [UpdatePasswordController::class, 'update']);
     });
 
     // Appointment routes
