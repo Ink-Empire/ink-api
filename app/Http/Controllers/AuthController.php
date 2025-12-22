@@ -96,6 +96,47 @@ class AuthController extends Controller
     }
 
     /**
+     * Check if email or username is available
+     */
+    public function checkAvailability(Request $request)
+    {
+        $email = $request->input('email');
+        $username = $request->input('username');
+
+        // Check email availability
+        if ($email) {
+            $emailExists = User::where('email', $email)->exists();
+            return response()->json([
+                'available' => !$emailExists,
+                'field' => 'email'
+            ]);
+        }
+
+        // Check username availability
+        if ($username) {
+            // Validate username format first
+            if (!preg_match('/^[a-zA-Z0-9._]+$/', $username)) {
+                return response()->json([
+                    'available' => false,
+                    'field' => 'username',
+                    'message' => 'Username can only contain letters, numbers, periods, and underscores'
+                ]);
+            }
+
+            $usernameExists = User::where('username', $username)->exists();
+            return response()->json([
+                'available' => !$usernameExists,
+                'field' => 'username'
+            ]);
+        }
+
+        return response()->json([
+            'available' => false,
+            'message' => 'No email or username provided'
+        ], 400);
+    }
+
+    /**
      * Login and return a token
      */
     public function login(LoginRequest $request)
@@ -134,8 +175,8 @@ class AuthController extends Controller
      */
     public function logout(Request $request)
     {
-        // Revoke the current access token
-        if ($request->user()) {
+        // Revoke the current access token if it exists
+        if ($request->user() && $request->user()->currentAccessToken()) {
             $request->user()->currentAccessToken()->delete();
         }
 
