@@ -139,9 +139,21 @@ class TattooController extends Controller
             //get the files uploaded, there may be multiple
             $files = $request->file('files');
 
+            // Check if files were uploaded
+            if (empty($files)) {
+                return $this->returnErrorResponse("No images uploaded", "Please select at least one image");
+            }
+
             //if we just have one file, make it an array
             if (!is_array($files)) {
                 $files = [$files];
+            }
+
+            // Filter out any null values
+            $files = array_filter($files);
+
+            if (empty($files)) {
+                return $this->returnErrorResponse("No valid images", "Please select at least one valid image");
             }
 
             $images = $this->tattooService->upload($files, $user);
@@ -166,6 +178,7 @@ class TattooController extends Controller
                     'artist_id' => $user->id,
                     'primary_image_id' => $primaryImage->id,
                     'studio_id' => $user->studio_id ?? null,
+                    'title' => $request->input('title'),
                     'description' => $request->input('description'),
                     'placement' => $request->input('placement'),
                     'primary_style_id' => $primaryStyleId,
@@ -186,11 +199,42 @@ class TattooController extends Controller
                     $tattoo->styles()->attach($styleIds);
                 }
 
+                // Handle user-selected tags (before AI generation)
+                // These are tags the user explicitly chose during upload
+                $userSelectedTagIds = [];
+                if ($request->has('tag_ids')) {
+                    $userTagIds = json_decode($request->input('tag_ids'), true);
+                    if (is_array($userTagIds) && !empty($userTagIds)) {
+                        // Validate that tag IDs exist
+                        $userSelectedTagIds = Tag::whereIn('id', $userTagIds)->pluck('id')->toArray();
+                        if (!empty($userSelectedTagIds)) {
+                            $tattoo->tags()->attach($userSelectedTagIds);
+                            \Log::info("User-selected tags attached to tattoo", [
+                                'tattoo_id' => $tattoo->id,
+                                'tag_ids' => $userSelectedTagIds
+                            ]);
+                        }
+                    }
+                }
+
                 // Generate AI tags for the tattoo images
+                // AI will suggest additional tags beyond what the user selected
+                $aiSuggestedTags = [];
                 try {
                     $tattoo->load('images');
-                    $this->tattooTagService->generateTagsForTattoo($tattoo);
-                    \Log::info("AI tags generated for tattoo", ['tattoo_id' => $tattoo->id]);
+                    $allAiTags = $this->tattooTagService->generateTagsForTattoo($tattoo);
+
+                    // Filter out tags the user already selected - only show NEW suggestions
+                    $aiSuggestedTags = array_filter($allAiTags, function($tag) use ($userSelectedTagIds) {
+                        return !in_array($tag->id, $userSelectedTagIds);
+                    });
+                    $aiSuggestedTags = array_values($aiSuggestedTags); // Re-index array
+
+                    \Log::info("AI tags generated for tattoo", [
+                        'tattoo_id' => $tattoo->id,
+                        'total_ai_tags' => count($allAiTags),
+                        'new_suggestions' => count($aiSuggestedTags)
+                    ]);
                 } catch (\Exception $e) {
                     // Don't fail the entire request if tag generation fails
                     \Log::error("Failed to generate AI tags for tattoo", [
@@ -199,10 +243,18 @@ class TattooController extends Controller
                     ]);
                 }
 
-                $tattoo->searchable(); //this is likely unnecessary, but we will need to re-index the tattoo
-                Artist::find($user->id)->searchable(); //re-index the artist
+                $tattoo->searchable();
+                Artist::find($user->id)->searchable();
 
-                return new TattooResource($tattoo);
+                // Return tattoo with AI suggestions for user review
+                return response()->json([
+                    'tattoo' => new TattooResource($tattoo),
+                    'ai_suggested_tags' => array_map(fn($tag) => [
+                        'id' => $tag->id,
+                        'name' => $tag->name,
+                        'slug' => $tag->slug
+                    ], $aiSuggestedTags)
+                ]);
             } else {
                 return $this->returnErrorResponse("No images uploaded", "No files uploaded");
             }

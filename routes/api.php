@@ -14,6 +14,7 @@ use App\Http\Controllers\CountryController;
 use App\Http\Controllers\MessageController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\StudioController;
+use App\Http\Controllers\TagController;
 
 /*
 |--------------------------------------------------------------------------
@@ -30,6 +31,11 @@ use App\Http\Controllers\StudioController;
 Route::get('/styles', [StyleController::class, 'index']);
 Route::get('/countries', [CountryController::class, 'index']);
 Route::post('/studios/check-availability', [StudioController::class, 'checkAvailability']);
+
+// Tag routes (public for autocomplete)
+Route::get('/tags', [TagController::class, 'index']);
+Route::get('/tags/search', [TagController::class, 'search']);
+Route::get('/tags/featured', [TagController::class, 'featured']);
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -55,6 +61,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me', [UserController::class, 'me']);
         Route::put('/password', [UpdatePasswordController::class, 'update']);
     });
+
+    // Tattoo tag management (authenticated)
+    Route::post('/tattoos/{tattooId}/tags', [TagController::class, 'setTattooTags']);
+    Route::post('/tattoos/{tattooId}/tags/add', [TagController::class, 'addTattooTag']);
 
     // Appointment routes
     Route::prefix('appointments')->group(function () {
