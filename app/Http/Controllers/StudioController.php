@@ -28,6 +28,39 @@ class StudioController extends Controller
     }
 
     /**
+     * Check if a studio username or email is available
+     */
+    public function checkAvailability(Request $request): JsonResponse
+    {
+        $email = $request->input('email');
+        $username = $request->input('username');
+
+        if ($email) {
+            $emailExists = Studio::where('email', $email)->exists();
+            return response()->json([
+                'available' => !$emailExists,
+                'field' => 'email'
+            ]);
+        }
+
+        if ($username) {
+            // Check both username and slug since they're often the same
+            $usernameExists = Studio::where('slug', $username)
+                ->orWhere('slug', strtolower($username))
+                ->exists();
+            return response()->json([
+                'available' => !$usernameExists,
+                'field' => 'username'
+            ]);
+        }
+
+        return response()->json([
+            'available' => true,
+            'field' => null
+        ]);
+    }
+
+    /**
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
