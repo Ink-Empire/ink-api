@@ -16,15 +16,21 @@ class StudioService
 {
 
     /**
+     * Get studio by ID or slug
      * @param $id
      */
     public function getById($id): ?Studio
     {
-        if ($id) {
+        if (!$id) {
+            return null;
+        }
+
+        // If numeric, search by ID; otherwise search by slug
+        if (is_numeric($id)) {
             return Studio::where('id', $id)->first();
         }
 
-        return null;
+        return Studio::where('slug', $id)->first();
     }
 
     /**
