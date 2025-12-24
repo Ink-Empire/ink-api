@@ -97,6 +97,7 @@ class Tattoo extends Model
             'studio',
             'images',
             'primary_style',
+            'primary_image',
             'styles',
             'tags'
         ]);
