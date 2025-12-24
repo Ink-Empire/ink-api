@@ -181,6 +181,7 @@ class TattooController extends Controller
                     'title' => $request->input('title'),
                     'description' => $request->input('description'),
                     'placement' => $request->input('placement'),
+                    'duration' => $request->input('hours_to_complete'),
                     'primary_style_id' => $primaryStyleId,
                 ]);
 

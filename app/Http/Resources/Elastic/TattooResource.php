@@ -17,6 +17,8 @@ class TattooResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'placement' => $this->placement,
+            'duration' => $this->duration,
+            'artist' => new ArtistResource($this->artist),
             'studio' => $this->studio->name ?? "",
             'primary_style' => $this->primary_style->name ?? "",
             'primary_subject' => $this->subject->name ?? "",

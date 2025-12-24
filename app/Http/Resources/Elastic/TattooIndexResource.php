@@ -33,6 +33,7 @@ class TattooIndexResource extends JsonResource
             'title' => $this->title,
             'description' => $this->description,
             'placement' => $this->placement,
+            'duration' => $this->duration,
             'artist' => new ArtistResource($this->artist),
             'studio' => new StudioResource($this->studio),
             'primary_style' => $this->primary_style->name ?? '',

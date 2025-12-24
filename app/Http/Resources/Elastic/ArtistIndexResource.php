@@ -33,7 +33,6 @@ class ArtistIndexResource extends JsonResource
             'slug' => $this->slug,
             'studio' => new StudioResource($this->studio),
             'studio_name' => $this->studio?->name,
-            'type' => $this->type->name,
             'is_featured' => (bool) $this->is_featured,
             'styles' => StyleResource::collection($this->styles),
             'tattoos' => TattooResource::collection($this->tattoos),
