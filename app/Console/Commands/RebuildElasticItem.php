@@ -35,14 +35,26 @@ class RebuildElasticItem extends Command
         $model = StringToModel::convert($type);
         $itemToRebuild = $model::find($this->argument('id'));
 
-        \Log::info($itemToRebuild);
+        if (!$itemToRebuild) {
+            $this->error("$type with ID {$this->argument('id')} not found.");
+            return;
+        }
 
         $this->info("Rebuilding $type with ID {$this->argument('id')}...");
 
         try {
+            // Load all relationships before indexing
+            if ($type === 'tattoo') {
+                $itemToRebuild->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style']);
+            } elseif ($type === 'artist') {
+                $itemToRebuild->load(['tattoos', 'styles', 'studio', 'settings']);
+            }
+
             $itemToRebuild->searchable();
+            $this->info("Successfully reindexed $type {$this->argument('id')}");
         } catch (\Exception $e) {
-            \Log::info("Error rebuilding item: {$e->getMessage()}");
+            $this->error("Error rebuilding item: {$e->getMessage()}");
+            \Log::error("Error rebuilding item: {$e->getMessage()}");
         }
     }
 }

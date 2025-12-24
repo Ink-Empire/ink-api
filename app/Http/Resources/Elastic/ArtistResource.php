@@ -21,13 +21,13 @@ class ArtistResource extends JsonResource
             'phone' => $this->phone,
             'slug' => $this->slug,
             'studio' => $this->studio->name ?? "",
-            'type' => $this->type->name,
+            'type' => $this->type->name ?? null,
             'is_featured' => (int) $this->is_featured,
-            'styles' => $this->styles,
+            'styles' => $this->whenLoaded('styles'),
             'isFavorite' => $this->getIsUserFavorite(),
             'username' => $this->username,
-            'working_hours' => WorkingHoursResource::collection($this->working_hours ?? collect()),
-            'appointments' => AppointmentResource::collection($this->appointments ?? collect()),
+            'working_hours' => $this->whenLoaded('working_hours', fn() => WorkingHoursResource::collection($this->working_hours)),
+            'appointments' => $this->whenLoaded('appointments', fn() => AppointmentResource::collection($this->appointments)),
             'settings' => $this->settings ?? [],
         ];
     }

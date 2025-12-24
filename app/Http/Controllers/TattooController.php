@@ -243,6 +243,9 @@ class TattooController extends Controller
                     ]);
                 }
 
+                // Refresh the tattoo to ensure all relationships (including newly attached tags) are loaded
+                $tattoo->refresh();
+                $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style']);
                 $tattoo->searchable();
                 Artist::find($user->id)->searchable();
 
@@ -302,8 +305,11 @@ class TattooController extends Controller
                 }
             }
 
-            \Log::info("created tattoo", ['tattoo' => $tattoo->id]);
+            \Log::info("updated tattoo", ['tattoo' => $tattoo->id]);
 
+            // Refresh to ensure all relationships are loaded before indexing
+            $tattoo->refresh();
+            $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style']);
             $tattoo->searchable();
 
             \Log::info("indexed tattoo", ['tattoo' => $tattoo->id]);
