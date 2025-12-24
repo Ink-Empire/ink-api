@@ -6,7 +6,7 @@ class StringToModel
 {
     public static function convert($model)
     {
-        $model = 'App\Models\\' . ($model);
+        $model = 'App\Models\\' . ucfirst($model);
         return new $model;
     }
 }
