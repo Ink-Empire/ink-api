@@ -37,6 +37,9 @@ Route::get('/tags', [TagController::class, 'index']);
 Route::get('/tags/search', [TagController::class, 'search']);
 Route::get('/tags/featured', [TagController::class, 'featured']);
 
+// Google Places config (returns API key for frontend SDK use)
+Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'config']);
+
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
 Route::post('/username', [AuthController::class, 'checkUsername']);

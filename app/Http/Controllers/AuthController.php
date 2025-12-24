@@ -62,7 +62,8 @@ class AuthController extends Controller
             'location' => $request->location ?? null,
             'location_lat_long' => $request->location_lat_long ?? null,
             'type_id' => $request->type == UserTypes::USER ? 1 : 2,
-            'address_id' => $address->id ?? null
+            'address_id' => $address->id ?? null,
+            'experience_level' => $request->experience_level ?? null,
         ]);
 
         // Store password in history
