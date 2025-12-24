@@ -10,6 +10,8 @@ class Studio extends Model
 {
     use HasFactory;
 
+    protected $with = ['image'];
+
     protected $fillable = [
         'name',
         'slug',

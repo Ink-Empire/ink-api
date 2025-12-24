@@ -17,7 +17,7 @@ class User extends Authenticatable implements MustVerifyEmail
 {
     use HasApiTokens, HasFactory, Notifiable;
 
-    protected $with = ['ownedStudio'];
+    protected $with = ['ownedStudio', 'image'];
 
 //    protected static function booted()
 //    {

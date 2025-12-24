@@ -54,6 +54,12 @@ class UserController extends Controller
         try {
             $user = $request->user();
 
+
+            if (!$user) {
+                \Log::error('Profile photo upload failed - no authenticated user');
+                return $this->returnErrorResponse("Not authenticated", "Please log in to upload a photo");
+            }
+
             if ($request->hasFile('profile_photo')) {
 
                 $file = $request->file('profile_photo');
