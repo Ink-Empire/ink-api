@@ -136,7 +136,7 @@ abstract class SearchService
     protected function getDistanceField(): string
     {
         if ($this->searchContext === SearchContext::TATTOO) {
-            return 'artist.location_lat_long';
+            return 'artist_location_lat_long';
         }
         return 'location_lat_long';
     }
@@ -321,7 +321,7 @@ abstract class SearchService
         $distance = '25mi';
         $latLongArray = explode(",", $this->user->location_lat_long);
 
-        $distanceSearch->whereDistance('artist.location_lat_long', $latLongArray[0], $latLongArray[1], $distance);
+        $distanceSearch->whereDistance('artist_location_lat_long', $latLongArray[0], $latLongArray[1], $distance);
 
         $distanceResponse = $distanceSearch->get();
 
@@ -390,7 +390,7 @@ abstract class SearchService
     {
         $latLongArray = explode(",", $this->user->location_lat_long);
 
-        $response['bool']['must'] = $this->search->whereDistanceSyntax('artist.location_lat_long', $latLongArray[0], $latLongArray[1], '25mi');
+        $response['bool']['must'] = $this->search->whereDistanceSyntax('artist_location_lat_long', $latLongArray[0], $latLongArray[1], '25mi');
 
         return $response;
     }

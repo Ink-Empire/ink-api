@@ -1,4 +1,5 @@
 <IfModule mod_rewrite.c>
+SetEnv PHP_IDE_CONFIG "serverName=inkedin"
     <IfModule mod_negotiation.c>
         Options -MultiViews -Indexes
     </IfModule>
