@@ -17,6 +17,7 @@ class Tattoo extends Model
         'title',
         'description',
         'placement',
+        'duration',
         'artist_id',
         'studio_id',
         'primary_style_id',

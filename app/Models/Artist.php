@@ -114,7 +114,7 @@ class Artist extends User
             'studio',
             'styles',
             'tattoos',
-            'primary_image'
+            'primary_image',
         ];
 
         $this->loadMissing($with);

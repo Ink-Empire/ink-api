@@ -92,6 +92,10 @@ abstract class SearchService
             $this->buildTagsParam();
         }
 
+        if (isset($this->filters['tagNames']) && !empty($this->filters['tagNames'])) {
+            $this->buildTagNamesParam();
+        }
+
         if (isset($this->filters['near_me'])) {
             $this->buildGeoParam();
         }
@@ -225,6 +229,29 @@ abstract class SearchService
                 foreach ($tagNames as $tagName) {
                     $this->search->where('tags', '=', $tagName);
                 }
+            }
+        }
+    }
+
+    /**
+     * Build tag names parameter filter - filter by tag names directly (no ID lookup)
+     */
+    protected function buildTagNamesParam(): void
+    {
+        $tagNames = $this->filters['tagNames'];
+
+        // Ensure tagNames is always an array
+        if (!is_array($tagNames)) {
+            $tagNames = [$tagNames];
+        }
+
+        // Filter out empty values
+        $tagNames = array_filter($tagNames);
+
+        if (count($tagNames) > 0) {
+            // Each tag must match (AND logic) - use where for each tag name
+            foreach ($tagNames as $tagName) {
+                $this->search->where('tags', '=', $tagName);
             }
         }
     }
