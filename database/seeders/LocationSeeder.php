@@ -18,8 +18,17 @@ class LocationSeeder extends Seeder
             return;
         }
 
+        // Helper to insert or get existing location
+        $insertOrGet = function (array $data) {
+            $existing = DB::table('locations')->where('slug', $data['slug'])->first();
+            if ($existing) {
+                return $existing->id;
+            }
+            return DB::table('locations')->insertGetId($data);
+        };
+
         // Regions
-        $northAmerica = DB::table('locations')->insertGetId([
+        $northAmerica = $insertOrGet([
             'type' => 'region',
             'name' => 'North America',
             'slug' => 'north-america',
@@ -34,7 +43,7 @@ class LocationSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $europe = DB::table('locations')->insertGetId([
+        $europe = $insertOrGet([
             'type' => 'region',
             'name' => 'Europe',
             'slug' => 'europe',
@@ -49,7 +58,7 @@ class LocationSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $oceania = DB::table('locations')->insertGetId([
+        $oceania = $insertOrGet([
             'type' => 'region',
             'name' => 'Oceania',
             'slug' => 'oceania',
@@ -65,7 +74,7 @@ class LocationSeeder extends Seeder
         ]);
 
         // Countries
-        $usa = DB::table('locations')->insertGetId([
+        $usa = $insertOrGet([
             'type' => 'country',
             'name' => 'United States',
             'slug' => 'united-states',
@@ -80,7 +89,7 @@ class LocationSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $canada = DB::table('locations')->insertGetId([
+        $canada = $insertOrGet([
             'type' => 'country',
             'name' => 'Canada',
             'slug' => 'canada',
@@ -95,7 +104,7 @@ class LocationSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $uk = DB::table('locations')->insertGetId([
+        $uk = $insertOrGet([
             'type' => 'country',
             'name' => 'United Kingdom',
             'slug' => 'united-kingdom',
@@ -110,7 +119,7 @@ class LocationSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $germany = DB::table('locations')->insertGetId([
+        $germany = $insertOrGet([
             'type' => 'country',
             'name' => 'Germany',
             'slug' => 'germany',
@@ -125,7 +134,7 @@ class LocationSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $france = DB::table('locations')->insertGetId([
+        $france = $insertOrGet([
             'type' => 'country',
             'name' => 'France',
             'slug' => 'france',
@@ -140,7 +149,7 @@ class LocationSeeder extends Seeder
             'updated_at' => now(),
         ]);
 
-        $australia = DB::table('locations')->insertGetId([
+        $australia = $insertOrGet([
             'type' => 'country',
             'name' => 'Australia',
             'slug' => 'australia',
@@ -182,7 +191,7 @@ class LocationSeeder extends Seeder
         ];
 
         foreach ($cities as $city) {
-            DB::table('locations')->insert([
+            DB::table('locations')->insertOrIgnore([
                 'type' => 'city',
                 'name' => $city['name'],
                 'slug' => $city['slug'],
