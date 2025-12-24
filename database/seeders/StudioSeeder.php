@@ -5,6 +5,7 @@ namespace Database\Seeders;
 use App\Models\Studio;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Schema;
+use Illuminate\Support\Str;
 use File;
 
 class StudioSeeder extends Seeder
@@ -23,6 +24,7 @@ class StudioSeeder extends Seeder
             foreach ($studios as $key => $value) {
                 Studio::create([
                     "name" => $value->name,
+                    "slug" => Str::slug($value->name) . '-' . ($key + 1),
                     "email" => $value->email,
                     "phone" => $value->phone,
                     "about" => $value->about,
