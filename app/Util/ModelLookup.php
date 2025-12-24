@@ -10,14 +10,21 @@ class ModelLookup
 {
     /**
      * Find an artist by ID (numeric) or slug (string)
+     * Loads relationships needed for full API responses
      */
-    public static function findArtist($identifier)
+    public static function findArtist($identifier, bool $withSchedule = true)
     {
-        if (!is_numeric($identifier)) {
-            return Artist::where('slug', $identifier)->first();
+        $query = Artist::query();
+
+        if ($withSchedule) {
+            $query->with(['working_hours', 'appointments', 'styles']);
         }
-        
-        return Artist::find($identifier);
+
+        if (!is_numeric($identifier)) {
+            return $query->where('slug', $identifier)->first();
+        }
+
+        return $query->find($identifier);
     }
 
     /**
