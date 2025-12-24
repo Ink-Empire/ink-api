@@ -12,11 +12,13 @@ use App\Models\ProfileView;
 use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
+use App\Services\TattooService;
 use App\Util\ModelLookup;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\Log;
 
 /**
  *
@@ -25,7 +27,8 @@ class ArtistController extends Controller
 {
     public function __construct(
         protected ArtistService $artistService,
-        protected ImageService  $imageService
+        protected ImageService  $imageService,
+        protected TattooService $tattooService
     )
     {
     }
@@ -70,7 +73,23 @@ class ArtistController extends Controller
 
             return $this->returnResponse('artist', new ArtistResource($artist));
         }
+
+        $params = request()->all();
+
         $artist = $this->artistService->getById($id);
+        $tattoos = $this->tattooService->getByArtistId($id, $params);
+
+        // Replace embedded tattoos with fresh data from tattoos index
+        if (is_array($artist) && isset($artist['tattoos'])) {
+            $tattooData = $tattoos['response'];
+
+            // Convert Collection to array if needed
+            if ($tattooData instanceof \Illuminate\Support\Collection) {
+                $tattooData = $tattooData->values()->toArray();
+            }
+
+            $artist['tattoos'] = $tattooData;
+        }
 
         return $this->returnResponse('artist', $artist);
     }
@@ -154,16 +173,6 @@ class ArtistController extends Controller
         }
 
         return response()->json(['success' => true]);
-    }
-
-    public function portfolio(Request $request, $id): JsonResponse
-    {
-        $response = $this->artistService->getById($id);
-
-        if ($response) {
-            return response()->json($response->first()['tattoos']);
-        }
-
     }
 
     /**

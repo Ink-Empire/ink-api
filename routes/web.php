@@ -44,7 +44,7 @@ Route::prefix('api')->group(function () {
 
         Route::group(['prefix' => 'tattoos'], function () {
             Route::post('/create', [TattooController::class, 'create']);
-            Route::put('/tattoos/{id}', [TattooController::class, 'update']);
+            Route::match(['put', 'post'], '/{id}', [TattooController::class, 'update']);
             Route::post('/{id}/generate-tags', [TattooController::class, 'generateTags']);
             Route::put('/{id}/featured', [TattooController::class, 'toggleFeatured']);
         });
@@ -55,7 +55,6 @@ Route::prefix('api')->group(function () {
         Route::post('/', [ArtistController::class, 'search']);
         Route::get('/{id}', [ArtistController::class, 'getById']);
         Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
-        Route::get('/{id}/portfolio', [ArtistController::class, 'portfolio']);
 
         // Public appointment viewing - for guests to see availability
         Route::post('/appointments', [AppointmentController::class, 'index']);

@@ -13,12 +13,13 @@ class TattooService extends SearchService
 {
     public function __construct(
         protected UserService $userService,
-        public ImageService $imageService
-    ) {
+        public ImageService   $imageService
+    )
+    {
         parent::__construct($userService);
     }
 
-    public function upload(array $files, User $user): Array
+    public function upload(array $files, User $user): array
     {
         $images = [];
 
@@ -65,7 +66,7 @@ class TattooService extends SearchService
             $this->buildTattooSearchStringFilter();
         }
 
-        if(isset($this->filters['booksOpen']) && $this->filters['booksOpen'] === true) {
+        if (isset($this->filters['booksOpen']) && $this->filters['booksOpen'] === true) {
             $this->search->where('artist_books_open', '=', true);
         }
     }
@@ -94,7 +95,16 @@ class TattooService extends SearchService
     {
         // Use Eloquent for simple ID lookups, Elasticsearch for more complex queries
         if ($id) {
-            return Tattoo::where('id', $id)->first();
+            return Tattoo::with([
+                'images',
+                'primary_image',
+                'styles',
+                'tags',
+                'artist',
+                'studio',
+                'primary_style',
+                'subject'
+            ])->where('id', $id)->first();
         }
 
         return null;
@@ -122,4 +132,22 @@ class TattooService extends SearchService
         return $tattoo;
     }
 
+    /**
+     * Get all tattoos for a specific artist from the tattoos index
+     */
+    public function getByArtistId(mixed $artistId, array $params = []): array
+    {
+        $this->filters = $params;
+        $this->initializeSearch();
+
+        // Filter by artist_id or artist.slug
+        if (!is_numeric($artistId)) {
+            // It's a slug - query nested artist.slug field
+            $this->search->where('artist_slug', '=', $artistId);
+        } else {
+            $this->search->where('artist_id', '=', (int) $artistId);
+        }
+
+        return $this->search->get();
+    }
 }

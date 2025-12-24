@@ -276,33 +276,97 @@ class TattooController extends Controller
     {
         try {
             $user = $request->user();
-            //todo figure out how jonathan is returning that object without querying it
             $tattoo = $this->tattooService->getById($id);
 
-            $tags = $data['tags'] ?? null; //TODO properly implement tags
+            if (!$tattoo) {
+                return $this->returnErrorResponse('Tattoo not found');
+            }
 
-            //TODO idea get AI to analyze image in post-process to add subject/tags
-            $styles = $data['styles'] ?? null;
+            // Verify the user owns this tattoo
+            if ($tattoo->artist_id !== $user->id) {
+                return $this->returnErrorResponse('You can only update your own tattoos', 403);
+            }
 
-            if(!empty($styles)) {
-                $styles = Style::whereIn('id', explode(",", $styles))->get();
-                //attach styles to tattoo
-                $tattoo->styles()->sync($styles);
+            // Update basic fields
+            if ($request->has('title')) {
+                $tattoo->title = $request->input('title');
+            }
+            if ($request->has('description')) {
+                $tattoo->description = $request->input('description');
+            }
+            if ($request->has('placement')) {
+                $tattoo->placement = $request->input('placement');
+            }
+            if ($request->has('duration')) {
+                $tattoo->duration = $request->input('duration');
+            }
+
+            // Handle image deletions
+            $deletedImageIds = $request->input('deleted_image_ids');
+            if (!empty($deletedImageIds)) {
+                if (is_string($deletedImageIds)) {
+                    $deletedImageIds = json_decode($deletedImageIds, true);
+                }
+                if (is_array($deletedImageIds) && count($deletedImageIds) > 0) {
+                    // Detach deleted images from the pivot table
+                    $tattoo->images()->detach($deletedImageIds);
+
+                    // If primary image was deleted, set a new one
+                    if (in_array($tattoo->primary_image_id, $deletedImageIds)) {
+                        $remainingImage = $tattoo->images()->first();
+                        $tattoo->primary_image_id = $remainingImage ? $remainingImage->id : null;
+                    }
+
+                    \Log::info("Deleted images from tattoo", [
+                        'tattoo_id' => $tattoo->id,
+                        'deleted_ids' => $deletedImageIds
+                    ]);
+                }
+            }
+
+            // Handle new image uploads
+            $files = $request->file('files');
+            if (!empty($files)) {
+                if (!is_array($files)) {
+                    $files = [$files];
+                }
+                $files = array_filter($files);
+
+                if (count($files) > 0) {
+                    $newImages = $this->tattooService->upload($files, $user);
+                    $newImageIds = collect($newImages)->pluck('id')->toArray();
+                    $tattoo->images()->attach($newImageIds);
+
+                    // If no primary image, set the first new one
+                    if (!$tattoo->primary_image_id && count($newImages) > 0) {
+                        $tattoo->primary_image_id = $newImages[0]->id;
+                    }
+
+                    \Log::info("Added new images to tattoo", [
+                        'tattoo_id' => $tattoo->id,
+                        'new_image_ids' => $newImageIds
+                    ]);
+                }
             }
 
             $tattoo->save();
 
+            // Handle styles - can be array of IDs or comma-separated string
+            $styles = $request->input('styles');
+            if (!empty($styles)) {
+                if (is_array($styles)) {
+                    $styleIds = $styles;
+                } else {
+                    $styleIds = explode(",", $styles);
+                }
+                $tattoo->styles()->sync($styleIds);
+            }
 
-            if (!empty($tags)) {
-                $tags = explode(",", $tags);
-
-                foreach ($tags as $tag) {
-                    $tag = new Tag([
-                        'tattoo_id' => $tattoo->id,
-                        'tag' => $tag
-                    ]);
-
-                    $tag->save();
+            // Handle tags
+            $tagIds = $request->input('tag_ids');
+            if (!empty($tagIds)) {
+                if (is_array($tagIds)) {
+                    $tattoo->tags()->sync($tagIds);
                 }
             }
 
@@ -310,7 +374,7 @@ class TattooController extends Controller
 
             // Refresh to ensure all relationships are loaded before indexing
             $tattoo->refresh();
-            $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style']);
+            $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
             $tattoo->searchable();
 
             \Log::info("indexed tattoo", ['tattoo' => $tattoo->id]);
@@ -318,7 +382,7 @@ class TattooController extends Controller
             return $this->returnResponse('tattoo', new TattooResource($tattoo));
 
         } catch (\Exception $e) {
-            \Log::error("Unable to create tattoo", [
+            \Log::error("Unable to update tattoo", [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
                 'file' => $e->getFile()
