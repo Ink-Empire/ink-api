@@ -366,4 +366,138 @@ class StudioController extends Controller
         $this->studioService->removeSpotlight($spotlight);
         return response()->json(['success' => true]);
     }
+
+    // ==================== Admin Methods ====================
+
+    /**
+     * List all studios with pagination for admin
+     */
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $perPage = min($request->input('per_page', 25), 100);
+        $page = $request->input('page', 1);
+        $sort = $request->input('sort', 'id');
+        $order = $request->input('order', 'desc');
+        $filter = $request->input('filter', []);
+
+        $query = Studio::with(['owner', 'image']);
+
+        // Apply filters
+        if (is_string($filter)) {
+            $filter = json_decode($filter, true) ?? [];
+        }
+
+        if (!empty($filter['q'])) {
+            $search = $filter['q'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('location', 'like', "%{$search}%");
+            });
+        }
+
+        // Apply sorting
+        $query->orderBy($sort, $order);
+
+        $total = $query->count();
+        $studios = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+
+        return response()->json([
+            'data' => $studios,
+            'total' => $total,
+        ]);
+    }
+
+    /**
+     * Create a new studio (admin only)
+     */
+    public function adminStore(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+        ]);
+
+        $studio = Studio::create([
+            'name' => $request->input('name'),
+            'slug' => $request->input('slug', strtolower(str_replace(' ', '-', $request->input('name')))),
+            'email' => $request->input('email'),
+            'phone' => $request->input('phone'),
+            'location' => $request->input('location', ''),
+            'about' => $request->input('about'),
+            'owner_id' => $request->input('owner_id'),
+        ]);
+
+        return response()->json([
+            'data' => $studio,
+        ], 201);
+    }
+
+    /**
+     * Get a single studio for admin
+     */
+    public function adminShow(int $id): JsonResponse
+    {
+        $studio = Studio::with(['owner', 'image', 'artists'])->find($id);
+
+        if (!$studio) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Studio not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => $studio,
+        ]);
+    }
+
+    /**
+     * Update any studio (admin only)
+     */
+    public function adminUpdate(Request $request, int $id): JsonResponse
+    {
+        $studio = Studio::find($id);
+
+        if (!$studio) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Studio not found',
+            ], 404);
+        }
+
+        $data = $request->all();
+
+        foreach ($data as $fieldName => $fieldVal) {
+            if (in_array($fieldName, $studio->getFillable())) {
+                $studio->{$fieldName} = $fieldVal;
+            }
+        }
+
+        $studio->save();
+
+        return response()->json([
+            'data' => $studio,
+        ]);
+    }
+
+    /**
+     * Delete a studio (admin only)
+     */
+    public function adminDestroy(int $id): JsonResponse
+    {
+        $studio = Studio::find($id);
+
+        if (!$studio) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Studio not found',
+            ], 404);
+        }
+
+        $studio->delete();
+
+        return response()->json([
+            'data' => ['id' => $id],
+        ]);
+    }
 }

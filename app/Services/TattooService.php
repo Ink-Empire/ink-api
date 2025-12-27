@@ -94,21 +94,20 @@ class TattooService extends SearchService
      */
     public function getById($id, $model = 'tattoo')
     {
-        // Use Eloquent for simple ID lookups, Elasticsearch for more complex queries
-        if ($id) {
-            return Tattoo::with([
-                'images',
-                'primary_image',
-                'styles',
-                'tags',
-                'artist',
-                'studio',
-                'primary_style',
-                'subject'
-            ])->where('id', $id)->first();
-        }
+        try {
+            $tattoo = Tattoo::search()->where('id', '=', $id)->get();
+            if ($tattoo) {
+                return $tattoo['response']->first();
+            }
+        } catch (\Exception $e) {
+            \Log::error([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
 
-        return null;
+            return null;
+        }
     }
 
     /**
@@ -146,7 +145,7 @@ class TattooService extends SearchService
             // It's a slug - query nested artist.slug field
             $this->search->where('artist_slug', '=', $artistId);
         } else {
-            $this->search->where('artist_id', '=', (int) $artistId);
+            $this->search->where('artist_id', '=', (int)$artistId);
         }
 
         return $this->search->get();

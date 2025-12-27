@@ -345,4 +345,200 @@ class TagController extends Controller
                 : 'Tag found'
         ]);
     }
+
+    // ==================== Admin Methods ====================
+
+    /**
+     * List all tags with pagination for admin (including pending)
+     */
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $perPage = min($request->input('per_page', 25), 100);
+        $page = $request->input('page', 1);
+        $sort = $request->input('sort', 'id');
+        $order = $request->input('order', 'desc');
+        $filter = $request->input('filter', []);
+
+        $query = Tag::withCount('tattoos');
+
+        // Apply filters
+        if (is_string($filter)) {
+            $filter = json_decode($filter, true) ?? [];
+        }
+
+        if (!empty($filter['q'])) {
+            $search = $filter['q'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('slug', 'like', "%{$search}%");
+            });
+        }
+
+        if (isset($filter['is_pending'])) {
+            $query->where('is_pending', $filter['is_pending']);
+        }
+
+        // Apply sorting
+        $query->orderBy($sort, $order);
+
+        $total = $query->count();
+        $tags = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+
+        return response()->json([
+            'data' => $tags,
+            'total' => $total,
+        ]);
+    }
+
+    /**
+     * Create a new tag (admin only)
+     */
+    public function adminStore(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|string|min:2|max:50',
+        ]);
+
+        $name = trim($request->input('name'));
+        $slug = strtolower(str_replace(' ', '-', $name));
+
+        // Check if tag already exists
+        $existing = Tag::where('slug', $slug)->first();
+        if ($existing) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tag already exists',
+            ], 422);
+        }
+
+        $tag = Tag::create([
+            'name' => $name,
+            'slug' => $slug,
+            'is_pending' => $request->input('is_pending', false),
+        ]);
+
+        return response()->json([
+            'data' => $tag,
+        ], 201);
+    }
+
+    /**
+     * Get a single tag for admin
+     */
+    public function adminShow(int $id): JsonResponse
+    {
+        $tag = Tag::withCount('tattoos')->find($id);
+
+        if (!$tag) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tag not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => $tag,
+        ]);
+    }
+
+    /**
+     * Update a tag (admin only)
+     */
+    public function adminUpdate(Request $request, int $id): JsonResponse
+    {
+        $tag = Tag::find($id);
+
+        if (!$tag) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tag not found',
+            ], 404);
+        }
+
+        $data = $request->all();
+
+        foreach ($data as $fieldName => $fieldVal) {
+            if (in_array($fieldName, $tag->getFillable())) {
+                $tag->{$fieldName} = $fieldVal;
+            }
+        }
+
+        $tag->save();
+
+        return response()->json([
+            'data' => $tag,
+        ]);
+    }
+
+    /**
+     * Delete a tag (admin only)
+     */
+    public function adminDestroy(int $id): JsonResponse
+    {
+        $tag = Tag::find($id);
+
+        if (!$tag) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tag not found',
+            ], 404);
+        }
+
+        // Detach from all tattoos first
+        $tag->tattoos()->detach();
+        $tag->delete();
+
+        return response()->json([
+            'data' => ['id' => $id],
+        ]);
+    }
+
+    /**
+     * Approve a pending tag (admin only)
+     */
+    public function approve(int $id): JsonResponse
+    {
+        $tag = Tag::find($id);
+
+        if (!$tag) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tag not found',
+            ], 404);
+        }
+
+        $tag->is_pending = false;
+        $tag->save();
+
+        return response()->json([
+            'success' => true,
+            'data' => $tag,
+            'message' => 'Tag approved successfully',
+        ]);
+    }
+
+    /**
+     * Reject a pending tag (admin only) - deletes the tag
+     */
+    public function reject(int $id): JsonResponse
+    {
+        $tag = Tag::find($id);
+
+        if (!$tag) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Tag not found',
+            ], 404);
+        }
+
+        // Detach from all tattoos first
+        $tag->tattoos()->detach();
+        $tag->delete();
+
+        return response()->json([
+            'success' => true,
+            'data' => ['id' => $id],
+            'message' => 'Tag rejected and deleted',
+        ]);
+    }
 }

@@ -26,6 +26,7 @@ class UserResource extends JsonResource
             'studios' => $this->studios,
             'tattoos' => $this->tattoos->pluck('id')->toArray(),
             'username' => $this->username,
+            'is_admin' => (bool) $this->is_admin,
             'is_studio_admin' => $this->ownedStudio !== null,
             'owned_studio_id' => $this->ownedStudio?->id,
         ];

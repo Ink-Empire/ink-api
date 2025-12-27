@@ -171,4 +171,152 @@ class UserController extends Controller
     {
 
     }
+
+    // ==================== Admin Methods ====================
+
+    /**
+     * List all users with pagination for admin
+     */
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $perPage = min($request->input('per_page', 25), 100);
+        $page = $request->input('page', 1);
+        $sort = $request->input('sort', 'id');
+        $order = $request->input('order', 'desc');
+        $filter = $request->input('filter', []);
+
+        $query = User::query();
+
+        // Apply filters
+        if (is_string($filter)) {
+            $filter = json_decode($filter, true) ?? [];
+        }
+
+        if (!empty($filter['q'])) {
+            $search = $filter['q'];
+            $query->where(function ($q) use ($search) {
+                $q->where('name', 'like', "%{$search}%")
+                  ->orWhere('email', 'like', "%{$search}%")
+                  ->orWhere('username', 'like', "%{$search}%");
+            });
+        }
+
+        if (isset($filter['type_id'])) {
+            $query->where('type_id', $filter['type_id']);
+        }
+
+        if (isset($filter['is_admin'])) {
+            $query->where('is_admin', $filter['is_admin']);
+        }
+
+        // Apply sorting
+        $query->orderBy($sort, $order);
+
+        $total = $query->count();
+        $users = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+
+        return response()->json([
+            'data' => $users,
+            'total' => $total,
+        ]);
+    }
+
+    /**
+     * Create a new user (admin only)
+     */
+    public function adminStore(Request $request): JsonResponse
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'email' => 'required|email|unique:users,email',
+            'password' => 'required|string|min:6',
+            'type_id' => 'required|integer|in:1,2',
+        ]);
+
+        $user = User::create([
+            'name' => $request->input('name'),
+            'email' => $request->input('email'),
+            'password' => bcrypt($request->input('password')),
+            'type_id' => $request->input('type_id'),
+            'is_admin' => $request->input('is_admin', false),
+            'username' => $request->input('username', strtolower(str_replace(' ', '', $request->input('name')))),
+            'slug' => $request->input('slug', strtolower(str_replace(' ', '-', $request->input('name')))),
+            'location' => $request->input('location', ''),
+            'phone' => $request->input('phone'),
+            'about' => $request->input('about'),
+        ]);
+
+        return response()->json([
+            'data' => $user,
+        ], 201);
+    }
+
+    /**
+     * Get a single user for admin
+     */
+    public function adminShow(int $id): JsonResponse
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        return response()->json([
+            'data' => $user,
+        ]);
+    }
+
+    /**
+     * Update any user (admin only)
+     */
+    public function adminUpdate(Request $request, int $id): JsonResponse
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $data = $request->all();
+
+        foreach ($data as $fieldName => $fieldVal) {
+            if (in_array($fieldName, $user->getFillable())) {
+                $user->{$fieldName} = $fieldVal;
+            }
+        }
+
+        $user->save();
+
+        return response()->json([
+            'data' => $user,
+        ]);
+    }
+
+    /**
+     * Delete a user (admin only)
+     */
+    public function adminDestroy(int $id): JsonResponse
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $user->delete();
+
+        return response()->json([
+            'data' => ['id' => $id],
+        ]);
+    }
 }
