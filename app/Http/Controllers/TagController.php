@@ -18,11 +18,11 @@ class TagController extends Controller
     }
 
     /**
-     * Get all tags (for listing)
+     * Get all approved tags (for listing)
      */
     public function index(): JsonResponse
     {
-        $tags = Tag::orderBy('name')->get();
+        $tags = Tag::approved()->orderBy('name')->get();
 
         return response()->json([
             'success' => true,
@@ -56,13 +56,14 @@ class TagController extends Controller
     }
 
     /**
-     * Get featured/popular tags (for homepage)
+     * Get featured/popular approved tags (for homepage)
      */
     public function featured(Request $request): JsonResponse
     {
         $limit = min($request->input('limit', 15), 30);
 
-        $tags = Tag::withCount('tattoos')
+        $tags = Tag::approved()
+                   ->withCount('tattoos')
                    ->orderBy('tattoos_count', 'desc')
                    ->limit($limit)
                    ->get();
@@ -74,11 +75,11 @@ class TagController extends Controller
     }
 
     /**
-     * Get a single tag by slug
+     * Get a single approved tag by slug
      */
     public function show(string $slug): JsonResponse
     {
-        $tag = Tag::where('slug', $slug)->first();
+        $tag = Tag::approved()->where('slug', $slug)->first();
 
         if (!$tag) {
             return response()->json([
@@ -309,6 +310,39 @@ class TagController extends Controller
             'success' => true,
             'message' => 'Tags generated successfully',
             'data' => $tags
+        ]);
+    }
+
+    /**
+     * Create a new tag (will be pending until approved)
+     */
+    public function create(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $request->validate([
+            'name' => 'required|string|min:2|max:50'
+        ]);
+
+        $name = trim($request->input('name'));
+
+        // Use findOrCreateByName which handles existing tags and creates new ones as pending
+        $tag = Tag::findOrCreateByName($name);
+
+        return response()->json([
+            'success' => true,
+            'data' => $tag,
+            'is_new' => $tag->wasRecentlyCreated,
+            'message' => $tag->is_pending
+                ? 'Tag created and pending approval'
+                : 'Tag found'
         ]);
     }
 }

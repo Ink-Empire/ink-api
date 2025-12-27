@@ -67,6 +67,15 @@ class Tattoo extends Model
     }
 
     /**
+     * Get only approved tags (for public display).
+     */
+    public function approvedTags()
+    {
+        return $this->belongsToMany(Tag::class, 'tattoos_tags', 'tattoo_id', 'tag_id')
+                    ->where('is_pending', false);
+    }
+
+    /**
      * Get all profile views for this tattoo.
      */
     public function profileViews()
