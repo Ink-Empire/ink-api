@@ -26,6 +26,8 @@ class SelfUserResource extends JsonResource
             'studios' => $this->studios,
             'tattoos' => $this->tattoos->pluck('id')->toArray(),
             'username' => $this->username,
+            // Admin fields
+            'is_admin' => (bool) $this->is_admin,
             // Studio admin fields
             'is_studio_admin' => $this->ownedStudio !== null,
             'owned_studio' => $this->ownedStudio ? [

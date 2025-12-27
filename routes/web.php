@@ -4,6 +4,7 @@ use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ArtistController;
 use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\ElasticController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\TattooController;
 use App\Http\Controllers\UserController;
@@ -172,11 +173,11 @@ Route::prefix('api')->group(function () {
 
         // Protected elastic routes - require authentication (admin operations)
         Route::middleware('auth:sanctum')->group(function () {
-            Route::post('/rebuild', 'ElasticController@rebuild');
-            Route::post('/rebuild-by-elastic', 'ElasticController@rebuildByElasticQuery');
-            Route::post('/rebuild-bypass', 'ElasticController@rebuildBypass');
-            Route::post('/migrate', 'ElasticController@migrateAlias');
-            Route::post('translate-query', 'ElasticController@translateQuery');
+            Route::post('/rebuild', [ElasticController::class, 'rebuild']);
+            Route::post('/rebuild-by-elastic', [ElasticController::class, 'rebuildByElasticQuery']);
+            Route::post('/rebuild-bypass', [ElasticController::class, 'rebuildBypass']);
+            Route::post('/migrate', [ElasticController::class, 'migrateAlias']);
+            Route::post('translate-query', [ElasticController::class, 'translateQuery']);
         });
     });
 

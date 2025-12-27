@@ -86,3 +86,35 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{messageId}/read', [MessageController::class, 'markAsRead']);
     });
 });
+
+// Admin routes (requires authentication + admin privilege)
+Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {
+    // Users
+    Route::get('users', [UserController::class, 'adminIndex']);
+    Route::post('users', [UserController::class, 'adminStore']);
+    Route::get('users/{id}', [UserController::class, 'adminShow']);
+    Route::put('users/{id}', [UserController::class, 'adminUpdate']);
+    Route::delete('users/{id}', [UserController::class, 'adminDestroy']);
+
+    // Studios
+    Route::get('studios', [StudioController::class, 'adminIndex']);
+    Route::post('studios', [StudioController::class, 'adminStore']);
+    Route::get('studios/{id}', [StudioController::class, 'adminShow']);
+    Route::put('studios/{id}', [StudioController::class, 'adminUpdate']);
+    Route::delete('studios/{id}', [StudioController::class, 'adminDestroy']);
+
+    // Tags
+    Route::get('tags', [TagController::class, 'adminIndex']);
+    Route::post('tags', [TagController::class, 'adminStore']);
+    Route::get('tags/{id}', [TagController::class, 'adminShow']);
+    Route::put('tags/{id}', [TagController::class, 'adminUpdate']);
+    Route::delete('tags/{id}', [TagController::class, 'adminDestroy']);
+    Route::post('tags/{id}/approve', [TagController::class, 'approve']);
+    Route::post('tags/{id}/reject', [TagController::class, 'reject']);
+
+    // Elastic operations
+    Route::post('elastic/rebuild', [\App\Http\Controllers\ElasticController::class, 'rebuild']);
+    Route::post('elastic/rebuild-bypass', [\App\Http\Controllers\ElasticController::class, 'rebuildBypass']);
+    Route::post('elastic/rebuild-by-elastic', [\App\Http\Controllers\ElasticController::class, 'rebuildByElasticQuery']);
+    Route::post('elastic/migrate', [\App\Http\Controllers\ElasticController::class, 'migrateAlias']);
+});

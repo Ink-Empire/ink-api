@@ -55,7 +55,7 @@ class TattooController extends Controller
     {
         $tattoo = $this->tattooService->getById($id);
 
-        return $this->returnResponse('tattoo', new TattooResource($tattoo));
+        return $this->returnResponse('tattoo', $tattoo);
     }
 
     public function search(Request $request): JsonResponse
@@ -187,12 +187,12 @@ class TattooController extends Controller
 
                 // Attach ALL images to the pivot table (including the primary image)
                 $imageIds = collect($images)->pluck('id')->toArray();
-                
+
                 // Ensure primary image is definitely included in the pivot table
                 if (!in_array($primaryImage->id, $imageIds)) {
                     $imageIds[] = $primaryImage->id;
                 }
-                
+
                 $tattoo->images()->attach($imageIds);
 
                 // Attach all selected styles to the tattoo
