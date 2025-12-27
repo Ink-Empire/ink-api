@@ -65,7 +65,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/password', [UpdatePasswordController::class, 'update']);
     });
 
-    // Tattoo tag management (authenticated)
+    // Tag management (authenticated)
+    Route::post('/tags', [TagController::class, 'create']);
     Route::post('/tattoos/{tattooId}/tags', [TagController::class, 'setTattooTags']);
     Route::post('/tattoos/{tattooId}/tags/add', [TagController::class, 'addTattooTag']);
 

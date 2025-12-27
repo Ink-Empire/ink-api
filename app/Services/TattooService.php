@@ -23,13 +23,14 @@ class TattooService extends SearchService
     {
         $images = [];
 
-        foreach ($files as $file) {
-            $date = Date('Ymdi');
+        foreach ($files as $index => $file) {
+            $date = Date('Ymdis');  // Added seconds for more uniqueness
 
             //get image extension
             $extension = $file->getClientOriginalExtension() ?: 'jpeg';
 
-            $filename = "tattoo_" . $user->id . "_" . $date . "." . $extension;
+            // Include index to ensure unique filename for each image in batch upload
+            $filename = "tattoo_" . $user->id . "_" . $date . "_" . $index . "." . $extension;
             $image = $this->imageService->processImage($file, $filename);
 
             if ($image) {

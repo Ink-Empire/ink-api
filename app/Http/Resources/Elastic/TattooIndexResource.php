@@ -51,7 +51,8 @@ class TattooIndexResource extends JsonResource
     private function getTags()
     {
         if (isset($this->tags)) {
-            return $this->tags->pluck('name')->toArray();
+            // Only index approved tags (not pending ones)
+            return $this->tags->where('is_pending', false)->pluck('name')->toArray();
         }
 
         return [];
