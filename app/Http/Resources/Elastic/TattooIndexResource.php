@@ -45,6 +45,7 @@ class TattooIndexResource extends JsonResource
             'styles' => StyleResource::collection($this->styles),
             'tags' => $this->getTags(),
             'is_featured' => (bool) $this->is_featured,
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 

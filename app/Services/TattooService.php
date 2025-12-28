@@ -134,6 +134,7 @@ class TattooService extends SearchService
 
     /**
      * Get all tattoos for a specific artist from the tattoos index
+     * Sorted by: featured first, then newest first
      */
     public function getByArtistId(mixed $artistId, array $params = []): array
     {
@@ -147,6 +148,10 @@ class TattooService extends SearchService
         } else {
             $this->search->where('artist_id', '=', (int)$artistId);
         }
+
+        // Sort by: featured tattoos first, then newest uploads first
+        $this->search->sort('is_featured', 'desc');
+        $this->search->sort('created_at', 'desc');
 
         return $this->search->get();
     }

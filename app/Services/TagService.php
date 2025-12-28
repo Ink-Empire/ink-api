@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Models\Tag;
 use App\Models\Tattoo;
 use App\Models\Image;
+use App\Models\BlockedTerm;
 use OpenAI\Laravel\Facades\OpenAI;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\DB;
@@ -97,7 +98,7 @@ class TagService
                         'content' => [
                             [
                                 'type' => 'text',
-                                'text' => 'Analyze this tattoo image and provide three to five single-word noun descriptions that best describe what you see. Do not use words like "ink" or "tattoo" as we already know this is supposed to be a tattoo. Also avoid generic words like "art" or "design" as we want descriptive nouns for the image itself. Focus on the main subjects and objects visible in the tattoo. It is possible that the image is abstract and it is ok to not return a noun in this case. Return only the words separated by commas, no additional text or explanation.'
+                                'text' => $this->getTagAnalysisPrompt()
                             ],
                             [
                                 'type' => 'image_url',
@@ -217,10 +218,8 @@ class TagService
             return $tag;
         }
 
-        // Try partial match (tag name contains the search term or vice versa)
-        $tag = Tag::where('name', 'like', '%' . $tagName . '%')
-                  ->orWhere(DB::raw('LOWER(?)'), 'like', DB::raw("CONCAT('%', name, '%')"))
-                  ->first();
+        // Try partial match (tag name contains the search term)
+        $tag = Tag::where('name', 'like', '%' . $tagName . '%')->first();
 
         return $tag;
     }
@@ -341,5 +340,199 @@ class TagService
         // This would require logging unmatched tags to a separate table
         // For now, these are just logged to the application log
         return [];
+    }
+
+    /**
+     * Analyze images and return AI tag suggestions WITHOUT attaching to a tattoo.
+     * Used for showing suggestions while user is selecting tags during upload flow.
+     *
+     * @param array $imageUrls Array of image URLs to analyze
+     * @return array Array of suggested Tag objects that match the master list
+     */
+    public function suggestTagsForImages(array $imageUrls): array
+    {
+        $allTags = [];
+
+        foreach ($imageUrls as $imageUrl) {
+            if (empty($imageUrl)) continue;
+
+            try {
+                $tags = $this->analyzeImageUrl($imageUrl);
+                $allTags = array_merge($allTags, $tags);
+            } catch (Exception $e) {
+                Log::error("Failed to analyze image for suggestions", [
+                    'url' => $imageUrl,
+                    'error' => $e->getMessage()
+                ]);
+            }
+        }
+
+        $uniqueTags = array_unique($allTags);
+
+        // Return suggestions as a mix of existing tags and new suggestions
+        // New suggestions are returned with id=null so frontend knows they need to be created
+        $resultTags = [];
+        $seenNames = [];
+
+        foreach ($uniqueTags as $tagName) {
+            $tagName = strtolower(trim($tagName));
+
+            // Skip if we've already processed this name
+            if (in_array($tagName, $seenNames)) {
+                continue;
+            }
+            $seenNames[] = $tagName;
+
+            // Skip inappropriate or invalid tags
+            if (!$this->isValidTagName($tagName)) {
+                continue;
+            }
+
+            // Check if tag exists
+            $existingTag = $this->findMatchingTag($tagName);
+
+            if ($existingTag) {
+                // Return existing tag
+                $resultTags[] = $existingTag;
+            } else {
+                // Return as a "suggested" new tag (not created yet)
+                // Frontend will call create endpoint when user selects it
+                $resultTags[] = (object) [
+                    'id' => null,
+                    'name' => $tagName,
+                    'slug' => Str::slug($tagName),
+                    'is_pending' => false,
+                    'is_new_suggestion' => true,
+                ];
+            }
+        }
+
+        Log::info("AI tag suggestions generated", [
+            'image_count' => count($imageUrls),
+            'raw_suggestions' => $uniqueTags,
+            'result_tags' => array_map(fn($t) => [
+                'name' => $t->name,
+                'is_new' => $t->id === null
+            ], $resultTags)
+        ]);
+
+        return $resultTags;
+    }
+
+    /**
+     * Check if a tag name is valid (not inappropriate, correct length)
+     */
+    private function isValidTagName(string $tagName): bool
+    {
+        // Check length
+        if (strlen($tagName) < 2 || strlen($tagName) > 30) {
+            return false;
+        }
+
+        // Get blocked terms from database (cached for 1 hour)
+        $blockedTerms = BlockedTerm::getActiveTerms();
+
+        foreach ($blockedTerms as $blocked) {
+            if (str_contains($tagName, $blocked)) {
+                Log::warning("Blocked inappropriate AI tag suggestion", ['tag' => $tagName]);
+                return false;
+            }
+        }
+
+        return true;
+    }
+
+    /**
+     * Analyze a single image URL using OpenAI Vision API
+     * Similar to analyzeImage but takes a URL directly instead of an Image model
+     */
+    private function analyzeImageUrl(string $imageUrl): array
+    {
+        try {
+            $response = OpenAI::chat()->create([
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'text',
+                                'text' => $this->getTagAnalysisPrompt()
+                            ],
+                            [
+                                'type' => 'image_url',
+                                'image_url' => [
+                                    'url' => $imageUrl,
+                                    'detail' => 'low'
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                'max_tokens' => 50,
+                'temperature' => 0.3,
+            ]);
+
+            $content = $response->choices[0]->message->content ?? '';
+            return $this->parseTagsFromResponse($content);
+
+        } catch (Exception $e) {
+            Log::error("Failed to analyze image URL", [
+                'url' => $imageUrl,
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+    }
+
+    /**
+     * Get the prompt for AI tag analysis with content filtering
+     */
+    private function getTagAnalysisPrompt(): string
+    {
+        return 'Analyze this tattoo image and provide three to five single-word noun descriptions that best describe what you see. ' .
+               'Focus on the main subjects, objects, and themes visible in the tattoo (e.g., animals, flowers, symbols, mythological creatures). ' .
+               'Do not use words like "ink" or "tattoo" as we already know this is a tattoo. ' .
+               'Avoid generic words like "art", "design", "style", or "piece". ' .
+               'IMPORTANT: Do not suggest any inappropriate, vulgar, sexual, or offensive terms. Keep suggestions family-friendly and professional. ' .
+               'If the image contains adult or inappropriate content, return only safe, neutral descriptors or nothing at all. ' .
+               'It is okay to not return anything if the image is abstract or inappropriate. ' .
+               'Return only the words separated by commas, no additional text or explanation.';
+    }
+
+    /**
+     * Create a tag from an AI suggestion (user accepted it).
+     * Creates as approved (is_pending = false) with is_ai_generated = true.
+     */
+    public function createFromAiSuggestion(string $tagName): ?Tag
+    {
+        $tagName = strtolower(trim($tagName));
+        $slug = Str::slug($tagName);
+
+        // Validate the tag name
+        if (!$this->isValidTagName($tagName)) {
+            return null;
+        }
+
+        // Check if tag already exists
+        $existing = Tag::where('slug', $slug)->first();
+        if ($existing) {
+            return $existing;
+        }
+
+        // Create new tag as APPROVED (user accepted the AI suggestion)
+        $tag = Tag::create([
+            'name' => $tagName,
+            'slug' => $slug,
+            'is_pending' => false, // Approved because user explicitly accepted it
+            'is_ai_generated' => true,
+        ]);
+
+        Log::info("Created AI-suggested tag (user accepted)", [
+            'tag_id' => $tag->id,
+            'name' => $tagName
+        ]);
+
+        return $tag;
     }
 }

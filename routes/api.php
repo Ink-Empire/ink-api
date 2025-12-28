@@ -15,6 +15,8 @@ use App\Http\Controllers\MessageController;
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\StudioController;
 use App\Http\Controllers\TagController;
+use App\Http\Controllers\PlacementController;
+use App\Http\Controllers\BlockedTermController;
 
 /*
 |--------------------------------------------------------------------------
@@ -36,6 +38,9 @@ Route::post('/studios/check-availability', [StudioController::class, 'checkAvail
 Route::get('/tags', [TagController::class, 'index']);
 Route::get('/tags/search', [TagController::class, 'search']);
 Route::get('/tags/featured', [TagController::class, 'featured']);
+
+// Placement routes (public)
+Route::get('/placements', [PlacementController::class, 'index']);
 
 // Google Places config (returns API key for frontend SDK use)
 Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'config']);
@@ -65,8 +70,17 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/password', [UpdatePasswordController::class, 'update']);
     });
 
+    // Direct S3 upload routes (presigned URLs)
+    Route::prefix('uploads')->group(function () {
+        Route::post('/presign', [\App\Http\Controllers\ImageController::class, 'getPresignedUrl']);
+        Route::post('/presign-batch', [\App\Http\Controllers\ImageController::class, 'getPresignedUrls']);
+        Route::post('/confirm', [\App\Http\Controllers\ImageController::class, 'confirmUploads']);
+    });
+
     // Tag management (authenticated)
     Route::post('/tags', [TagController::class, 'create']);
+    Route::post('/tags/suggest', [TagController::class, 'suggestFromImages']);
+    Route::post('/tags/create-from-ai', [TagController::class, 'createFromAiSuggestion']);
     Route::post('/tattoos/{tattooId}/tags', [TagController::class, 'setTattooTags']);
     Route::post('/tattoos/{tattooId}/tags/add', [TagController::class, 'addTattooTag']);
 
@@ -111,6 +125,20 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::delete('tags/{id}', [TagController::class, 'adminDestroy']);
     Route::post('tags/{id}/approve', [TagController::class, 'approve']);
     Route::post('tags/{id}/reject', [TagController::class, 'reject']);
+
+    // Placements
+    Route::get('placements', [PlacementController::class, 'adminIndex']);
+    Route::post('placements', [PlacementController::class, 'adminStore']);
+    Route::get('placements/{id}', [PlacementController::class, 'adminShow']);
+    Route::put('placements/{id}', [PlacementController::class, 'adminUpdate']);
+    Route::delete('placements/{id}', [PlacementController::class, 'adminDestroy']);
+
+    // Blocked Terms
+    Route::get('blocked-terms', [BlockedTermController::class, 'adminIndex']);
+    Route::post('blocked-terms', [BlockedTermController::class, 'adminStore']);
+    Route::get('blocked-terms/{id}', [BlockedTermController::class, 'adminShow']);
+    Route::put('blocked-terms/{id}', [BlockedTermController::class, 'adminUpdate']);
+    Route::delete('blocked-terms/{id}', [BlockedTermController::class, 'adminDestroy']);
 
     // Elastic operations
     Route::post('elastic/rebuild', [\App\Http\Controllers\ElasticController::class, 'rebuild']);
