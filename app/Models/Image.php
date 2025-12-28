@@ -9,6 +9,8 @@ class Image extends Model
 {
     use HasFactory;
 
+    protected $touches = ['tattoos', 'tattoosAsPrimary', 'artists'];
+
     protected $fillable = [
         'name',
         'filename',
@@ -19,6 +21,30 @@ class Image extends Model
     protected $casts = [
         'is_primary' => 'boolean',
     ];
+
+    /**
+     * Tattoos that use this image in their gallery.
+     */
+    public function tattoos()
+    {
+        return $this->belongsToMany(Tattoo::class, 'tattoos_images', 'image_id', 'tattoo_id');
+    }
+
+    /**
+     * Tattoos that use this as their primary image.
+     */
+    public function tattoosAsPrimary()
+    {
+        return $this->hasMany(Tattoo::class, 'primary_image_id');
+    }
+
+    /**
+     * Artists/Users that use this as their profile image.
+     */
+    public function artists()
+    {
+        return $this->hasMany(User::class, 'image_id');
+    }
 
     public function setUriAttribute($filename = null)
     {

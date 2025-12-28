@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Jobs\ReindexTaggedTattoosJob;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Str;
@@ -46,6 +47,13 @@ class Tag extends Model
             if ($tag->isDirty('name')) {
                 $tag->slug = Str::slug($tag->name);
                 $tag->name = strtolower($tag->name);
+            }
+        });
+
+        // Dispatch reindex job when tag is approved
+        static::updated(function ($tag) {
+            if ($tag->wasChanged('is_pending') && !$tag->is_pending) {
+                ReindexTaggedTattoosJob::dispatch($tag->id);
             }
         });
     }

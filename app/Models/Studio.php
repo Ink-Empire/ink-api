@@ -10,6 +10,8 @@ class Studio extends Model
 {
     use HasFactory;
 
+    protected $touches = ['tattoos', 'artists'];
+
     protected $with = ['image'];
 
     protected $fillable = [

@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Http\Resources\Elastic\TattooIndexResource;
+use Fico7489\Laravel\Pivot\Traits\PivotEventTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Larelastic\Elastic\Traits\Migratable;
@@ -11,6 +12,7 @@ use Larelastic\Elastic\Traits\Searchable;
 class Tattoo extends Model
 {
     use HasFactory;
+    use PivotEventTrait;
 
     protected $fillable = [
         'id',
@@ -24,6 +26,45 @@ class Tattoo extends Model
         'primary_subject_id',
         'primary_image_id',
     ];
+
+    protected array $searchableRelations = [
+        'tags',
+        'artist',
+        'studio',
+        'images',
+        'primary_style',
+        'primary_image',
+        'styles',
+    ];
+
+    protected static function booted()
+    {
+        foreach ((new static)->searchableRelations as $relation) {
+
+            static::pivotAttached(function ($model, $relationName) use ($relation) {
+                if ($relationName === $relation) {
+                    $model->searchable();
+                }
+            });
+
+            static::pivotDetached(function ($model, $relationName) use ($relation) {
+                if ($relationName === $relation) {
+                    $model->searchable();
+                }
+            });
+
+            static::pivotUpdated(function ($model, $relationName) use ($relation) {
+                if ($relationName === $relation) {
+                    $model->searchable();
+                }
+            });
+        }
+
+        static::saved(function (Tattoo $tattoo) {
+            $tattoo->searchable();
+        });
+    }
+
 
     public function artist()
     {
@@ -101,15 +142,9 @@ class Tattoo extends Model
     public function searchableQuery()
     {
         $query = $this->newQuery();
-        $query->with([
-            'artist',
-            'studio',
-            'images',
-            'primary_style',
-            'primary_image',
-            'styles',
-            'tags'
-        ]);
+        $query->with(
+            $this->searchableRelations
+        );
 
         return $query;
     }
@@ -121,14 +156,7 @@ class Tattoo extends Model
 
     public function toSearchableArray()
     {
-        $with = [
-            'artist',
-            'studio',
-            'images',
-            'primary_style',
-            'styles',
-            'tags',
-        ];
+        $with = $this->searchableRelations;
 
         $this->loadMissing($with);
 
