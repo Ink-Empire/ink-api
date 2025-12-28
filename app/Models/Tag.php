@@ -20,10 +20,12 @@ class Tag extends Model
         'name',
         'slug',
         'is_pending',
+        'is_ai_generated',
     ];
 
     protected $casts = [
         'is_pending' => 'boolean',
+        'is_ai_generated' => 'boolean',
     ];
 
     /**

@@ -39,30 +39,6 @@ class Tattoo extends Model
 
     protected static function booted()
     {
-        foreach ((new static)->searchableRelations as $relation) {
-
-            static::pivotAttached(function ($model, $relationName) use ($relation) {
-                if ($relationName === $relation) {
-                    $model->searchable();
-                }
-            });
-
-            static::pivotDetached(function ($model, $relationName) use ($relation) {
-                if ($relationName === $relation) {
-                    $model->searchable();
-                }
-            });
-
-            static::pivotUpdated(function ($model, $relationName) use ($relation) {
-                if ($relationName === $relation) {
-                    $model->searchable();
-                }
-            });
-        }
-
-        static::saved(function (Tattoo $tattoo) {
-            $tattoo->searchable();
-        });
     }
 
 

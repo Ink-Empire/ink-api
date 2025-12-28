@@ -346,6 +346,91 @@ class TagController extends Controller
         ]);
     }
 
+    /**
+     * Create a tag from an AI suggestion (user accepted it).
+     * Creates as approved with is_ai_generated = true.
+     */
+    public function createFromAiSuggestion(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $request->validate([
+            'name' => 'required|string|min:2|max:50'
+        ]);
+
+        $name = trim($request->input('name'));
+        $tag = $this->tagService->createFromAiSuggestion($name);
+
+        if (!$tag) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Invalid tag name'
+            ], 422);
+        }
+
+        return response()->json([
+            'success' => true,
+            'data' => $tag,
+            'message' => 'Tag created from AI suggestion'
+        ]);
+    }
+
+    /**
+     * Get AI tag suggestions for images (without creating a tattoo).
+     * Used during the upload flow to show suggestions while user is selecting tags.
+     */
+    public function suggestFromImages(Request $request): JsonResponse
+    {
+        $user = auth()->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized'
+            ], 401);
+        }
+
+        $request->validate([
+            'image_urls' => 'required|array|min:1|max:10',
+            'image_urls.*' => 'required|string|url'
+        ]);
+
+        $imageUrls = $request->input('image_urls');
+
+        try {
+            $suggestions = $this->tagService->suggestTagsForImages($imageUrls);
+
+            return response()->json([
+                'success' => true,
+                'data' => array_map(fn($tag) => [
+                    'id' => $tag->id,
+                    'name' => $tag->name,
+                    'slug' => $tag->slug,
+                    'is_ai_suggested' => true,
+                ], $suggestions)
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error('Failed to generate AI tag suggestions', [
+                'error' => $e->getMessage(),
+                'user_id' => $user->id,
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to analyze images',
+                'data' => []
+            ], 500);
+        }
+    }
+
     // ==================== Admin Methods ====================
 
     /**
@@ -376,6 +461,10 @@ class TagController extends Controller
 
         if (isset($filter['is_pending'])) {
             $query->where('is_pending', $filter['is_pending']);
+        }
+
+        if (isset($filter['is_ai_generated'])) {
+            $query->where('is_ai_generated', $filter['is_ai_generated']);
         }
 
         // Apply sorting

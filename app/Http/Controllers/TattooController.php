@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\TattooCreateRequest;
 use App\Http\Resources\Elastic\TattooResource;
+use App\Jobs\GenerateAiTagsJob;
 use App\Models\Artist;
 use App\Models\Image;
 use App\Models\Style;
@@ -136,27 +137,44 @@ class TattooController extends Controller
         try {
             $user = $request->user();
 
-            //get the files uploaded, there may be multiple
-            $files = $request->file('files');
+            $images = [];
 
-            // Check if files were uploaded
-            if (empty($files)) {
-                return $this->returnErrorResponse("No images uploaded", "Please select at least one image");
+            // Check for pre-uploaded image IDs (from presigned URL flow)
+            $imageIds = $request->input('image_ids');
+            if (!empty($imageIds)) {
+                if (is_string($imageIds)) {
+                    $imageIds = json_decode($imageIds, true);
+                }
+                if (is_array($imageIds) && !empty($imageIds)) {
+                    // Fetch the Image records
+                    $images = \App\Models\Image::whereIn('id', $imageIds)->get()->all();
+                    \Log::info("Using pre-uploaded images", [
+                        'image_ids' => $imageIds,
+                        'found' => count($images)
+                    ]);
+                }
             }
 
-            //if we just have one file, make it an array
-            if (!is_array($files)) {
-                $files = [$files];
+            // Fall back to traditional file upload if no image_ids provided
+            if (empty($images)) {
+                $files = $request->file('files');
+
+                if (empty($files)) {
+                    return $this->returnErrorResponse("No images uploaded", "Please select at least one image");
+                }
+
+                if (!is_array($files)) {
+                    $files = [$files];
+                }
+
+                $files = array_filter($files);
+
+                if (empty($files)) {
+                    return $this->returnErrorResponse("No valid images", "Please select at least one valid image");
+                }
+
+                $images = $this->tattooService->upload($files, $user);
             }
-
-            // Filter out any null values
-            $files = array_filter($files);
-
-            if (empty($files)) {
-                return $this->returnErrorResponse("No valid images", "Please select at least one valid image");
-            }
-
-            $images = $this->tattooService->upload($files, $user);
 
             if(count($images) > 0) {
                $primaryImage = $images[0];
@@ -218,46 +236,22 @@ class TattooController extends Controller
                     }
                 }
 
-                // Generate AI tags for the tattoo images
-                // AI will suggest additional tags beyond what the user selected
-                $aiSuggestedTags = [];
-                try {
-                    $tattoo->load('images');
-                    $allAiTags = $this->tattooTagService->generateTagsForTattoo($tattoo);
+                // Dispatch AI tag generation to background job for async processing
+                GenerateAiTagsJob::dispatch($tattoo->id, $userSelectedTagIds);
+                \Log::info("Dispatched GenerateAiTagsJob for tattoo", ['tattoo_id' => $tattoo->id]);
 
-                    // Filter out tags the user already selected - only show NEW suggestions
-                    $aiSuggestedTags = array_filter($allAiTags, function($tag) use ($userSelectedTagIds) {
-                        return !in_array($tag->id, $userSelectedTagIds);
-                    });
-                    $aiSuggestedTags = array_values($aiSuggestedTags); // Re-index array
-
-                    \Log::info("AI tags generated for tattoo", [
-                        'tattoo_id' => $tattoo->id,
-                        'total_ai_tags' => count($allAiTags),
-                        'new_suggestions' => count($aiSuggestedTags)
-                    ]);
-                } catch (\Exception $e) {
-                    // Don't fail the entire request if tag generation fails
-                    \Log::error("Failed to generate AI tags for tattoo", [
-                        'tattoo_id' => $tattoo->id,
-                        'error' => $e->getMessage()
-                    ]);
-                }
-
-                // Refresh the tattoo to ensure all relationships (including newly attached tags) are loaded
+                // Refresh and index the tattoo (will be async with SCOUT_QUEUE=true)
                 $tattoo->refresh();
                 $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style']);
                 $tattoo->searchable();
-                Artist::find($user->id)->searchable();
+                Artist::find($user->id)?->searchable();
 
-                // Return tattoo with AI suggestions for user review
+                // Return immediately - AI suggestions will be generated in background
+                // Frontend can poll /tattoos/{id} or use websockets to get updated tags
                 return response()->json([
                     'tattoo' => new TattooResource($tattoo),
-                    'ai_suggested_tags' => array_map(fn($tag) => [
-                        'id' => $tag->id,
-                        'name' => $tag->name,
-                        'slug' => $tag->slug
-                    ], $aiSuggestedTags)
+                    'ai_suggested_tags' => [], // Tags generated async, will be available shortly
+                    'ai_tags_pending' => true  // Signal to frontend that AI tags are being generated
                 ]);
             } else {
                 return $this->returnErrorResponse("No images uploaded", "No files uploaded");
