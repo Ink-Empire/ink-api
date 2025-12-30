@@ -12,6 +12,7 @@ class SeedTestData extends Command
                            {--users : Seed users and related data}
                            {--studios : Seed studios and related data}
                            {--tattoos : Seed tattoos and related data}
+                           {--images : Seed images}
                            {--lookups : Seed lookup tables only (styles, tags, etc.)}
                            {--elastic : Rebuild Elasticsearch indexes after seeding}
                            {--fresh : Wipe database and run migrations first}
@@ -21,7 +22,8 @@ class SeedTestData extends Command
     protected $description = 'Interactive seeder for test data - choose what to seed';
 
     /**
-     * Seeder groups with their dependencies.
+     * Seeder groups - no dependencies, each group is independent.
+     * Assumes lookup tables (styles, tags, etc.) already exist.
      */
     private array $seederGroups = [
         'lookups' => [
@@ -50,7 +52,6 @@ class SeedTestData extends Command
         ],
         'studios' => [
             'label' => 'Studios (+ business hours, styles)',
-            'requires' => ['lookups', 'images', 'addresses'],
             'seeders' => [
                 \Database\Seeders\StudioSeeder::class,
                 \Database\Seeders\StudiosStylesSeeder::class,
@@ -58,8 +59,7 @@ class SeedTestData extends Command
             ],
         ],
         'users' => [
-            'label' => 'Users (+ styles, favorites, studio associations)',
-            'requires' => ['lookups', 'images', 'studios'],
+            'label' => 'Users (+ styles, favorites, availability)',
             'seeders' => [
                 \Database\Seeders\UserSeeder::class,
                 \Database\Seeders\UsernameSeeder::class,
@@ -73,7 +73,6 @@ class SeedTestData extends Command
         ],
         'tattoos' => [
             'label' => 'Tattoos (+ styles, tags, user favorites)',
-            'requires' => ['lookups', 'images', 'users'],
             'seeders' => [
                 \Database\Seeders\TattooSeeder::class,
                 \Database\Seeders\TattoosStylesSeeder::class,
@@ -83,7 +82,6 @@ class SeedTestData extends Command
         ],
         'appointments' => [
             'label' => 'Appointments & Conversations',
-            'requires' => ['users'],
             'seeders' => [
                 \Database\Seeders\AppointmentSeeder::class,
                 \Database\Seeders\ConversationSeeder::class,
@@ -99,7 +97,7 @@ class SeedTestData extends Command
         // Check if any explicit options were passed
         $hasExplicitOptions = $this->option('all') || $this->option('users') ||
                               $this->option('studios') || $this->option('tattoos') ||
-                              $this->option('lookups');
+                              $this->option('images') || $this->option('lookups');
 
         $selections = $this->getSelections();
 
@@ -157,7 +155,7 @@ class SeedTestData extends Command
         }
 
         $explicit = [];
-        foreach (['users', 'studios', 'tattoos', 'lookups'] as $opt) {
+        foreach (['users', 'studios', 'tattoos', 'images', 'lookups'] as $opt) {
             if ($this->option($opt)) {
                 $explicit[] = $opt;
             }
@@ -173,6 +171,7 @@ class SeedTestData extends Command
             'users' => '👤 Users (+ styles, favorites, availability)',
             'studios' => '🏢 Studios (+ business hours, styles)',
             'tattoos' => '🎨 Tattoos (+ styles, tags)',
+            'images' => '🖼️  Images',
             'appointments' => '📅 Appointments & Conversations',
             'lookups' => '📚 Lookup tables only (styles, tags, etc.)',
         ];
