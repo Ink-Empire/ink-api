@@ -47,21 +47,35 @@ class UserController extends Controller
     }
 
     /**
-     * @param Request $request
+     * Upload or set profile photo.
+     * Accepts either:
+     * - image_id: ID of an already-uploaded image (from presigned URL flow - faster)
+     * - profile_photo: File upload or base64 string (legacy flow - slower)
      */
     public function upload(Request $request): JsonResponse|Response
     {
         try {
             $user = $request->user();
 
-
             if (!$user) {
                 \Log::error('Profile photo upload failed - no authenticated user');
                 return $this->returnErrorResponse("Not authenticated", "Please log in to upload a photo");
             }
 
-            if ($request->hasFile('profile_photo')) {
+            // Check for presigned URL flow (faster) - image already uploaded to S3
+            if ($request->has('image_id')) {
+                $image = \App\Models\Image::find($request->input('image_id'));
 
+                if (!$image) {
+                    return $this->returnErrorResponse("Image not found", "The specified image does not exist");
+                }
+
+                $user = $this->userService->setProfileImage($user->id, $image);
+                return $this->returnResponse('user', new UserResource($user));
+            }
+
+            // Legacy flow: process file through server
+            if ($request->hasFile('profile_photo')) {
                 $file = $request->file('profile_photo');
                 $date = Date('Ymdi');
                 $extension = $file->getClientOriginalExtension() ?: 'jpeg';

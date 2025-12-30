@@ -175,6 +175,12 @@ class StudioController extends Controller
         return $this->returnResponse('studio', new StudioResource($studio));
     }
 
+    /**
+     * Upload or set studio image.
+     * Accepts either:
+     * - image_id: ID of an already-uploaded image (from presigned URL flow - faster)
+     * - image: File upload or base64 string (legacy flow - slower)
+     */
     public function uploadImage(Request $request, $id): JsonResponse
     {
         try {
@@ -184,6 +190,19 @@ class StudioController extends Controller
                 return $this->returnErrorResponse('Studio not found');
             }
 
+            // Check for presigned URL flow (faster) - image already uploaded to S3
+            if ($request->has('image_id')) {
+                $image = \App\Models\Image::find($request->input('image_id'));
+
+                if (!$image) {
+                    return $this->returnErrorResponse('Image not found', 'The specified image does not exist');
+                }
+
+                $studio = $this->studioService->setStudioImage($id, $image);
+                return $this->returnResponse('studio', new StudioResource($studio));
+            }
+
+            // Legacy flow: process file through server
             if ($request->hasFile('image')) {
                 $file = $request->file('image');
                 $date = date('Ymdi');
