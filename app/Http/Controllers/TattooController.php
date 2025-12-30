@@ -74,6 +74,11 @@ class TattooController extends Controller
                 "3. Broaden your search radius to find more results.";
         }
 
+        // Add total count if not already present
+        if (!isset($response['total'])) {
+            $response['total'] = count($response['response']);
+        }
+
         return $this->returnElasticResponse($response);
     }
 
