@@ -74,9 +74,16 @@ class TattooController extends Controller
                 "3. Broaden your search radius to find more results.";
         }
 
-        // Add total count if not already present
-        if (!isset($response['total'])) {
-            $response['total'] = count($response['response']);
+        // Determine if this is an active search query (has filters/search terms)
+        $hasActiveQuery = !empty($params['searchString']) ||
+                          !empty($params['styles']) ||
+                          !empty($params['tags']) ||
+                          !empty($params['tagNames']);
+
+        // Only include total count if there's an active search query
+        // For browsing without filters, we don't show "X tattoos available"
+        if (!$hasActiveQuery) {
+            unset($response['total']);
         }
 
         return $this->returnElasticResponse($response);
