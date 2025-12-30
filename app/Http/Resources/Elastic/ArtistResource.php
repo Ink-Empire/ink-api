@@ -35,7 +35,7 @@ class ArtistResource extends JsonResource
 
     private function getIsUserFavorite(): bool
     {
-        if (session('user_id')) {
+        if (session('user_id') && $this->users) {
             if (in_array(session('user_id'), $this->users->pluck('id')->toArray())) {
                 return true;
             }
