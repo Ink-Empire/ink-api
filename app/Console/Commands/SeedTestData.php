@@ -15,6 +15,7 @@ class SeedTestData extends Command
                            {--lookups : Seed lookup tables only (styles, tags, etc.)}
                            {--elastic : Rebuild Elasticsearch indexes after seeding}
                            {--fresh : Wipe database and run migrations first}
+                           {--clean : Run data:clean first to remove existing test data}
                            {--force : Skip confirmation prompts}';
 
     protected $description = 'Interactive seeder for test data - choose what to seed';
@@ -92,8 +93,13 @@ class SeedTestData extends Command
 
     public function handle(): int
     {
-        $this->info('🌱 Interactive Test Data Seeder');
-        $this->newLine();
+        $this->output->writeln('🌱 Interactive Test Data Seeder');
+        $this->output->writeln('');
+
+        // Check if any explicit options were passed
+        $hasExplicitOptions = $this->option('all') || $this->option('users') ||
+                              $this->option('studios') || $this->option('tattoos') ||
+                              $this->option('lookups');
 
         $selections = $this->getSelections();
 
@@ -108,7 +114,8 @@ class SeedTestData extends Command
         // Show what will be seeded
         $this->showPlan($resolved);
 
-        if (!$this->option('force') && !$this->confirm('Proceed with seeding?')) {
+        // Skip confirmation if explicit options passed or --force
+        if (!$this->option('force') && !$hasExplicitOptions && !$this->confirm('Proceed with seeding?')) {
             $this->info('Cancelled.');
             return 0;
         }
@@ -116,6 +123,16 @@ class SeedTestData extends Command
         // Handle fresh database if requested
         if ($this->option('fresh') || in_array('all', $selections)) {
             $this->handleFreshDatabase();
+        }
+
+        // Run data:clean first if requested
+        if ($this->option('clean')) {
+            $this->output->writeln('🧹 Cleaning existing test data...');
+            Artisan::call('data:clean', [
+                '--preserve-lookups' => true,
+                '--force' => true,
+            ]);
+            $this->output->writeln('✓ Data cleaned');
         }
 
         // Run the seeders
@@ -196,19 +213,26 @@ class SeedTestData extends Command
 
             $group = $this->seederGroups[$current];
 
-            // Add dependencies first
+            // Check if all dependencies are resolved
+            $missingDeps = [];
             if (isset($group['requires'])) {
                 foreach ($group['requires'] as $dep) {
                     if (!in_array($dep, $resolved)) {
-                        array_unshift($toResolve, $dep);
+                        $missingDeps[] = $dep;
                     }
                 }
-                // Re-add current after dependencies
-                $toResolve[] = $current;
-                continue;
             }
 
-            $resolved[] = $current;
+            if (!empty($missingDeps)) {
+                // Add missing dependencies to front, current to end
+                foreach (array_reverse($missingDeps) as $dep) {
+                    array_unshift($toResolve, $dep);
+                }
+                $toResolve[] = $current;
+            } else {
+                // All deps satisfied, add to resolved
+                $resolved[] = $current;
+            }
         }
 
         return $resolved;
@@ -261,13 +285,15 @@ class SeedTestData extends Command
             $this->line("  Seeding: {$label}");
 
             foreach ($groupConfig['seeders'] as $seederClass) {
+                $seederName = class_basename($seederClass);
                 try {
-                    Artisan::call('db:seed', [
-                        '--class' => $seederClass,
-                        '--force' => true,
-                    ]);
+                    $seeder = app($seederClass);
+                    $seeder->setContainer(app());
+                    $seeder->setCommand($this);
+                    $seeder->run();
+                    $this->line("    ✓ {$seederName}");
                 } catch (\Exception $e) {
-                    $this->warn("    ⚠ Failed: " . class_basename($seederClass) . " - " . $e->getMessage());
+                    $this->warn("    ⚠ Failed: {$seederName} - " . $e->getMessage());
                 }
             }
 
