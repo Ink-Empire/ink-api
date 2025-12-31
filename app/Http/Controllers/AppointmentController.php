@@ -7,8 +7,10 @@ use App\Http\Resources\AppointmentResource;
 use App\Http\Resources\RawAppointmentResource;
 use App\Models\Appointment;
 use App\Models\Artist;
+use App\Models\User;
 use App\Util\ModelLookup;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
 
 class AppointmentController extends Controller
 {
@@ -171,5 +173,54 @@ class AppointmentController extends Controller
         $appointment->delete();
 
         return response()->json(['message' => 'Appointment deleted successfully'], 200);
+    }
+
+    public function invite(Request $request)
+    {
+        $data = $request->validate([
+            'artist_id' => 'required|exists:artists,id',
+            'date' => 'required|date',
+            'type' => 'required|string|in:consultation,appointment',
+            'guest_email' => 'required|email',
+            'guest_name' => 'nullable|string',
+            'note' => 'nullable|string',
+        ]);
+
+        $artist = Artist::find($data['artist_id']);
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        // Find or create the guest user by email
+        $guest = User::where('email', $data['guest_email'])->first();
+
+        if (!$guest) {
+            // Create a new user with a temporary password
+            $guest = User::create([
+                'email' => $data['guest_email'],
+                'name' => $data['guest_name'] ?? explode('@', $data['guest_email'])[0],
+                'password' => bcrypt(Str::random(16)),
+                'type_id' => 1, // Client type
+            ]);
+        }
+
+        // Create the appointment
+        $appointment = $artist->appointments()->create([
+            'title' => $data['type'] === 'consultation' ? 'Consultation' : 'Tattoo Appointment',
+            'date' => date('Y-m-d', strtotime($data['date'])),
+            'start_time' => '09:00:00', // Default start time
+            'end_time' => $data['type'] === 'consultation' ? '09:30:00' : '12:00:00', // Default end times
+            'type' => $data['type'] === 'consultation' ? 'consultation' : 'tattoo',
+            'status' => AppointmentStatus::PENDING,
+            'client_id' => $guest->id,
+            'description' => $data['note'] ?? null,
+        ]);
+
+        // TODO: Send email notification to guest
+
+        return response()->json([
+            'message' => 'Invite sent successfully',
+            'appointment' => new AppointmentResource($appointment),
+        ], 201);
     }
 }
