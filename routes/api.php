@@ -68,6 +68,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('users')->group(function () {
         Route::get('/me', [UserController::class, 'me']);
         Route::put('/password', [UpdatePasswordController::class, 'update']);
+        Route::post('/favorites/{type}', [UserController::class, 'toggleFavorite']);
     });
 
     // Direct S3 upload routes (presigned URLs)
