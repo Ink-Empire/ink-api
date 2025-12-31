@@ -71,6 +71,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/favorites/{type}', [UserController::class, 'toggleFavorite']);
     });
 
+    // Client/wishlist routes (consolidated with favorites)
+    Route::get('/client/wishlist', [UserController::class, 'getSavedArtists']);
+
     // Direct S3 upload routes (presigned URLs)
     Route::prefix('uploads')->group(function () {
         Route::post('/presign', [\App\Http\Controllers\ImageController::class, 'getPresignedUrl']);

@@ -214,6 +214,45 @@ class UserController extends Controller
     }
 
     /**
+     * Get the user's saved/wishlisted artists with full details
+     */
+    public function getSavedArtists(Request $request)
+    {
+        $user = $request->user();
+
+        // Get the IDs of saved artists directly from the pivot table
+        $savedArtistIds = \Illuminate\Support\Facades\DB::table('users_artists')
+            ->where('user_id', $user->id)
+            ->pluck('artist_id')
+            ->toArray();
+
+        if (empty($savedArtistIds)) {
+            return response()->json(['wishlist' => []]);
+        }
+
+        // Fetch users directly (bypassing Artist scope) and join settings
+        $savedArtists = User::whereIn('id', $savedArtistIds)
+            ->with(['image', 'studio'])
+            ->get()
+            ->map(function ($artist) {
+                // Get artist settings separately
+                $settings = \App\Models\ArtistSettings::where('artist_id', $artist->id)->first();
+                return [
+                    'id' => $artist->id,
+                    'name' => $artist->name,
+                    'username' => $artist->username,
+                    'image' => $artist->image ? ['id' => $artist->image->id, 'uri' => $artist->image->uri] : null,
+                    'studio' => $artist->studio ? ['id' => $artist->studio->id, 'name' => $artist->studio->name] : null,
+                    'books_open' => $settings?->books_open ?? false,
+                ];
+            });
+
+        return response()->json([
+            'wishlist' => $savedArtists
+        ]);
+    }
+
+    /**
      * @return void
      */
     public function delete()
