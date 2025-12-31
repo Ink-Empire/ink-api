@@ -179,6 +179,41 @@ class UserController extends Controller
     }
 
     /**
+     * Toggle a favorite (add or remove based on action param)
+     * Used by frontend to save/unsave artists, tattoos, studios
+     */
+    public function toggleFavorite(Request $request, $type)
+    {
+        $user = $request->user();
+        $ids = $request->get('ids');
+        $action = $request->get('action', 'add');
+
+        // Handle both single ID and array of IDs
+        $idArray = is_array($ids) ? $ids : [$ids];
+
+        $relationship = UserRelationships::getRelationship($type);
+
+        if (!$relationship) {
+            return response()->json(['error' => 'Invalid favorite type'], 400);
+        }
+
+        if ($action === 'remove') {
+            $user->{$relationship}()->detach($idArray);
+        } else {
+            $user->{$relationship}()->syncWithoutDetaching($idArray);
+        }
+
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'action' => $action,
+            'type' => $type,
+            'ids' => $idArray
+        ]);
+    }
+
+    /**
      * @return void
      */
     public function delete()
