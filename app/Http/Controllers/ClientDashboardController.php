@@ -59,7 +59,7 @@ class ClientDashboardController extends Controller
     }
 
     /**
-     * Get wishlist artists for the authenticated client.
+     * Get wishlist artists for the authenticated client (intentional tracking for book openings).
      */
     public function getWishlist(Request $request): JsonResponse
     {
@@ -73,6 +73,25 @@ class ClientDashboardController extends Controller
 
         return response()->json([
             'wishlist' => $wishlistItems,
+        ]);
+    }
+
+    /**
+     * Get favorited/saved artists for the authenticated client (from users_artists table).
+     * These are casual saves from the bookmark button.
+     */
+    public function getFavorites(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        // Query users_artists table (favorites)
+        $favoriteArtists = $user->artists()
+            ->with(['image', 'studio', 'styles'])
+            ->get()
+            ->map(fn ($artist) => $this->formatFavoriteArtist($artist));
+
+        return response()->json([
+            'favorites' => $favoriteArtists,
         ]);
     }
 
@@ -300,6 +319,34 @@ class ClientDashboardController extends Controller
                 'id' => $style->id,
                 'name' => $style->name,
             ])->take(3)->values()->toArray(),
+            'books_open' => $settings?->books_open ?? false,
+        ];
+    }
+
+    /**
+     * Format a favorited artist (from users_artists).
+     */
+    private function formatFavoriteArtist($artist): array
+    {
+        // Get artist settings separately since artists() returns User models
+        $settings = \App\Models\ArtistSettings::where('artist_id', $artist->id)->first();
+
+        return [
+            'id' => $artist->id,
+            'name' => $artist->name,
+            'username' => $artist->username,
+            'image' => $artist->image ? [
+                'id' => $artist->image->id,
+                'uri' => $artist->image->uri,
+            ] : null,
+            'studio' => $artist->studio ? [
+                'id' => $artist->studio->id,
+                'name' => $artist->studio->name,
+            ] : null,
+            'styles' => $artist->styles ? $artist->styles->map(fn ($style) => [
+                'id' => $style->id,
+                'name' => $style->name,
+            ])->take(3)->values()->toArray() : [],
             'books_open' => $settings?->books_open ?? false,
         ];
     }
