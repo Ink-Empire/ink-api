@@ -220,6 +220,10 @@ class UserController extends Controller
     {
         $user = $request->user();
 
+        if (!$user) {
+            return response()->json(['wishlist' => [], 'debug' => 'No authenticated user']);
+        }
+
         // Get the IDs of saved artists directly from the pivot table
         $savedArtistIds = \Illuminate\Support\Facades\DB::table('users_artists')
             ->where('user_id', $user->id)
@@ -227,7 +231,9 @@ class UserController extends Controller
             ->toArray();
 
         if (empty($savedArtistIds)) {
-            return response()->json(['wishlist' => []]);
+            return response()->json([
+                'wishlist' => [],
+            ]);
         }
 
         // Fetch users directly (bypassing Artist scope) and join settings

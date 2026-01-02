@@ -99,6 +99,7 @@ Route::prefix('api')->group(function () {
         // Client Dashboard
         Route::group(['prefix' => 'client'], function () {
             Route::get('/dashboard', [ClientDashboardController::class, 'index']);
+            Route::get('/favorites', [ClientDashboardController::class, 'getFavorites']);
             Route::get('/wishlist', [ClientDashboardController::class, 'getWishlist']);
             Route::post('/wishlist', [ClientDashboardController::class, 'addToWishlist']);
             Route::put('/wishlist/{artistId}', [ClientDashboardController::class, 'updateWishlistItem']);

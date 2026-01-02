@@ -219,7 +219,7 @@ return [
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
                 'connection' => 'redis',
-                'queue' => ['default'],
+                'queue' => ['default', 'elastic-rebuild', 'elastic-reindex'],
                 'tries' => 3,
                 'timeout' => 90,
             ],
@@ -229,7 +229,7 @@ return [
             'supervisor-1' => [
                 'maxProcesses' => 3,
                 'connection' => 'redis',
-                'queue' => ['default'],
+                'queue' => ['default', 'elastic-rebuild', 'elastic-reindex'],
                 'tries' => 3,
             ],
         ],
