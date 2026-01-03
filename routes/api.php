@@ -152,6 +152,4 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('tattoos', [\App\Http\Controllers\TattooController::class, 'adminIndex']);
     Route::get('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminShow']);
     Route::put('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminUpdate']);
-    Route::put('tattoos/{id}/tags', [\App\Http\Controllers\TattooController::class, 'adminUpdateTags']);
-    Route::post('tattoos/{id}/fix-ai', [\App\Http\Controllers\TattooController::class, 'adminFixDescriptionAndTags']);
 });

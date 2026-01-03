@@ -437,216 +437,6 @@ class TattooController extends Controller
     }
 
     /**
-     * Admin: Fix a single tattoo's description and tags using AI analysis
-     */
-    public function adminFixDescriptionAndTags(Request $request, $id): JsonResponse
-    {
-        try {
-            $tattoo = Tattoo::with(['images', 'tags', 'primary_image'])->find($id);
-
-            if (!$tattoo) {
-                return response()->json(['message' => 'Tattoo not found'], 404);
-            }
-
-            $dryRun = $request->boolean('dry_run', false);
-            $createTags = $request->boolean('create_tags', false);
-
-            // Get image URL
-            $imageUrl = $tattoo->primary_image?->uri ?? $tattoo->images->first()?->uri;
-
-            if (!$imageUrl) {
-                return response()->json(['message' => 'Tattoo has no images to analyze'], 400);
-            }
-
-            // Get existing tags for matching
-            $existingTags = Tag::approved()->pluck('name')->toArray();
-
-            // Analyze the image
-            $analysis = $this->tattooTagService->analyzeTattooForDescriptionAndTags($imageUrl, $existingTags);
-
-            // Start with matched tags
-            $allTags = collect($analysis['matched_tags']);
-            $matchedNames = $allTags->pluck('name')->map(fn($n) => strtolower($n))->toArray();
-
-            // Find unmatched suggestions
-            $unmatchedTags = array_filter($analysis['suggested_tags'], function($tag) use ($matchedNames) {
-                return !in_array(strtolower($tag), $matchedNames);
-            });
-
-            $createdTags = [];
-
-            // Create new tags if requested
-            if ($createTags && !empty($unmatchedTags) && !$dryRun) {
-                $skipWords = ['design', 'color', 'pattern', 'art', 'style', 'piece', 'work', 'image'];
-
-                foreach ($unmatchedTags as $tagName) {
-                    $tagName = strtolower(trim($tagName));
-
-                    if (in_array($tagName, $skipWords)) {
-                        continue;
-                    }
-
-                    // Check if tag was just created
-                    $existing = Tag::where('name', $tagName)->first();
-                    if ($existing) {
-                        $allTags->push($existing);
-                        continue;
-                    }
-
-                    $newTag = Tag::create([
-                        'name' => $tagName,
-                        'slug' => \Illuminate\Support\Str::slug($tagName),
-                        'is_pending' => false,
-                        'is_ai_generated' => true,
-                    ]);
-
-                    $allTags->push($newTag);
-                    $createdTags[] = $tagName;
-
-                    \Log::info("Admin: Created new tag from AI suggestion", [
-                        'tag_id' => $newTag->id,
-                        'name' => $tagName,
-                        'tattoo_id' => $tattoo->id
-                    ]);
-                }
-            }
-
-            $result = [
-                'tattoo_id' => $tattoo->id,
-                'old_description' => $tattoo->description,
-                'new_description' => $analysis['description'],
-                'old_tags' => $tattoo->tags->pluck('name')->toArray(),
-                'suggested_tags' => $analysis['suggested_tags'],
-                'matched_tags' => collect($analysis['matched_tags'])->pluck('name')->toArray(),
-                'unmatched_tags' => array_values($unmatchedTags),
-                'created_tags' => $createdTags,
-                'final_tags' => $allTags->pluck('name')->toArray(),
-                'dry_run' => $dryRun,
-                'create_tags' => $createTags,
-            ];
-
-            if (!$dryRun) {
-                // Update description
-                if ($analysis['description']) {
-                    $tattoo->description = $analysis['description'];
-                    $tattoo->save();
-                }
-
-                // Update tags
-                if ($allTags->isNotEmpty()) {
-                    $tagIds = $allTags->pluck('id')->toArray();
-                    $tattoo->tags()->sync($tagIds);
-                }
-
-                // Re-index for search
-                $tattoo->searchable();
-
-                $result['saved'] = true;
-            }
-
-            return response()->json($result);
-
-        } catch (\Exception $e) {
-            \Log::error("Admin: Failed to fix tattoo description/tags", [
-                'tattoo_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json(['message' => 'Failed to analyze tattoo: ' . $e->getMessage()], 500);
-        }
-    }
-
-    /**
-     * Admin: Update tattoo tags by name (creates new tags if needed)
-     */
-    public function adminUpdateTags(Request $request, $id): JsonResponse
-    {
-        try {
-            $tattoo = Tattoo::with(['tags'])->find($id);
-
-            if (!$tattoo) {
-                return response()->json(['message' => 'Tattoo not found'], 404);
-            }
-
-            $tagNamesInput = $request->input('tag_names', '');
-            $description = $request->input('description');
-
-            // Update description if provided
-            if ($description !== null) {
-                $tattoo->description = $description;
-                $tattoo->save();
-            }
-
-            // Parse tag names from comma-separated string
-            $tagNames = array_filter(
-                array_map('trim', explode(',', $tagNamesInput)),
-                fn($name) => strlen($name) >= 2
-            );
-
-            $allTags = collect();
-
-            foreach ($tagNames as $tagName) {
-                $tagName = strtolower(trim($tagName));
-                $slug = \Illuminate\Support\Str::slug($tagName);
-
-                // Try to find existing tag
-                $tag = Tag::where('name', $tagName)
-                    ->orWhere('slug', $slug)
-                    ->first();
-
-                if ($tag) {
-                    $allTags->push($tag);
-                } else {
-                    // Create new tag
-                    $newTag = Tag::create([
-                        'name' => $tagName,
-                        'slug' => $slug,
-                        'is_pending' => false,
-                        'is_ai_generated' => false, // Manual entry by admin
-                    ]);
-
-                    $allTags->push($newTag);
-
-                    \Log::info("Admin created new tag", [
-                        'tag_id' => $newTag->id,
-                        'name' => $tagName,
-                        'tattoo_id' => $tattoo->id
-                    ]);
-                }
-            }
-
-            // Sync tags to tattoo
-            $tagIds = $allTags->pluck('id')->toArray();
-            $tattoo->tags()->sync($tagIds);
-
-            // Re-index for search
-            $tattoo->refresh();
-            $tattoo->searchable();
-
-            \Log::info("Admin updated tattoo tags", [
-                'tattoo_id' => $tattoo->id,
-                'tag_count' => count($tagIds),
-                'tags' => $allTags->pluck('name')->toArray()
-            ]);
-
-            return response()->json([
-                'success' => true,
-                'tattoo_id' => $tattoo->id,
-                'tags' => $allTags->pluck('name')->toArray(),
-                'description' => $tattoo->description,
-            ]);
-
-        } catch (\Exception $e) {
-            \Log::error("Admin: Failed to update tattoo tags", [
-                'tattoo_id' => $id,
-                'error' => $e->getMessage()
-            ]);
-
-            return response()->json(['message' => 'Failed to update tags: ' . $e->getMessage()], 500);
-        }
-    }
-
-    /**
      * Admin: Get a single tattoo
      */
     public function adminShow(int $id): JsonResponse
@@ -662,6 +452,7 @@ class TattooController extends Controller
                 'id' => $tattoo->id,
                 'title' => $tattoo->title,
                 'description' => $tattoo->description,
+                'placement' => $tattoo->placement,
                 'artist_id' => $tattoo->artist_id,
                 'artist_name' => $tattoo->artist?->name,
                 'primary_image' => $tattoo->primary_image?->uri,
@@ -686,6 +477,11 @@ class TattooController extends Controller
         // Update description
         if ($request->has('description')) {
             $tattoo->description = $request->input('description');
+        }
+
+        if ($request->has('placement')) {
+            $tattoo->placement = $request->input('placement');;
+            $tattoo->save();
         }
 
         if ($request->has('title')) {
@@ -736,6 +532,7 @@ class TattooController extends Controller
                 'id' => $tattoo->id,
                 'title' => $tattoo->title,
                 'description' => $tattoo->description,
+                'placement' => $tattoo->placement,
                 'artist_id' => $tattoo->artist_id,
                 'artist_name' => $tattoo->artist?->name,
                 'primary_image' => $tattoo->primary_image?->uri,
