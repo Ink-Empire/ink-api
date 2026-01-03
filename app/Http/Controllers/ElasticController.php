@@ -12,6 +12,7 @@ use App\Services\ElasticService;
 use App\Util\StringToModel;
 use Exception;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
 use App\Util\JSON;
 
@@ -201,6 +202,22 @@ class ElasticController
             }
         } catch (Exception $e) {
             return response()->json(["message" => "Error updating item(s) via $jobName;. Message: " . $e->getMessage()], 500);
+        }
+    }
+
+    public function reindex(Request $request)
+    {
+        $model = $request->get('model');
+
+        $class = 'App\\Models\\' . $model;
+
+        try {
+            Artisan::call('scout:import', [
+                'model' => $class,
+            ]);
+            return response()->json(['message' => "Reindex started for {$model}"]);
+        } catch (\Exception $e) {
+            return response()->json(['message' => 'Error starting reindex: ' . $e->getMessage()], 500);
         }
     }
 
