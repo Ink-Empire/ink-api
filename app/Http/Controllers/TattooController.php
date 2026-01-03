@@ -441,7 +441,7 @@ class TattooController extends Controller
      */
     public function adminShow(int $id): JsonResponse
     {
-        $tattoo = Tattoo::with(['artist', 'primary_image', 'tags', 'primary_style'])->find($id);
+        $tattoo = Tattoo::with(['artist', 'primary_image', 'tags', 'primary_style', 'styles'])->find($id);
 
         if (!$tattoo) {
             return response()->json(['message' => 'Tattoo not found'], 404);
@@ -458,6 +458,8 @@ class TattooController extends Controller
                 'primary_image' => $tattoo->primary_image?->uri,
                 'tags' => $tattoo->tags->pluck('name')->toArray(),
                 'primary_style' => $tattoo->primary_style?->name,
+                'styles' => $tattoo->styles->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
+                'style_ids' => $tattoo->styles->pluck('id')->toArray(),
                 'created_at' => $tattoo->created_at,
             ],
         ]);
@@ -524,7 +526,16 @@ class TattooController extends Controller
             $tattoo->tags()->sync($allTags->pluck('id')->toArray());
         }
 
+        // Handle styles if provided
+        if ($request->has('style_ids')) {
+            $styleIds = $request->input('style_ids', []);
+            if (is_array($styleIds)) {
+                $tattoo->styles()->sync($styleIds);
+            }
+        }
+
         $tattoo->refresh();
+        $tattoo->load('styles');
         $tattoo->searchable();
 
         return response()->json([
@@ -538,6 +549,8 @@ class TattooController extends Controller
                 'primary_image' => $tattoo->primary_image?->uri,
                 'tags' => $tattoo->tags->pluck('name')->toArray(),
                 'primary_style' => $tattoo->primary_style?->name,
+                'styles' => $tattoo->styles->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
+                'style_ids' => $tattoo->styles->pluck('id')->toArray(),
                 'created_at' => $tattoo->created_at,
             ],
         ]);
@@ -554,7 +567,7 @@ class TattooController extends Controller
         $order = $request->input('order', 'desc');
         $filter = $request->input('filter', []);
 
-        $query = Tattoo::with(['artist', 'primary_image', 'tags', 'primary_style']);
+        $query = Tattoo::with(['artist', 'primary_image', 'tags', 'primary_style', 'styles']);
 
         if (is_string($filter)) {
             $filter = json_decode($filter, true) ?? [];
@@ -609,6 +622,7 @@ class TattooController extends Controller
                 'primary_image' => $t->primary_image?->uri,
                 'tags' => $t->tags->pluck('name')->toArray(),
                 'primary_style' => $t->primary_style?->name,
+                'styles' => $t->styles->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
                 'created_at' => $t->created_at,
             ]),
             'total' => $total,
