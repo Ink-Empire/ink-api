@@ -206,18 +206,24 @@ class FixTattooDescriptionsAndTags extends Command
                         foreach ($unmatchedSuggestions as $tagName) {
                             $tagName = strtolower(trim($tagName));
 
-                            // Skip if already created in this run
-                            if (in_array($tagName, $createdTagNames)) {
-                                $existingNew = Tag::where('name', $tagName)->first();
-                                if ($existingNew) {
-                                    $allTags->push($existingNew);
-                                }
-                                continue;
-                            }
-
                             // Skip generic words
                             $skipWords = ['design', 'color', 'pattern', 'art', 'style', 'piece', 'work', 'image'];
                             if (in_array($tagName, $skipWords)) {
+                                continue;
+                            }
+
+                            // Check if tag already exists in database
+                            $existingTag = Tag::where('name', $tagName)
+                                ->orWhere('slug', \Illuminate\Support\Str::slug($tagName))
+                                ->first();
+
+                            if ($existingTag) {
+                                $allTags->push($existingTag);
+                                continue;
+                            }
+
+                            // Skip if already created in this run
+                            if (in_array($tagName, $createdTagNames)) {
                                 continue;
                             }
 
@@ -250,8 +256,28 @@ class FixTattooDescriptionsAndTags extends Command
 
                     if (!$dryRun && $allTags->isNotEmpty()) {
                         $tagIds = $allTags->pluck('id')->toArray();
+
+                        Log::info("Syncing tags to tattoo", [
+                            'tattoo_id' => $tattoo->id,
+                            'tag_ids' => $tagIds,
+                            'tag_names' => $allTags->pluck('name')->toArray()
+                        ]);
+
                         $tattoo->tags()->sync($tagIds);
+                        $tattoo->refresh();
+
+                        Log::info("Tags synced successfully", [
+                            'tattoo_id' => $tattoo->id,
+                            'tags_after_sync' => $tattoo->tags->pluck('name')->toArray()
+                        ]);
+
                         $stats['tags_updated']++;
+                    } elseif (!$dryRun && $allTags->isEmpty()) {
+                        Log::warning("No tags to sync for tattoo", [
+                            'tattoo_id' => $tattoo->id,
+                            'matched_tags_count' => count($analysis['matched_tags']),
+                            'suggested_tags' => $analysis['suggested_tags']
+                        ]);
                     }
                 }
 

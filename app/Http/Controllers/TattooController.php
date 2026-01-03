@@ -557,6 +557,196 @@ class TattooController extends Controller
     }
 
     /**
+     * Admin: Update tattoo tags by name (creates new tags if needed)
+     */
+    public function adminUpdateTags(Request $request, $id): JsonResponse
+    {
+        try {
+            $tattoo = Tattoo::with(['tags'])->find($id);
+
+            if (!$tattoo) {
+                return response()->json(['message' => 'Tattoo not found'], 404);
+            }
+
+            $tagNamesInput = $request->input('tag_names', '');
+            $description = $request->input('description');
+
+            // Update description if provided
+            if ($description !== null) {
+                $tattoo->description = $description;
+                $tattoo->save();
+            }
+
+            // Parse tag names from comma-separated string
+            $tagNames = array_filter(
+                array_map('trim', explode(',', $tagNamesInput)),
+                fn($name) => strlen($name) >= 2
+            );
+
+            $allTags = collect();
+
+            foreach ($tagNames as $tagName) {
+                $tagName = strtolower(trim($tagName));
+                $slug = \Illuminate\Support\Str::slug($tagName);
+
+                // Try to find existing tag
+                $tag = Tag::where('name', $tagName)
+                    ->orWhere('slug', $slug)
+                    ->first();
+
+                if ($tag) {
+                    $allTags->push($tag);
+                } else {
+                    // Create new tag
+                    $newTag = Tag::create([
+                        'name' => $tagName,
+                        'slug' => $slug,
+                        'is_pending' => false,
+                        'is_ai_generated' => false, // Manual entry by admin
+                    ]);
+
+                    $allTags->push($newTag);
+
+                    \Log::info("Admin created new tag", [
+                        'tag_id' => $newTag->id,
+                        'name' => $tagName,
+                        'tattoo_id' => $tattoo->id
+                    ]);
+                }
+            }
+
+            // Sync tags to tattoo
+            $tagIds = $allTags->pluck('id')->toArray();
+            $tattoo->tags()->sync($tagIds);
+
+            // Re-index for search
+            $tattoo->refresh();
+            $tattoo->searchable();
+
+            \Log::info("Admin updated tattoo tags", [
+                'tattoo_id' => $tattoo->id,
+                'tag_count' => count($tagIds),
+                'tags' => $allTags->pluck('name')->toArray()
+            ]);
+
+            return response()->json([
+                'success' => true,
+                'tattoo_id' => $tattoo->id,
+                'tags' => $allTags->pluck('name')->toArray(),
+                'description' => $tattoo->description,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Admin: Failed to update tattoo tags", [
+                'tattoo_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['message' => 'Failed to update tags: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Admin: Get a single tattoo
+     */
+    public function adminShow(int $id): JsonResponse
+    {
+        $tattoo = Tattoo::with(['artist', 'primary_image', 'tags', 'primary_style'])->find($id);
+
+        if (!$tattoo) {
+            return response()->json(['message' => 'Tattoo not found'], 404);
+        }
+
+        return response()->json([
+            'data' => [
+                'id' => $tattoo->id,
+                'title' => $tattoo->title,
+                'description' => $tattoo->description,
+                'artist_id' => $tattoo->artist_id,
+                'artist_name' => $tattoo->artist?->name,
+                'primary_image' => $tattoo->primary_image?->uri,
+                'tags' => $tattoo->tags->pluck('name')->toArray(),
+                'primary_style' => $tattoo->primary_style?->name,
+                'created_at' => $tattoo->created_at,
+            ],
+        ]);
+    }
+
+    /**
+     * Admin: Update a tattoo (standard React Admin update)
+     */
+    public function adminUpdate(Request $request, int $id): JsonResponse
+    {
+        $tattoo = Tattoo::find($id);
+
+        if (!$tattoo) {
+            return response()->json(['message' => 'Tattoo not found'], 404);
+        }
+
+        // Update description
+        if ($request->has('description')) {
+            $tattoo->description = $request->input('description');
+        }
+
+        if ($request->has('title')) {
+            $tattoo->title = $request->input('title');
+        }
+
+        $tattoo->save();
+
+        // Handle tags if provided
+        if ($request->has('tag_names')) {
+            $tagNamesInput = $request->input('tag_names', '');
+            $tagNames = array_filter(
+                array_map('trim', explode(',', $tagNamesInput)),
+                fn($name) => strlen($name) >= 2
+            );
+
+            $allTags = collect();
+
+            foreach ($tagNames as $tagName) {
+                $tagName = strtolower(trim($tagName));
+                $slug = \Illuminate\Support\Str::slug($tagName);
+
+                $tag = Tag::where('name', $tagName)
+                    ->orWhere('slug', $slug)
+                    ->first();
+
+                if ($tag) {
+                    $allTags->push($tag);
+                } else {
+                    $newTag = Tag::create([
+                        'name' => $tagName,
+                        'slug' => $slug,
+                        'is_pending' => false,
+                        'is_ai_generated' => false,
+                    ]);
+                    $allTags->push($newTag);
+                }
+            }
+
+            $tattoo->tags()->sync($allTags->pluck('id')->toArray());
+        }
+
+        $tattoo->refresh();
+        $tattoo->searchable();
+
+        return response()->json([
+            'data' => [
+                'id' => $tattoo->id,
+                'title' => $tattoo->title,
+                'description' => $tattoo->description,
+                'artist_id' => $tattoo->artist_id,
+                'artist_name' => $tattoo->artist?->name,
+                'primary_image' => $tattoo->primary_image?->uri,
+                'tags' => $tattoo->tags->pluck('name')->toArray(),
+                'primary_style' => $tattoo->primary_style?->name,
+                'created_at' => $tattoo->created_at,
+            ],
+        ]);
+    }
+
+    /**
      * Admin: List all tattoos with pagination
      */
     public function adminIndex(Request $request): JsonResponse
