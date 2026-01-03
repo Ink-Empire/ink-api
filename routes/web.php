@@ -179,6 +179,7 @@ Route::prefix('api')->group(function () {
             Route::post('/rebuild-bypass', [ElasticController::class, 'rebuildBypass']);
             Route::post('/migrate', [ElasticController::class, 'migrateAlias']);
             Route::post('translate-query', [ElasticController::class, 'translateQuery']);
+            Route::post('reindex', [ElasticController::class, 'reindex']);
         });
     });
 

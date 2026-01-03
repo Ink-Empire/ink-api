@@ -501,6 +501,128 @@ class TagService
     }
 
     /**
+     * Analyze a tattoo image and return both a description and tag suggestions.
+     * Used by the fix/cleanup command to correct mismatched descriptions and tags.
+     *
+     * @param string $imageUrl The URL of the tattoo image
+     * @param array $existingTags Array of existing approved tag names for matching
+     * @return array ['description' => string, 'suggested_tags' => array, 'matched_tags' => array]
+     */
+    public function analyzeTattooForDescriptionAndTags(string $imageUrl, array $existingTags = []): array
+    {
+        try {
+            $response = OpenAI::chat()->create([
+                'model' => 'gpt-4o-mini',
+                'messages' => [
+                    [
+                        'role' => 'user',
+                        'content' => [
+                            [
+                                'type' => 'text',
+                                'text' => $this->getDescriptionAndTagsPrompt($existingTags)
+                            ],
+                            [
+                                'type' => 'image_url',
+                                'image_url' => [
+                                    'url' => $imageUrl,
+                                    'detail' => 'low'
+                                ]
+                            ]
+                        ]
+                    ]
+                ],
+                'max_tokens' => 200,
+                'temperature' => 0.3,
+            ]);
+
+            $content = $response->choices[0]->message->content ?? '';
+            return $this->parseDescriptionAndTagsResponse($content, $existingTags);
+
+        } catch (Exception $e) {
+            Log::error("Failed to analyze tattoo for description and tags", [
+                'url' => $imageUrl,
+                'error' => $e->getMessage()
+            ]);
+            return [
+                'description' => null,
+                'suggested_tags' => [],
+                'matched_tags' => []
+            ];
+        }
+    }
+
+    /**
+     * Get prompt for combined description and tag analysis
+     */
+    private function getDescriptionAndTagsPrompt(array $existingTags): string
+    {
+        $tagList = '';
+        if (!empty($existingTags)) {
+            // Include a sample of existing tags to guide the AI toward using them
+            $sampleTags = array_slice($existingTags, 0, 100);
+            $tagList = "\n\nHere are some existing tags you should prefer to use when they match: " . implode(', ', $sampleTags);
+        }
+
+        return 'Analyze this tattoo image and provide:
+
+1. DESCRIPTION: Write a clear, concise description (1-2 sentences) of what the tattoo depicts. Focus on the main subject, style elements, and any notable artistic details. Do not mention that it is a tattoo.
+
+2. TAGS: List 3-5 single-word or two-word tags that describe the main subjects and themes visible. Focus on concrete nouns (animals, objects, symbols) rather than abstract concepts.' . $tagList . '
+
+IMPORTANT: Keep all content family-friendly and professional. If the image is unclear or inappropriate, provide neutral descriptors.
+
+Format your response exactly like this:
+DESCRIPTION: [your description here]
+TAGS: [tag1, tag2, tag3, tag4, tag5]';
+    }
+
+    /**
+     * Parse the combined description and tags response from OpenAI
+     */
+    private function parseDescriptionAndTagsResponse(string $response, array $existingTags): array
+    {
+        $description = null;
+        $suggestedTags = [];
+        $matchedTags = [];
+
+        // Extract description
+        if (preg_match('/DESCRIPTION:\s*(.+?)(?=TAGS:|$)/is', $response, $descMatch)) {
+            $description = trim($descMatch[1]);
+            // Clean up any trailing newlines
+            $description = preg_replace('/\s+/', ' ', $description);
+        }
+
+        // Extract tags
+        if (preg_match('/TAGS:\s*(.+?)$/is', $response, $tagMatch)) {
+            $tagString = trim($tagMatch[1]);
+            $suggestedTags = array_map('trim', explode(',', $tagString));
+            $suggestedTags = array_filter($suggestedTags, fn($t) => strlen($t) >= 2 && strlen($t) <= 30);
+            $suggestedTags = array_map('strtolower', $suggestedTags);
+            $suggestedTags = array_slice($suggestedTags, 0, 5);
+        }
+
+        // Match suggested tags against existing tags
+        foreach ($suggestedTags as $suggestedTag) {
+            $match = $this->findMatchingTag($suggestedTag);
+            if ($match) {
+                $matchedTags[] = $match;
+            }
+        }
+
+        Log::info("Parsed description and tags response", [
+            'description' => $description,
+            'suggested_tags' => $suggestedTags,
+            'matched_count' => count($matchedTags)
+        ]);
+
+        return [
+            'description' => $description,
+            'suggested_tags' => $suggestedTags,
+            'matched_tags' => $matchedTags
+        ];
+    }
+
+    /**
      * Create a tag from an AI suggestion (user accepted it).
      * Creates as approved (is_pending = false) with is_ai_generated = true.
      */

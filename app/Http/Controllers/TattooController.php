@@ -435,4 +435,196 @@ class TattooController extends Controller
             return $this->returnErrorResponse($e->getMessage());
         }
     }
+
+    /**
+     * Admin: Fix a single tattoo's description and tags using AI analysis
+     */
+    public function adminFixDescriptionAndTags(Request $request, $id): JsonResponse
+    {
+        try {
+            $tattoo = Tattoo::with(['images', 'tags', 'primary_image'])->find($id);
+
+            if (!$tattoo) {
+                return response()->json(['message' => 'Tattoo not found'], 404);
+            }
+
+            $dryRun = $request->boolean('dry_run', false);
+            $createTags = $request->boolean('create_tags', false);
+
+            // Get image URL
+            $imageUrl = $tattoo->primary_image?->uri ?? $tattoo->images->first()?->uri;
+
+            if (!$imageUrl) {
+                return response()->json(['message' => 'Tattoo has no images to analyze'], 400);
+            }
+
+            // Get existing tags for matching
+            $existingTags = Tag::approved()->pluck('name')->toArray();
+
+            // Analyze the image
+            $analysis = $this->tattooTagService->analyzeTattooForDescriptionAndTags($imageUrl, $existingTags);
+
+            // Start with matched tags
+            $allTags = collect($analysis['matched_tags']);
+            $matchedNames = $allTags->pluck('name')->map(fn($n) => strtolower($n))->toArray();
+
+            // Find unmatched suggestions
+            $unmatchedTags = array_filter($analysis['suggested_tags'], function($tag) use ($matchedNames) {
+                return !in_array(strtolower($tag), $matchedNames);
+            });
+
+            $createdTags = [];
+
+            // Create new tags if requested
+            if ($createTags && !empty($unmatchedTags) && !$dryRun) {
+                $skipWords = ['design', 'color', 'pattern', 'art', 'style', 'piece', 'work', 'image'];
+
+                foreach ($unmatchedTags as $tagName) {
+                    $tagName = strtolower(trim($tagName));
+
+                    if (in_array($tagName, $skipWords)) {
+                        continue;
+                    }
+
+                    // Check if tag was just created
+                    $existing = Tag::where('name', $tagName)->first();
+                    if ($existing) {
+                        $allTags->push($existing);
+                        continue;
+                    }
+
+                    $newTag = Tag::create([
+                        'name' => $tagName,
+                        'slug' => \Illuminate\Support\Str::slug($tagName),
+                        'is_pending' => false,
+                        'is_ai_generated' => true,
+                    ]);
+
+                    $allTags->push($newTag);
+                    $createdTags[] = $tagName;
+
+                    \Log::info("Admin: Created new tag from AI suggestion", [
+                        'tag_id' => $newTag->id,
+                        'name' => $tagName,
+                        'tattoo_id' => $tattoo->id
+                    ]);
+                }
+            }
+
+            $result = [
+                'tattoo_id' => $tattoo->id,
+                'old_description' => $tattoo->description,
+                'new_description' => $analysis['description'],
+                'old_tags' => $tattoo->tags->pluck('name')->toArray(),
+                'suggested_tags' => $analysis['suggested_tags'],
+                'matched_tags' => collect($analysis['matched_tags'])->pluck('name')->toArray(),
+                'unmatched_tags' => array_values($unmatchedTags),
+                'created_tags' => $createdTags,
+                'final_tags' => $allTags->pluck('name')->toArray(),
+                'dry_run' => $dryRun,
+                'create_tags' => $createTags,
+            ];
+
+            if (!$dryRun) {
+                // Update description
+                if ($analysis['description']) {
+                    $tattoo->description = $analysis['description'];
+                    $tattoo->save();
+                }
+
+                // Update tags
+                if ($allTags->isNotEmpty()) {
+                    $tagIds = $allTags->pluck('id')->toArray();
+                    $tattoo->tags()->sync($tagIds);
+                }
+
+                // Re-index for search
+                $tattoo->searchable();
+
+                $result['saved'] = true;
+            }
+
+            return response()->json($result);
+
+        } catch (\Exception $e) {
+            \Log::error("Admin: Failed to fix tattoo description/tags", [
+                'tattoo_id' => $id,
+                'error' => $e->getMessage()
+            ]);
+
+            return response()->json(['message' => 'Failed to analyze tattoo: ' . $e->getMessage()], 500);
+        }
+    }
+
+    /**
+     * Admin: List all tattoos with pagination
+     */
+    public function adminIndex(Request $request): JsonResponse
+    {
+        $perPage = min($request->input('per_page', 25), 100);
+        $page = $request->input('page', 1);
+        $sort = $request->input('sort', 'id');
+        $order = $request->input('order', 'desc');
+        $filter = $request->input('filter', []);
+
+        $query = Tattoo::with(['artist', 'primary_image', 'tags', 'primary_style']);
+
+        if (is_string($filter)) {
+            $filter = json_decode($filter, true) ?? [];
+        }
+
+        // Search filter
+        if (!empty($filter['q'])) {
+            $search = $filter['q'];
+            $query->where(function ($q) use ($search) {
+                $q->where('title', 'like', "%{$search}%")
+                  ->orWhere('description', 'like', "%{$search}%");
+            });
+        }
+
+        // Artist filter
+        if (!empty($filter['artist_id'])) {
+            $query->where('artist_id', $filter['artist_id']);
+        }
+
+        // Has tags filter
+        if (isset($filter['has_tags'])) {
+            if ($filter['has_tags']) {
+                $query->whereHas('tags');
+            } else {
+                $query->whereDoesntHave('tags');
+            }
+        }
+
+        // Has description filter
+        if (isset($filter['has_description'])) {
+            if ($filter['has_description']) {
+                $query->whereNotNull('description')->where('description', '!=', '');
+            } else {
+                $query->where(function ($q) {
+                    $q->whereNull('description')->orWhere('description', '');
+                });
+            }
+        }
+
+        $query->orderBy($sort, $order);
+
+        $total = $query->count();
+        $tattoos = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+
+        return response()->json([
+            'data' => $tattoos->map(fn($t) => [
+                'id' => $t->id,
+                'title' => $t->title,
+                'description' => $t->description,
+                'artist_id' => $t->artist_id,
+                'artist_name' => $t->artist?->name,
+                'primary_image' => $t->primary_image?->uri,
+                'tags' => $t->tags->pluck('name')->toArray(),
+                'primary_style' => $t->primary_style?->name,
+                'created_at' => $t->created_at,
+            ]),
+            'total' => $total,
+        ]);
+    }
 }
