@@ -396,7 +396,11 @@ abstract class SearchService
     }
 
     /**
-     * Build search string filter for specified model and fields
+     * Build search string filter for specified model and fields.
+     * Creates one large OR query that matches:
+     * - Intervals queries on text fields (description, artist_name, studio_name)
+     * - Terms queries for each word against tags
+     * - Nested terms queries for each word against styles.name
      *
      * @param string $modelClass The model class name (e.g., 'Artist', 'Tattoo')
      * @param array $fields Array of field names to search in
@@ -418,15 +422,39 @@ abstract class SearchService
         // Create a generic search object to construct clauses we need
         $query = $fullModelClass::search();
 
-        // Build OR conditions for each field
+        // Build intervals queries for each text field (high priority matches)
         foreach ($fields as $field) {
             $query->wherePrefix($field, $searchText, 'all_of', true);
         }
 
-        //now check tags
+        // Check full search text against tags
         $query->where('tags', 'in', [$searchText]);
 
-        // Add the OR query to the main search with minimum match
+        // Split search string into individual words for tag/style matching
+        $words = array_filter(
+            explode(' ', strtolower(trim($searchText))),
+            fn($word) => strlen(trim($word)) >= 2
+        );
+
+        // Add terms query for each word against tags
+        foreach ($words as $word) {
+            $word = trim($word);
+            if (!empty($word)) {
+                $query->where('tags', 'in', [$word]);
+            }
+        }
+
+        // Add nested terms queries for each word against styles.name
+        foreach ($words as $word) {
+            $word = trim($word);
+            if (!empty($word)) {
+                $query->where('styles.name', 'in', [$word]);
+                $query->where('placement', 'in',[$word]); //in case they want to see all shoulder tats
+            }
+        }
+
+        // Add the complete OR query to the main search with minimum match
+        // All the above clauses get wrapped in one should block
         $this->search->orWhere($query, $minMatch);
     }
 }

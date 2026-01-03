@@ -18,11 +18,15 @@ class TagController extends Controller
     }
 
     /**
-     * Get all approved tags (for listing)
+     * Get all approved tags that have at least one tattoo (for listing)
      */
     public function index(): JsonResponse
     {
-        $tags = Tag::approved()->orderBy('name')->get();
+        $tags = Tag::approved()
+            ->whereHas('tattoos')
+            ->withCount('tattoos')
+            ->orderBy('name')
+            ->get();
 
         return response()->json([
             'success' => true,
@@ -56,13 +60,14 @@ class TagController extends Controller
     }
 
     /**
-     * Get featured/popular approved tags (for homepage)
+     * Get featured/popular approved tags that have tattoos (for homepage)
      */
     public function featured(Request $request): JsonResponse
     {
         $limit = min($request->input('limit', 15), 30);
 
         $tags = Tag::approved()
+                   ->whereHas('tattoos')
                    ->withCount('tattoos')
                    ->orderBy('tattoos_count', 'desc')
                    ->limit($limit)
