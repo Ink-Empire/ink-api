@@ -50,6 +50,9 @@ class SyncUserCalendar implements ShouldQueue
 
             $stats = $googleCalendar->syncEvents($connection);
 
+            // Update last synced timestamp
+            $connection->update(['last_synced_at' => now()]);
+
             Log::info("Calendar sync completed for connection {$this->connectionId}", $stats);
 
         } catch (\Exception $e) {
