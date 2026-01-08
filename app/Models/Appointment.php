@@ -23,10 +23,16 @@ class Appointment extends Model
         'tattoo_id',
         'date',
         'status', // booked, completed, cancelled
+        'google_event_id',
         'type', // tattoo or consultation
         'all_day',
         'start_time',
         'end_time',
+    ];
+
+    protected $casts = [
+        'date' => 'date',
+        'all_day' => 'boolean',
     ];
 
     public function client()
