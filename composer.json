@@ -16,6 +16,7 @@
         "aws/aws-sdk-php": "^3.337",
         "elasticsearch/elasticsearch": "^7.17",
         "fico7489/laravel-pivot": "^3.0",
+        "google/apiclient": "^2.0",
         "guzzlehttp/guzzle": "^7.2",
         "ink-empire/elastic": "dev-master",
         "intervention/image": "^3.1",

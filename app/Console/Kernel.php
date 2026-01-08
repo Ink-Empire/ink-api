@@ -2,6 +2,9 @@
 
 namespace App\Console;
 
+use App\Jobs\RefreshCalendarWebhooks;
+use App\Jobs\SyncUserCalendar;
+use App\Models\CalendarConnection;
 use Illuminate\Console\Scheduling\Schedule;
 use Illuminate\Foundation\Console\Kernel as ConsoleKernel;
 
@@ -15,7 +18,24 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
-        // $schedule->command('inspire')->hourly();
+        // Refresh calendar webhooks daily (before they expire)
+        $schedule->job(new RefreshCalendarWebhooks)
+            ->daily()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // Periodic sync for all calendars (backup for webhooks)
+        // Syncs calendars that haven't been synced in the last 6 hours
+        $schedule->call(function () {
+            CalendarConnection::where('sync_enabled', true)
+                ->where(function ($q) {
+                    $q->whereNull('last_synced_at')
+                      ->orWhere('last_synced_at', '<', now()->subHours(6));
+                })
+                ->each(function ($connection) {
+                    SyncUserCalendar::dispatch($connection->id);
+                });
+        })->hourly()->withoutOverlapping()->onOneServer();
     }
 
     /**

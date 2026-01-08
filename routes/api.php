@@ -17,6 +17,8 @@ use App\Http\Controllers\StudioController;
 use App\Http\Controllers\TagController;
 use App\Http\Controllers\PlacementController;
 use App\Http\Controllers\BlockedTermController;
+use App\Http\Controllers\CalendarOAuthController;
+use App\Http\Controllers\CalendarWebhookController;
 
 /*
 |--------------------------------------------------------------------------
@@ -101,7 +103,23 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/send', [MessageController::class, 'sendMessage']);
         Route::put('/{messageId}/read', [MessageController::class, 'markAsRead']);
     });
+
+    // Calendar integration routes
+    Route::prefix('calendar')->group(function () {
+        Route::get('/auth-url', [CalendarOAuthController::class, 'getAuthUrl']);
+        Route::get('/status', [CalendarOAuthController::class, 'status']);
+        Route::get('/events', [CalendarOAuthController::class, 'getEvents']);
+        Route::post('/disconnect', [CalendarOAuthController::class, 'disconnect']);
+        Route::post('/toggle-sync', [CalendarOAuthController::class, 'toggleSync']);
+        Route::post('/sync', [CalendarOAuthController::class, 'triggerSync']);
+    });
 });
+
+// Calendar OAuth callback (no auth required - user comes from Google)
+Route::get('/calendar/callback', [CalendarOAuthController::class, 'handleCallback']);
+
+// Webhook endpoints (no auth - verified by channel ID/signature)
+Route::post('/webhooks/google-calendar', [CalendarWebhookController::class, 'handleGoogleWebhook']);
 
 // Admin routes (requires authentication + admin privilege)
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {

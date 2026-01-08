@@ -210,4 +210,20 @@ class User extends Authenticatable implements MustVerifyEmail
 
         return collect(); // fallback: no appointments
     }
+
+    /**
+     * Get the user's Google Calendar connection.
+     */
+    public function calendarConnection()
+    {
+        return $this->hasOne(CalendarConnection::class)->where('provider', 'google');
+    }
+
+    /**
+     * Check if the user has a Google Calendar connected.
+     */
+    public function hasGoogleCalendarConnected(): bool
+    {
+        return $this->calendarConnection()->exists();
+    }
 }
