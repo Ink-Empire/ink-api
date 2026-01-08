@@ -5,8 +5,10 @@ namespace App\Http\Controllers;
 use App\Enums\AppointmentStatus;
 use App\Http\Resources\AppointmentResource;
 use App\Http\Resources\RawAppointmentResource;
+use App\Jobs\SyncAppointmentToGoogle;
 use App\Models\Appointment;
 use App\Models\Artist;
+use App\Models\CalendarConnection;
 use App\Models\User;
 use App\Util\ModelLookup;
 use Illuminate\Http\Request;
@@ -220,6 +222,75 @@ class AppointmentController extends Controller
 
         return response()->json([
             'message' => 'Invite sent successfully',
+            'appointment' => new AppointmentResource($appointment),
+        ], 201);
+    }
+
+    /**
+     * Create a calendar event for the artist (personal/blocking time)
+     * Optionally syncs to Google Calendar
+     */
+    public function createEvent(Request $request)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $data = $request->validate([
+            'artist_id' => 'required|exists:artists,id',
+            'title' => 'nullable|string|max:255',
+            'type' => 'required|string|in:consultation,appointment,other',
+            'start' => 'required|date',
+            'end' => 'required|date|after:start',
+            'description' => 'nullable|string',
+            'status' => 'nullable|string',
+            'sync_to_google' => 'nullable|boolean',
+        ]);
+
+        // Verify the user owns this artist profile
+        $artist = Artist::find($data['artist_id']);
+        if (!$artist || $artist->user_id !== $user->id) {
+            return response()->json(['error' => 'You can only create events for your own calendar'], 403);
+        }
+
+        // Parse start and end datetimes
+        $start = new \DateTime($data['start']);
+        $end = new \DateTime($data['end']);
+
+        // Generate title if not provided
+        $title = $data['title'] ?? match($data['type']) {
+            'consultation' => 'Consultation',
+            'appointment' => 'Appointment',
+            'other' => 'Busy',
+        };
+
+        // Create the appointment/event
+        $appointment = $artist->appointments()->create([
+            'title' => $title,
+            'date' => $start->format('Y-m-d'),
+            'start_time' => $start->format('H:i:s'),
+            'end_time' => $end->format('H:i:s'),
+            'type' => $data['type'] === 'other' ? 'other' : $data['type'],
+            'status' => $data['status'] ?? AppointmentStatus::BOOKED,
+            'description' => $data['description'] ?? null,
+            'client_id' => null, // Personal event, no client
+        ]);
+
+        // Sync to Google Calendar if requested
+        if ($request->boolean('sync_to_google')) {
+            $connection = CalendarConnection::where('user_id', $user->id)
+                ->where('provider', 'google')
+                ->where('sync_enabled', true)
+                ->first();
+
+            if ($connection) {
+                SyncAppointmentToGoogle::dispatch($appointment->id, 'create');
+            }
+        }
+
+        return response()->json([
+            'message' => 'Event created successfully',
             'appointment' => new AppointmentResource($appointment),
         ], 201);
     }
