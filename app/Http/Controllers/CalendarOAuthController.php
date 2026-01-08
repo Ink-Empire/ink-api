@@ -97,7 +97,7 @@ class CalendarOAuthController extends Controller
             Log::info("Google Calendar connected for user {$user->id} ({$googleUser['email']})");
 
             // Redirect to frontend calendar page with success param
-            $frontendUrl = config('app.frontend_url', 'http://localhost:4000');
+            $frontendUrl = $this->getFrontendUrl();
             return redirect()->away("{$frontendUrl}/calendar?calendar_connected=true");
 
         } catch (\Exception $e) {
@@ -106,7 +106,7 @@ class CalendarOAuthController extends Controller
             ]);
 
             // Redirect to frontend with error param
-            $frontendUrl = config('app.frontend_url', 'http://localhost:4000');
+            $frontendUrl = $this->getFrontendUrl();
             $errorMessage = urlencode($e->getMessage());
             return redirect()->away("{$frontendUrl}/calendar?calendar_error={$errorMessage}");
         }
@@ -253,5 +253,20 @@ class CalendarOAuthController extends Controller
                 'source' => $event->source,
             ]),
         ]);
+    }
+
+    /**
+     * Get frontend URL with proper protocol
+     */
+    private function getFrontendUrl(): string
+    {
+        $url = config('app.frontend_url', 'http://localhost:3000');
+
+        // Ensure URL has a protocol
+        if (!preg_match('/^https?:\/\//', $url)) {
+            $url = 'https://' . $url;
+        }
+
+        return rtrim($url, '/');
     }
 }
