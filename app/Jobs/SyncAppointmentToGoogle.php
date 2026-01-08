@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Appointment;
+use App\Models\Artist;
 use App\Models\CalendarConnection;
 use App\Services\GoogleCalendarService;
 use Illuminate\Bus\Queueable;
@@ -33,13 +34,21 @@ class SyncAppointmentToGoogle implements ShouldQueue
             return;
         }
 
-        $connection = CalendarConnection::where('user_id', $appointment->artist_id)
+        // Get the artist's user_id for CalendarConnection lookup
+        // artist_id on appointment refers to artists.id, but CalendarConnection uses users.id
+        $artist = $appointment->artist;
+        if (!$artist) {
+            Log::warning("Artist not found for appointment {$this->appointmentId}, skipping Google Calendar sync");
+            return;
+        }
+
+        $connection = CalendarConnection::where('user_id', $artist->user_id)
             ->where('provider', 'google')
             ->where('sync_enabled', true)
             ->first();
 
         if (!$connection) {
-            Log::debug("No Google Calendar connection for artist {$appointment->artist_id}, skipping sync");
+            Log::debug("No Google Calendar connection for user {$artist->user_id} (artist {$appointment->artist_id}), skipping sync");
             return;
         }
 
