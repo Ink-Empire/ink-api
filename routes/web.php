@@ -57,9 +57,6 @@ Route::prefix('api')->group(function () {
         Route::get('/{id}', [ArtistController::class, 'getById']);
         Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
 
-        // Public appointment viewing - for guests to see availability
-        Route::post('/appointments', [AppointmentController::class, 'index']);
-
         // Protected artist routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
             Route::put('/artist/{id}', [ArtistController::class, 'update']);
