@@ -303,13 +303,24 @@ class AppointmentController extends Controller
     public function getArtistAppointments(Request $request)
     {
         $data = $request->validate([
-            'artist_id' => 'required|exists:users,id',
+            'artist_id' => 'required',
             'status' => 'nullable|string',
             'start_date' => 'nullable|date',
             'end_date' => 'nullable|date',
         ]);
 
-        $query = Appointment::where('artist_id', $data['artist_id'])
+        // Handle both numeric ID and slug
+        $artistId = $data['artist_id'];
+        if (!is_numeric($artistId)) {
+            // It's a slug, find the artist
+            $artist = Artist::where('slug', $artistId)->first();
+            if (!$artist) {
+                return response()->json(['error' => 'Artist not found'], 404);
+            }
+            $artistId = $artist->id;
+        }
+
+        $query = Appointment::where('artist_id', $artistId)
             ->with(['client', 'artist', 'studio']);
 
         // Filter by status if provided

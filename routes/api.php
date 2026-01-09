@@ -44,6 +44,9 @@ Route::get('/tags/featured', [TagController::class, 'featured']);
 // Placement routes (public)
 Route::get('/placements', [PlacementController::class, 'index']);
 
+// Artist appointments (public for calendar display)
+Route::post('/artists/appointments', [AppointmentController::class, 'getArtistAppointments']);
+
 // Google Places config (returns API key for frontend SDK use)
 Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'config']);
 
@@ -96,9 +99,6 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::put('/{id}', [AppointmentController::class, 'update']);
         Route::delete('/{id}', [AppointmentController::class, 'delete']);
     });
-
-    // Get artist appointments (for calendar display)
-    Route::post('/artists/appointments', [AppointmentController::class, 'getArtistAppointments']);
 
     // Message routes
     Route::prefix('messages')->group(function () {
