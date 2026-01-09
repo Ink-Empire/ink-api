@@ -180,7 +180,7 @@ class AppointmentController extends Controller
     public function invite(Request $request)
     {
         $data = $request->validate([
-            'artist_id' => 'required|exists:artists,id',
+            'artist_id' => 'required|exists:users,id',
             'date' => 'required|date',
             'type' => 'required|string|in:consultation,appointment',
             'guest_email' => 'required|email',
@@ -238,7 +238,7 @@ class AppointmentController extends Controller
         }
 
         $data = $request->validate([
-            'artist_id' => 'required|exists:artists,id',
+            'artist_id' => 'required|exists:users,id',
             'title' => 'nullable|string|max:255',
             'type' => 'required|string|in:consultation,appointment,other',
             'start' => 'required|date',
@@ -249,8 +249,9 @@ class AppointmentController extends Controller
         ]);
 
         // Verify the user owns this artist profile
+        // Artist extends User, so artist->id IS the user's id
         $artist = Artist::find($data['artist_id']);
-        if (!$artist || $artist->user_id !== $user->id) {
+        if (!$artist || $artist->id !== $user->id) {
             return response()->json(['error' => 'You can only create events for your own calendar'], 403);
         }
 
