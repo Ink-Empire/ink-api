@@ -295,4 +295,40 @@ class AppointmentController extends Controller
             'appointment' => new AppointmentResource($appointment),
         ], 201);
     }
+
+    /**
+     * Get all appointments for an artist (for calendar display)
+     * Includes both client appointments and personal events
+     */
+    public function getArtistAppointments(Request $request)
+    {
+        $data = $request->validate([
+            'artist_id' => 'required|exists:users,id',
+            'status' => 'nullable|string',
+            'start_date' => 'nullable|date',
+            'end_date' => 'nullable|date',
+        ]);
+
+        $query = Appointment::where('artist_id', $data['artist_id'])
+            ->with(['client', 'artist', 'studio']);
+
+        // Filter by status if provided
+        if (!empty($data['status']) && $data['status'] !== 'all') {
+            $query->where('status', $data['status']);
+        }
+
+        // Filter by date range if provided
+        if (!empty($data['start_date'])) {
+            $query->where('date', '>=', $data['start_date']);
+        }
+        if (!empty($data['end_date'])) {
+            $query->where('date', '<=', $data['end_date']);
+        }
+
+        $appointments = $query->orderBy('date', 'asc')
+            ->orderBy('start_time', 'asc')
+            ->get();
+
+        return AppointmentResource::collection($appointments);
+    }
 }

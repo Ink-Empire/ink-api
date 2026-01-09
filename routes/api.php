@@ -94,7 +94,11 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/invite', [AppointmentController::class, 'invite']);
         Route::post('/event', [AppointmentController::class, 'createEvent']);
         Route::put('/{id}', [AppointmentController::class, 'update']);
+        Route::delete('/{id}', [AppointmentController::class, 'delete']);
     });
+
+    // Get artist appointments (for calendar display)
+    Route::post('/artists/appointments', [AppointmentController::class, 'getArtistAppointments']);
 
     // Message routes
     Route::prefix('messages')->group(function () {
