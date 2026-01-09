@@ -34,6 +34,15 @@ class AppointmentResource extends JsonResource
 
     private function getISODateTime($date, $time)
     {
-        return date('Y-m-d\TH:i:s', strtotime($date . ' ' . $time));
+        if (!$date || !$time) {
+            return null;
+        }
+
+        // Handle Carbon/DateTime objects - extract just the date portion
+        $dateStr = $date instanceof \DateTimeInterface
+            ? $date->format('Y-m-d')
+            : date('Y-m-d', strtotime($date));
+
+        return $dateStr . 'T' . $time;
     }
 }
