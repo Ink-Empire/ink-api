@@ -23,9 +23,9 @@ class AppointmentResource extends JsonResource
             'extendedProps' => [
                 'status' => $this->status,
                 'description' => $this->description,
-                'clientName' => $this->client->name,
-                'artistName' => $this->artist->name,
-                'studioName' => $this->studio->name ?? "",
+                'clientName' => $this->client?->name,
+                'artistName' => $this->artist?->name,
+                'studioName' => $this->studio?->name ?? "",
             ],
             'client' => new ClientResource($this->whenLoaded('client')),
             'artist' => new BriefArtistResource($this->whenLoaded('artist')),
