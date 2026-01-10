@@ -437,6 +437,93 @@ class TattooController extends Controller
     }
 
     /**
+     * Delete a tattoo and its associated images from S3.
+     * Only the tattoo owner can delete their own tattoos.
+     */
+    public function destroy(Request $request, $id): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $tattoo = Tattoo::with('images')->find($id);
+
+            if (!$tattoo) {
+                return $this->returnErrorResponse('Tattoo not found', 404);
+            }
+
+            // Verify the user owns this tattoo
+            if ($tattoo->artist_id !== $user->id) {
+                return $this->returnErrorResponse('You can only delete your own tattoos', 403);
+            }
+
+            \Log::info("Deleting tattoo", ['tattoo_id' => $id, 'user_id' => $user->id]);
+
+            // Remove from Elasticsearch index
+            $tattoo->unsearchable();
+
+            // Get all images associated with this tattoo
+            $images = $tattoo->images;
+
+            // Detach images from pivot table first
+            $tattoo->images()->detach();
+
+            // Detach styles and tags
+            $tattoo->styles()->detach();
+            $tattoo->tags()->detach();
+
+            // Delete the tattoo record
+            $tattoo->delete();
+
+            // Delete images from S3 and database
+            // Only delete images that are not used by other tattoos
+            $storage = \Illuminate\Support\Facades\Storage::disk('s3');
+            $deletedImageCount = 0;
+
+            foreach ($images as $image) {
+                // Check if this image is still used elsewhere
+                $otherTattoosUsingImage = \DB::table('tattoos_images')
+                    ->where('image_id', $image->id)
+                    ->exists();
+
+                $isPrimaryElsewhere = Tattoo::where('primary_image_id', $image->id)->exists();
+
+                if (!$otherTattoosUsingImage && !$isPrimaryElsewhere) {
+                    // Delete from S3
+                    if ($image->filename && $storage->exists($image->filename)) {
+                        $storage->delete($image->filename);
+                    }
+                    // Delete image record
+                    $image->delete();
+                    $deletedImageCount++;
+                }
+            }
+
+            \Log::info("Tattoo deleted successfully", [
+                'tattoo_id' => $id,
+                'images_deleted' => $deletedImageCount
+            ]);
+
+            // Re-index the artist to update their tattoo count
+            Artist::find($user->id)?->searchable();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tattoo deleted successfully',
+                'images_deleted' => $deletedImageCount
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Unable to delete tattoo", [
+                'error' => $e->getMessage(),
+                'tattoo_id' => $id,
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
+            return $this->returnErrorResponse($e->getMessage());
+        }
+    }
+
+    /**
      * Admin: Get a single tattoo
      */
     public function adminShow(int $id): JsonResponse
