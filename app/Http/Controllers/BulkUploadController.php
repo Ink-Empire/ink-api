@@ -67,7 +67,8 @@ class BulkUploadController extends Controller
         $zipFilename = $bulkUpload->id . '_' . Str::random(8) . '.zip';
         $zipPath = "bulk-uploads/{$user->id}/{$zipFilename}";
 
-        Storage::disk('s3')->put($zipPath, file_get_contents($file->getRealPath()));
+        // Use streaming to avoid loading entire file into memory
+        Storage::disk('s3')->put($zipPath, fopen($file->getRealPath(), 'r'));
 
         $bulkUpload->update(['zip_filename' => $zipFilename]);
 
