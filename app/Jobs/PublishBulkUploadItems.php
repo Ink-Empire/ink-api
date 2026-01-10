@@ -80,6 +80,10 @@ class PublishBulkUploadItems implements ShouldQueue
                     'status' => 'completed',
                     'completed_at' => now(),
                 ]);
+
+                // Clean up the ZIP file - no longer needed after publishing
+                $bulkUpload->deleteZipFile();
+                Log::info("Deleted ZIP file for completed bulk upload {$this->bulkUploadId}");
             }
 
             Log::info("Published {$publishedCount} tattoos from bulk upload {$this->bulkUploadId}");

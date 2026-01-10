@@ -2,14 +2,12 @@
 
 namespace App\Services;
 
-
 use App\Models\Image;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
 
 class ImageService
 {
-
     protected $s3;
 
     protected $s3Path;
@@ -17,6 +15,25 @@ class ImageService
     public function __construct()
     {
         $this->s3 = Storage::disk('s3');
+    }
+
+    /**
+     * Get the S3 file prefix from config (e.g., 'dev' or 'production').
+     */
+    public static function getFilePrefix(): string
+    {
+        return config('filesystems.disks.s3.file_prefix', '');
+    }
+
+    /**
+     * Generate a prefixed filename for S3 storage.
+     * Prepends the environment prefix with a hyphen to distinguish dev/prod files.
+     * e.g., "production-tattoo_123_..." or "dev-profile_456_..."
+     */
+    public static function prefixFilename(string $filename): string
+    {
+        $prefix = self::getFilePrefix();
+        return $prefix ? $prefix . '-' . $filename : $filename;
     }
 
     public function processImage(mixed $input, string $filename): ?Image
@@ -43,13 +60,16 @@ class ImageService
                 throw new \Exception("Invalid image input type");
             }
 
-            $this->s3->put($filename, $imageData, [
+            // Add environment prefix to filename
+            $prefixedFilename = self::prefixFilename($filename);
+
+            $this->s3->put($prefixedFilename, $imageData, [
                 'visibility' => 'public',
                 'ContentType' => $mimeType,
                 'CacheControl' => 'max-age=31536000'
             ]);
 
-            return $this->saveImage($filename);
+            return $this->saveImage($prefixedFilename);
 
         } catch (\Exception $e) {
             \Log::error(
