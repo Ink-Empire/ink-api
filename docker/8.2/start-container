@@ -17,6 +17,9 @@ chown -R sail:sail /var/www/html/bootstrap/cache
 # Start Apache service
 service apache2 start
 
+# Start queue worker in background
+gosu sail php /var/www/html/artisan queue:work --tries=3 --timeout=600 &
+
 if [ $# -gt 0 ]; then
     exec gosu sail "$@"
 else
