@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\BulkUploadResource;
 use App\Http\Resources\BulkUploadItemResource;
+use App\Jobs\DeleteBulkUpload;
 use App\Jobs\ScanBulkUploadZip;
 use App\Jobs\ProcessBulkUploadBatch;
 use App\Jobs\PublishBulkUploadItems;
@@ -88,27 +89,15 @@ class BulkUploadController extends Controller
         $upload = BulkUpload::where('artist_id', $user->id)
             ->findOrFail($id);
 
-        // Delete ZIP from S3
-        $upload->deleteZipFile();
+        // Mark as deleting so it doesn't show in lists
+        $upload->update(['status' => 'deleting']);
 
-        // Delete associated images from S3 (only unpublished ones - published tattoos keep their images)
-        foreach ($upload->items()->whereNotNull('image_id')->where('is_published', false)->get() as $item) {
-            if ($item->image) {
-                // Delete from S3
-                if ($item->image->uri) {
-                    Storage::disk('s3')->delete($item->image->uri);
-                }
-                // Delete image record
-                $item->image->delete();
-            }
-        }
-
-        // Delete all items and the upload record
-        $upload->items()->delete();
-        $upload->delete();
+        // Dispatch job to handle cleanup asynchronously
+        \Log::info("dispatching job to delete bulk upload from S3");
+        DeleteBulkUpload::dispatch($upload->id);
 
         return response()->json([
-            'message' => 'Bulk upload deleted successfully',
+            'message' => 'Bulk upload deletion started',
         ]);
     }
 

@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Enums\QueueNames;
 use App\Models\BulkUpload;
 use App\Models\BulkUploadItem;
 use App\Models\Image;
@@ -23,6 +24,7 @@ class ProcessBulkUploadBatch implements ShouldQueue
 
     public int $tries = 3;
     public int $timeout = 900; // 15 minutes
+    public $queue = QueueNames::BULK_UPLOAD;
 
     public function __construct(
         public int $bulkUploadId,
