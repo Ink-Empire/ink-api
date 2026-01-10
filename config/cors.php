@@ -24,6 +24,10 @@ return [
     'allowed_origins_patterns' => [
         // Allow all Vercel preview deployments
         '#^https://.*\.vercel\.app$#',
+        // Dev environment
+        '#^https://inkedin\.dev$#',
+        // Prod environment
+        '#^https://getinked\.in$#',
     ],
 
     'allowed_headers' => ['*'],
