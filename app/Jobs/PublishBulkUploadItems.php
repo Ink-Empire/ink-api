@@ -77,16 +77,26 @@ class PublishBulkUploadItems implements ShouldQueue
             // Update counts
             $bulkUpload->updateCounts();
 
-            // Check if all done
-            if ($bulkUpload->readyItems()->count() === 0) {
+            // Check if all items are either published or skipped
+            $remainingItems = $bulkUpload->items()
+                ->where('is_published', false)
+                ->where('is_skipped', false)
+                ->count();
+
+            if ($remainingItems === 0) {
+                // All done - every item is either published or skipped
                 $bulkUpload->update([
                     'status' => 'completed',
                     'completed_at' => now(),
                 ]);
 
-                // Clean up the ZIP file - no longer needed after publishing
+                // Clean up the ZIP file - no longer needed after completing
                 $bulkUpload->deleteZipFile();
                 Log::info("Deleted ZIP file for completed bulk upload {$this->bulkUploadId}");
+            } else {
+                // Some items remain - mark as incomplete
+                $bulkUpload->update(['status' => 'incomplete']);
+                Log::info("Bulk upload {$this->bulkUploadId} marked incomplete - {$remainingItems} items remaining");
             }
 
             Log::info("Published {$publishedCount} tattoos from bulk upload {$this->bulkUploadId}");
