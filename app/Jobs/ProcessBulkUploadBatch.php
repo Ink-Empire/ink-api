@@ -24,13 +24,14 @@ class ProcessBulkUploadBatch implements ShouldQueue
 
     public int $tries = 3;
     public int $timeout = 900; // 15 minutes
-    public $queue = QueueNames::BULK_UPLOAD;
 
     public function __construct(
         public int $bulkUploadId,
         public int $batchSize = 200,
         public int $offset = 0
-    ) {}
+    ) {
+        $this->onQueue(QueueNames::BULK_UPLOAD);
+    }
 
     public function handle(): void
     {

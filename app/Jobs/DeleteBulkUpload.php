@@ -18,11 +18,12 @@ class DeleteBulkUpload implements ShouldQueue
 
     public int $tries = 3;
     public int $timeout = 300; // 5 minutes
-    public $queue = QueueNames::BULK_UPLOAD;
 
     public function __construct(
         public int $bulkUploadId
-    ) {}
+    ) {
+        $this->onQueue(QueueNames::BULK_UPLOAD);
+    }
 
     public function handle(): void
     {
