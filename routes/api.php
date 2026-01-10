@@ -90,6 +90,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tattoos/{tattooId}/tags', [TagController::class, 'setTattooTags']);
     Route::post('/tattoos/{tattooId}/tags/add', [TagController::class, 'addTattooTag']);
 
+    // Tattoo management (authenticated)
+    Route::delete('/tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'destroy']);
+
     // Appointment routes
     Route::prefix('appointments')->group(function () {
         Route::post('/inbox', [AppointmentController::class, 'inbox']);
