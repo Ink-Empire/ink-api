@@ -118,6 +118,21 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/toggle-sync', [CalendarOAuthController::class, 'toggleSync']);
         Route::post('/sync', [CalendarOAuthController::class, 'triggerSync']);
     });
+
+    // Bulk upload routes
+    Route::prefix('bulk-uploads')->group(function () {
+        Route::get('/', [\App\Http\Controllers\BulkUploadController::class, 'index']);
+        Route::post('/', [\App\Http\Controllers\BulkUploadController::class, 'store']);
+        Route::get('/{id}', [\App\Http\Controllers\BulkUploadController::class, 'show']);
+        Route::delete('/{id}', [\App\Http\Controllers\BulkUploadController::class, 'destroy']);
+        Route::get('/{id}/items', [\App\Http\Controllers\BulkUploadController::class, 'items']);
+        Route::put('/{id}/items/{itemId}', [\App\Http\Controllers\BulkUploadController::class, 'updateItem']);
+        Route::put('/{id}/items', [\App\Http\Controllers\BulkUploadController::class, 'batchUpdateItems']);
+        Route::post('/{id}/process-batch', [\App\Http\Controllers\BulkUploadController::class, 'processBatch']);
+        Route::post('/{id}/process-range', [\App\Http\Controllers\BulkUploadController::class, 'processRange']);
+        Route::post('/{id}/publish', [\App\Http\Controllers\BulkUploadController::class, 'publish']);
+        Route::get('/{id}/publish-status', [\App\Http\Controllers\BulkUploadController::class, 'publishStatus']);
+    });
 });
 
 // Calendar OAuth callback (no auth required - user comes from Google)
