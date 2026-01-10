@@ -96,8 +96,12 @@ class ScanBulkUploadZip implements ShouldQueue
         $zipPath = $bulkUpload->zip_path;
         $tempPath = sys_get_temp_dir() . '/' . uniqid('bulk_upload_') . '.zip';
 
-        $contents = Storage::disk('s3')->get($zipPath);
-        file_put_contents($tempPath, $contents);
+        // Use streaming to avoid loading entire ZIP into memory
+        $stream = Storage::disk('s3')->readStream($zipPath);
+        $tempFile = fopen($tempPath, 'w');
+        stream_copy_to_stream($stream, $tempFile);
+        fclose($tempFile);
+        fclose($stream);
 
         return $tempPath;
     }
@@ -130,6 +134,8 @@ class ScanBulkUploadZip implements ShouldQueue
         $items = [];
         $sortOrder = 0;
 
+        Log::info("Scanning ZIP with {$zip->numFiles} entries for bulk upload {$bulkUpload->id}");
+
         // Build a map of file paths to Instagram metadata
         $instagramMap = [];
         foreach ($instagramData as $post) {
@@ -145,17 +151,22 @@ class ScanBulkUploadZip implements ShouldQueue
         }
 
         // Scan ZIP for image files
+        $skippedCount = 0;
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $filename = $zip->getNameIndex($i);
             $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
 
-            // Skip non-image files
-            if (!in_array($ext, $allowedExtensions)) {
+            // Skip directories
+            if (str_ends_with($filename, '/')) {
                 continue;
             }
 
-            // Skip directories
-            if (str_ends_with($filename, '/')) {
+            // Skip non-image files
+            if (!in_array($ext, $allowedExtensions)) {
+                $skippedCount++;
+                if ($skippedCount <= 5) {
+                    Log::debug("Skipping non-image file: {$filename} (ext: {$ext})");
+                }
                 continue;
             }
 
@@ -186,6 +197,8 @@ class ScanBulkUploadZip implements ShouldQueue
 
             $items[] = BulkUploadItem::create($itemData);
         }
+
+        Log::info("Cataloged " . count($items) . " images, skipped {$skippedCount} non-image files for bulk upload {$bulkUpload->id}");
 
         return $items;
     }
