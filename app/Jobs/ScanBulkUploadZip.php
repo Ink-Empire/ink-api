@@ -21,11 +21,12 @@ class ScanBulkUploadZip implements ShouldQueue
 
     public int $tries = 3;
     public int $timeout = 600; // 10 minutes
-    public $queue = QueueNames::BULK_UPLOAD;
 
     public function __construct(
         public int $bulkUploadId
-    ) {}
+    ) {
+        $this->onQueue(QueueNames::BULK_UPLOAD);
+    }
 
     public function handle(InstagramExportParser $instagramParser): void
     {
