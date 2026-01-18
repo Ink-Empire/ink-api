@@ -51,9 +51,7 @@ class ArtistService extends SearchService
         }
 
         if (isset($this->filters['booksOpen']) && $this->filters['booksOpen'] === true) {
-            $this->search->whereNested('settings', function ($query) {
-                $query->where('settings.books_open', '=', true);
-            });
+            $this->search->where('settings.books_open', 'in', [true]);
         }
     }
 
