@@ -80,6 +80,16 @@ abstract class SearchService
      */
     protected function applyCommonFilters()
     {
+        // Handle demo mode filtering:
+        if (isset($this->filters['is_demo']) && $this->filters['is_demo']) {
+            // Demo mode: show only demo data
+            $this->search->where('is_demo', 'in', [true]);
+        } elseif (!isset($this->filters['include_demo']) || !$this->filters['include_demo']) {
+            // Default: filter out demo data
+            $this->search->where('is_demo', 'in', [false]);
+        }
+        // If include_demo is true, no filter is applied (show all data)
+
         if (isset($this->filters['studio_id'])) {
             $this->buildStudioParam();
         }

@@ -172,6 +172,7 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'studio' => self::STUDIO,
             'type' => Datatypes::KEYWORD,
             'is_featured' => Datatypes::BOOLEAN,
+            'is_demo' => Datatypes::BOOLEAN,
             'styles' => self::STYLE,
             'primary_image' => self::IMAGE,
             'tattoos' => self::TATTOOS,
