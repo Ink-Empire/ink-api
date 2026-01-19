@@ -49,6 +49,10 @@ class SlackService
 
     public function notifyNewUser(\App\Models\User $user): bool
     {
+        if (app()->environment() !== 'production') {
+            return false;
+        }
+
         $userType = $user->type_id === \App\Enums\UserTypes::ARTIST_TYPE_ID ? 'Artist' : 'Client';
         $timestamp = $user->created_at->format('M j, Y \a\t g:i A');
 
