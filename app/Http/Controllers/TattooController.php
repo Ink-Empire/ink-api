@@ -15,6 +15,8 @@ use App\Services\ImageService;
 use App\Services\TattooService;
 use App\Services\TagService;
 use App\Services\UserService;
+use App\Services\GooglePlacesService;
+use App\Services\SearchImpressionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,7 +33,9 @@ class TattooController extends Controller
         protected TattooService $tattooService,
         protected ImageService  $imageService,
         protected UserService   $userService,
-        protected TagService $tattooTagService
+        protected TagService $tattooTagService,
+        protected GooglePlacesService $googlePlacesService,
+        protected SearchImpressionService $impressionService
     )
     {
     }
@@ -86,7 +90,67 @@ class TattooController extends Controller
             unset($response['total']);
         }
 
-        return $this->returnElasticResponse($response);
+        // Get unclaimed studios if we have location coordinates and not searching "Anywhere"
+        $unclaimedStudios = $this->getUnclaimedStudios($params, $request);
+
+        return response()->json([
+            'response' => $response['response'],
+            'unclaimed_studios' => $unclaimedStudios,
+            'total' => $response['total'] ?? null,
+            'none_found' => $response['none_found'] ?? null,
+        ]);
+    }
+
+    /**
+     * Get unclaimed studios from Google Places based on search params
+     */
+    function getUnclaimedStudios(array $params, Request $request): array
+    {
+        // Don't hit Google Places API when viewing demo data
+        if (!empty($params['is_demo'])) {
+            return [];
+        }
+
+        $locationCoords = $params['locationCoords'] ?? null;
+        $useAnyLocation = $params['useAnyLocation'] ?? false;
+
+        // Don't search Google Places if no location or searching "Anywhere"
+        if (!$locationCoords || $useAnyLocation) {
+            return [];
+        }
+
+        $distance = $params['distance'] ?? 25;
+        $distanceUnit = $params['distanceUnit'] ?? 'mi';
+
+        // Convert to meters for Google Places API
+        $radiusMeters = $distanceUnit === 'km'
+            ? $distance * 1000
+            : $distance * 1609.34;
+
+        $unclaimedStudios = $this->googlePlacesService->searchTattooParlors(
+            $locationCoords,
+            (int) min($radiusMeters, 50000), // Max 50km for Google Places
+            5 // Limit to 5 unclaimed studios
+        );
+
+        // Record impressions for unclaimed studios
+        if (!empty($unclaimedStudios)) {
+            $unclaimedIds = collect($unclaimedStudios)->pluck('id')->toArray();
+            $this->impressionService->recordStudioImpressions(
+                $unclaimedIds,
+                $params['location'] ?? null,
+                $locationCoords,
+                $params,
+                $request->ip()
+            );
+
+            // Add weekly impression counts to each studio
+            foreach ($unclaimedStudios as $studio) {
+                $studio->weekly_impressions = $this->impressionService->getWeeklyImpressionCount($studio->id);
+            }
+        }
+
+        return $unclaimedStudios;
     }
 
     /**

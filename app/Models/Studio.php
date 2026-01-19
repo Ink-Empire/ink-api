@@ -26,13 +26,19 @@ class Studio extends Model
         'email',
         'password',
         'phone',
+        'website',
         'owner_id',
         'seeking_guest_artists',
         'guest_spot_details',
+        'is_claimed',
+        'google_place_id',
+        'rating',
     ];
 
     protected $casts = [
         'seeking_guest_artists' => 'boolean',
+        'is_claimed' => 'boolean',
+        'rating' => 'decimal:1',
     ];
 
     public function owner()
@@ -107,5 +113,29 @@ class Studio extends Model
     public function profileViews()
     {
         return $this->morphMany(ProfileView::class, 'viewable');
+    }
+
+    /**
+     * Get all search impressions for this studio.
+     */
+    public function searchImpressions()
+    {
+        return $this->morphMany(SearchImpression::class, 'impressionable');
+    }
+
+    /**
+     * Scope to get only claimed studios.
+     */
+    public function scopeClaimed($query)
+    {
+        return $query->where('is_claimed', true);
+    }
+
+    /**
+     * Scope to get only unclaimed studios.
+     */
+    public function scopeUnclaimed($query)
+    {
+        return $query->where('is_claimed', false);
     }
 }
