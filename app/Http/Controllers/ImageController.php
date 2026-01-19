@@ -2,15 +2,12 @@
 
 namespace App\Http\Controllers;
 
-use App\Exceptions\TattooNotFoundException;
 use App\Exceptions\UserNotFoundException;
-use App\Http\Resources\Elastic\TattooResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
 use App\Models\Image;
 use App\Services\ImageService;
 use App\Services\StudioService;
-use App\Services\TattooService;
 use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,8 +20,7 @@ class ImageController extends Controller
     public function __construct(
         protected ImageService  $imageService,
         protected UserService   $userService,
-        protected StudioService $studioService,
-        protected TattooService $tattooService
+        protected StudioService $studioService
     )
     {
     }
@@ -107,7 +103,8 @@ class ImageController extends Controller
 
             $timestamp = now()->format('YmdHis');
             $random = Str::random(8);
-            $filename = "{$purpose}_{$user->id}_{$timestamp}_{$random}.{$extension}";
+            $baseFilename = "{$purpose}_{$user->id}_{$timestamp}_{$random}.{$extension}";
+            $filename = ImageService::prefixFilename($baseFilename);
 
             // Get S3 client and bucket
             $disk = Storage::disk('s3');
@@ -186,7 +183,8 @@ class ImageController extends Controller
                 };
 
                 $random = Str::random(8);
-                $filename = "{$purpose}_{$user->id}_{$timestamp}_{$index}_{$random}.{$extension}";
+                $baseFilename = "{$purpose}_{$user->id}_{$timestamp}_{$index}_{$random}.{$extension}";
+                $filename = ImageService::prefixFilename($baseFilename);
 
                 $command = $client->getCommand('PutObject', [
                     'Bucket' => $bucket,

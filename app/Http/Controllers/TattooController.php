@@ -15,6 +15,8 @@ use App\Services\ImageService;
 use App\Services\TattooService;
 use App\Services\TagService;
 use App\Services\UserService;
+use App\Services\GooglePlacesService;
+use App\Services\SearchImpressionService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,7 +33,9 @@ class TattooController extends Controller
         protected TattooService $tattooService,
         protected ImageService  $imageService,
         protected UserService   $userService,
-        protected TagService $tattooTagService
+        protected TagService $tattooTagService,
+        protected GooglePlacesService $googlePlacesService,
+        protected SearchImpressionService $impressionService
     )
     {
     }
@@ -86,7 +90,67 @@ class TattooController extends Controller
             unset($response['total']);
         }
 
-        return $this->returnElasticResponse($response);
+        // Get unclaimed studios if we have location coordinates and not searching "Anywhere"
+        $unclaimedStudios = $this->getUnclaimedStudios($params, $request);
+
+        return response()->json([
+            'response' => $response['response'],
+            'unclaimed_studios' => $unclaimedStudios,
+            'total' => $response['total'] ?? null,
+            'none_found' => $response['none_found'] ?? null,
+        ]);
+    }
+
+    /**
+     * Get unclaimed studios from Google Places based on search params
+     */
+    function getUnclaimedStudios(array $params, Request $request): array
+    {
+        // Don't hit Google Places API when viewing demo data
+        if (!empty($params['is_demo'])) {
+            return [];
+        }
+
+        $locationCoords = $params['locationCoords'] ?? null;
+        $useAnyLocation = $params['useAnyLocation'] ?? false;
+
+        // Don't search Google Places if no location or searching "Anywhere"
+        if (!$locationCoords || $useAnyLocation) {
+            return [];
+        }
+
+        $distance = $params['distance'] ?? 25;
+        $distanceUnit = $params['distanceUnit'] ?? 'mi';
+
+        // Convert to meters for Google Places API
+        $radiusMeters = $distanceUnit === 'km'
+            ? $distance * 1000
+            : $distance * 1609.34;
+
+        $unclaimedStudios = $this->googlePlacesService->searchTattooParlors(
+            $locationCoords,
+            (int) min($radiusMeters, 50000), // Max 50km for Google Places
+            5 // Limit to 5 unclaimed studios
+        );
+
+        // Record impressions for unclaimed studios
+        if (!empty($unclaimedStudios)) {
+            $unclaimedIds = collect($unclaimedStudios)->pluck('id')->toArray();
+            $this->impressionService->recordStudioImpressions(
+                $unclaimedIds,
+                $params['location'] ?? null,
+                $locationCoords,
+                $params,
+                $request->ip()
+            );
+
+            // Add weekly impression counts to each studio
+            foreach ($unclaimedStudios as $studio) {
+                $studio->weekly_impressions = $this->impressionService->getWeeklyImpressionCount($studio->id);
+            }
+        }
+
+        return $unclaimedStudios;
     }
 
     /**
@@ -430,6 +494,93 @@ class TattooController extends Controller
             \Log::error("Unable to update tattoo featured status", [
                 'error' => $e->getMessage(),
                 'tattoo_id' => $id
+            ]);
+
+            return $this->returnErrorResponse($e->getMessage());
+        }
+    }
+
+    /**
+     * Delete a tattoo and its associated images from S3.
+     * Only the tattoo owner can delete their own tattoos.
+     */
+    public function destroy(Request $request, $id): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $tattoo = Tattoo::with('images')->find($id);
+
+            if (!$tattoo) {
+                return $this->returnErrorResponse('Tattoo not found', 404);
+            }
+
+            // Verify the user owns this tattoo
+            if ($tattoo->artist_id !== $user->id) {
+                return $this->returnErrorResponse('You can only delete your own tattoos', 403);
+            }
+
+            \Log::info("Deleting tattoo", ['tattoo_id' => $id, 'user_id' => $user->id]);
+
+            // Remove from Elasticsearch index
+            $tattoo->unsearchable();
+
+            // Get all images associated with this tattoo
+            $images = $tattoo->images;
+
+            // Detach images from pivot table first
+            $tattoo->images()->detach();
+
+            // Detach styles and tags
+            $tattoo->styles()->detach();
+            $tattoo->tags()->detach();
+
+            // Delete the tattoo record
+            $tattoo->delete();
+
+            // Delete images from S3 and database
+            // Only delete images that are not used by other tattoos
+            $storage = \Illuminate\Support\Facades\Storage::disk('s3');
+            $deletedImageCount = 0;
+
+            foreach ($images as $image) {
+                // Check if this image is still used elsewhere
+                $otherTattoosUsingImage = \DB::table('tattoos_images')
+                    ->where('image_id', $image->id)
+                    ->exists();
+
+                $isPrimaryElsewhere = Tattoo::where('primary_image_id', $image->id)->exists();
+
+                if (!$otherTattoosUsingImage && !$isPrimaryElsewhere) {
+                    // Delete from S3
+                    if ($image->filename && $storage->exists($image->filename)) {
+                        $storage->delete($image->filename);
+                    }
+                    // Delete image record
+                    $image->delete();
+                    $deletedImageCount++;
+                }
+            }
+
+            \Log::info("Tattoo deleted successfully", [
+                'tattoo_id' => $id,
+                'images_deleted' => $deletedImageCount
+            ]);
+
+            // Re-index the artist to update their tattoo count
+            Artist::find($user->id)?->searchable();
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Tattoo deleted successfully',
+                'images_deleted' => $deletedImageCount
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Unable to delete tattoo", [
+                'error' => $e->getMessage(),
+                'tattoo_id' => $id,
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
             ]);
 
             return $this->returnErrorResponse($e->getMessage());

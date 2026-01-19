@@ -10,6 +10,7 @@ class QueueNames extends AbstractEnum
 {
     const ELASTIC_REINDEX = 'elastic-reindex';
     const ELASTIC_REBUILD = 'elastic-rebuild';
+    const BULK_UPLOAD = 'bulk-upload';
 
     public static function returnArray()
     {

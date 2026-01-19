@@ -34,6 +34,7 @@ class ArtistIndexResource extends JsonResource
             'studio' => $this->studio ? new StudioResource($this->studio) : null,
             'studio_name' => $this->studio?->name,
             'is_featured' => (bool) $this->is_featured,
+            'is_demo' => (bool) $this->is_demo,
             'styles' => StyleResource::collection($this->styles ?? []),
             'tattoos' => TattooResource::collection($this->tattoos ?? []),
             'primary_image' => $this->primary_image ?? null,

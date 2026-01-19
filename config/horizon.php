@@ -215,13 +215,24 @@ return [
     'environments' => [
         'production' => [
             'supervisor-1' => [
-                'maxProcesses' => 3,
+                'maxProcesses' => 5,
                 'balanceMaxShift' => 1,
                 'balanceCooldown' => 3,
                 'connection' => 'redis',
                 'queue' => ['default', 'elastic-rebuild', 'elastic-reindex'],
                 'tries' => 3,
-                'timeout' => 90,
+                'timeout' => 120,
+                'memory' => 256,
+            ],
+            'supervisor-bulk' => [
+                'maxProcesses' => 3,
+                'balanceMaxShift' => 1,
+                'balanceCooldown' => 3,
+                'connection' => 'redis',
+                'queue' => ['bulk-upload'],
+                'tries' => 3,
+                'timeout' => 900, // 15 minutes for large uploads
+                'memory' => 512,
             ],
         ],
 
@@ -231,6 +242,15 @@ return [
                 'connection' => 'redis',
                 'queue' => ['default', 'elastic-rebuild', 'elastic-reindex'],
                 'tries' => 3,
+                'timeout' => 120,
+            ],
+            'supervisor-bulk' => [
+                'maxProcesses' => 2,
+                'connection' => 'redis',
+                'queue' => ['bulk-upload'],
+                'tries' => 3,
+                'timeout' => 900,
+                'memory' => 512,
             ],
         ],
     ],

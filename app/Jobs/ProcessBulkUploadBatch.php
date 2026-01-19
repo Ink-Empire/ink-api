@@ -2,9 +2,11 @@
 
 namespace App\Jobs;
 
+use App\Enums\QueueNames;
 use App\Models\BulkUpload;
 use App\Models\BulkUploadItem;
 use App\Models\Image;
+use App\Services\ImageService;
 use App\Services\TagService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
@@ -27,7 +29,9 @@ class ProcessBulkUploadBatch implements ShouldQueue
         public int $bulkUploadId,
         public int $batchSize = 200,
         public int $offset = 0
-    ) {}
+    ) {
+        $this->onQueue(QueueNames::BULK_UPLOAD);
+    }
 
     public function handle(): void
     {
@@ -100,8 +104,12 @@ class ProcessBulkUploadBatch implements ShouldQueue
         $zipPath = $bulkUpload->zip_path;
         $tempPath = sys_get_temp_dir() . '/' . uniqid('bulk_process_') . '.zip';
 
-        $contents = Storage::disk('s3')->get($zipPath);
-        file_put_contents($tempPath, $contents);
+        // Use streaming to avoid loading entire ZIP into memory
+        $stream = Storage::disk('s3')->readStream($zipPath);
+        $tempFile = fopen($tempPath, 'w');
+        stream_copy_to_stream($stream, $tempFile);
+        fclose($tempFile);
+        fclose($stream);
 
         return $tempPath;
     }
@@ -145,10 +153,11 @@ class ProcessBulkUploadBatch implements ShouldQueue
             default => 'image/jpeg',
         };
 
-        // Generate filename for S3
+        // Generate filename for S3 with environment prefix
         $timestamp = now()->format('YmdHis');
         $random = Str::random(8);
-        $filename = "tattoo_{$bulkUpload->artist_id}_{$timestamp}_{$item->id}_{$random}.{$extension}";
+        $baseFilename = "tattoo_{$bulkUpload->artist_id}_{$timestamp}_{$item->id}_{$random}.{$extension}";
+        $filename = ImageService::prefixFilename($baseFilename);
 
         // Upload to S3
         $s3Path = $filename;

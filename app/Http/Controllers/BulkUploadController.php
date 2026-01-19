@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\BulkUploadResource;
 use App\Http\Resources\BulkUploadItemResource;
+use App\Jobs\DeleteBulkUpload;
 use App\Jobs\ScanBulkUploadZip;
 use App\Jobs\ProcessBulkUploadBatch;
 use App\Jobs\PublishBulkUploadItems;
@@ -67,7 +68,8 @@ class BulkUploadController extends Controller
         $zipFilename = $bulkUpload->id . '_' . Str::random(8) . '.zip';
         $zipPath = "bulk-uploads/{$user->id}/{$zipFilename}";
 
-        Storage::disk('s3')->put($zipPath, file_get_contents($file->getRealPath()));
+        // Use streaming to avoid loading entire file into memory
+        Storage::disk('s3')->put($zipPath, fopen($file->getRealPath(), 'r'));
 
         $bulkUpload->update(['zip_filename' => $zipFilename]);
 
@@ -87,15 +89,15 @@ class BulkUploadController extends Controller
         $upload = BulkUpload::where('artist_id', $user->id)
             ->findOrFail($id);
 
-        // Delete ZIP from S3
-        $upload->deleteZipFile();
+        // Mark as deleting so it doesn't show in lists
+        $upload->update(['status' => 'deleting']);
 
-        // Delete all items and the upload record
-        $upload->items()->delete();
-        $upload->delete();
+        // Dispatch job to handle cleanup asynchronously
+        \Log::info("dispatching job to delete bulk upload from S3");
+        DeleteBulkUpload::dispatch($upload->id);
 
         return response()->json([
-            'message' => 'Bulk upload deleted successfully',
+            'message' => 'Bulk upload deletion started',
         ]);
     }
 

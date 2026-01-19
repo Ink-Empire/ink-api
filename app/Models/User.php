@@ -52,6 +52,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'slug',
         'last_login_at',
         'experience_level',
+        'is_demo',
     ];
 
     /**
@@ -74,6 +75,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_seen_at' => 'datetime',
         'last_login_at' => 'datetime',
         'is_admin' => 'boolean',
+        'is_demo' => 'boolean',
     ];
 
     public function scopeArtist(Builder $query): void
@@ -137,6 +139,16 @@ class User extends Authenticatable implements MustVerifyEmail
     public function ownedStudio()
     {
         return $this->hasOne(Studio::class, 'owner_id');
+    }
+
+    public function tattooLeads()
+    {
+        return $this->hasMany(TattooLead::class);
+    }
+
+    public function activeTattooLead()
+    {
+        return $this->hasOne(TattooLead::class)->where('is_active', true);
     }
 
     public function passwords()
