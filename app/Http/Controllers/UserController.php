@@ -303,6 +303,13 @@ class UserController extends Controller
             $query->where('is_admin', $filter['is_admin']);
         }
 
+        // Filter by is_demo - defaults to false (hide demo users)
+        if (isset($filter['is_demo'])) {
+            $query->where('is_demo', $filter['is_demo']);
+        } else {
+            $query->where('is_demo', false);
+        }
+
         // Apply sorting
         $query->orderBy($sort, $order);
 
