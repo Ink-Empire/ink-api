@@ -32,7 +32,7 @@ class Artist extends User
      */
     public function searchableAs()
     {
-        return 'artists';
+        return $this->getIndexConfigurator()->getName();
     }
 
     //the people who favorite this artist
