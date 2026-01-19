@@ -141,6 +141,16 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Studio::class, 'owner_id');
     }
 
+    public function tattooLeads()
+    {
+        return $this->hasMany(TattooLead::class);
+    }
+
+    public function activeTattooLead()
+    {
+        return $this->hasOne(TattooLead::class)->where('is_active', true);
+    }
+
     public function passwords()
     {
         return $this->hasMany(Password::class);
