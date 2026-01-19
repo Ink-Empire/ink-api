@@ -51,7 +51,7 @@ class SearchController extends Controller
                 $params['search_again'] = true;
 
                 \Log::info("no search results returned, searching again for generic response");
-                
+
                 if ($model == 'tattoo') {
                     return $this->tattooService->search_tattoo($params);
                 } else {
