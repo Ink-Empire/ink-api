@@ -98,6 +98,8 @@ class Artist extends User
             'studio',
             'styles',
             'tattoos',
+            'primary_image',
+            'settings',
         ]);
 
         return $query;
@@ -115,14 +117,22 @@ class Artist extends User
             'styles',
             'tattoos',
             'primary_image',
+            'settings',
         ];
 
         $this->loadMissing($with);
 
-        if ($this instanceof Artist) {
-            return (new ArtistIndexResource($this))->jsonSerialize();
-        } else {
-            return ArtistIndexResource::collection($this)->jsonSerialize();
+        $result = (new ArtistIndexResource($this))->jsonSerialize();
+
+        // Debug: log if is_demo is missing
+        if (!isset($result['is_demo'])) {
+            \Log::warning('Artist toSearchableArray missing is_demo', [
+                'id' => $this->id,
+                'is_demo_attr' => $this->is_demo,
+                'attributes' => $this->getAttributes(),
+            ]);
         }
+
+        return $result;
     }
 }
