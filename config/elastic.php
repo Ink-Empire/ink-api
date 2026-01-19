@@ -13,6 +13,8 @@ return [
             : null,
         'base_url' => env('ELASTICSEARCH_HOST') . ":" . env('ELASTICSEARCH_PORT', 443),
         'index' => env('ELASTICSEARCH_INDEX', 'tattoos'),
+        'artists_index' => env('ELASTICSEARCH_ARTISTS_INDEX', 'artists'),
+        'tattoos_index' => env('ELASTICSEARCH_TATTOOS_INDEX', 'tattoos'),
         'username' => env('ELASTICSEARCH_USERNAME'),
         'password' => env('ELASTICSEARCH_PASSWORD'),
         'timeout_in_seconds' => env('ELASTICSEARCH_TIMEOUT', 30),

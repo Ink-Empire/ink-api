@@ -188,8 +188,6 @@ class TattooIndexConfigurator extends IndexConfigurator
 
     public function getName()
     {
-        $name = config('elastic.client.index');
-
-        return $name;
+        return config('elastic.client.tattoos_index', 'tattoos');
     }
 }
