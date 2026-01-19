@@ -35,6 +35,8 @@ use App\Http\Controllers\CalendarWebhookController;
 Route::get('/styles', [StyleController::class, 'index']);
 Route::get('/countries', [CountryController::class, 'index']);
 Route::post('/studios/check-availability', [StudioController::class, 'checkAvailability']);
+Route::post('/studios/lookup-or-create', [StudioController::class, 'lookupOrCreate']);
+Route::post('/studios/{id}/claim', [StudioController::class, 'claim']);
 
 // Tag routes (public for autocomplete)
 Route::get('/tags', [TagController::class, 'index']);
