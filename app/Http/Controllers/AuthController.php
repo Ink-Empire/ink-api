@@ -41,6 +41,8 @@ class AuthController extends Controller
                 'regex:/^[a-zA-Z0-9._]+$/' // Only letters, numbers, periods, and underscores
             ],
             'slug' => 'required|string|max:30|unique:users',
+            'selected_styles' => 'nullable|array',
+            'selected_styles.*' => 'integer|exists:styles,id',
         ]);
 
         if (isset($request->address)) {
@@ -70,6 +72,11 @@ class AuthController extends Controller
         $user->passwords()->create([
             'password' => $hashedPassword,
         ]);
+
+        // Save selected styles if provided
+        if ($request->has('selected_styles') && is_array($request->selected_styles)) {
+            $user->styles()->sync($request->selected_styles);
+        }
 
         // Create token for API authentication
         $token = $user->createToken('auth-token')->plainTextToken;
