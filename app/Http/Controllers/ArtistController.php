@@ -51,8 +51,9 @@ class ArtistController extends Controller
         $unclaimedStudios = $this->getUnclaimedStudios($params, $request);
 
         return response()->json([
-            'response' => $response,
+            'response' => $response['response'],
             'unclaimed_studios' => $unclaimedStudios,
+            'total' => $response['total'] ?? null,
         ]);
     }
 
