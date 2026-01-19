@@ -13,6 +13,7 @@ use App\Services\AddressService;
 use App\Services\ImageService;
 use App\Services\StudioService;
 use App\Services\UserService;
+use App\Services\GooglePlacesService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -23,6 +24,7 @@ class StudioController extends Controller
         protected ImageService   $imageService,
         protected StudioService  $studioService,
         protected UserService    $userService,
+        protected GooglePlacesService $googlePlacesService,
     )
     {
     }
@@ -57,6 +59,89 @@ class StudioController extends Controller
         return response()->json([
             'available' => true,
             'field' => null
+        ]);
+    }
+
+    /**
+     * Lookup a studio by Google Place ID, or create one if it doesn't exist.
+     * Used by autocomplete to link artists to studios or pre-fill studio registration.
+     */
+    public function lookupOrCreate(Request $request): JsonResponse
+    {
+        $placeId = $request->input('place_id');
+
+        if (!$placeId) {
+            return response()->json(['error' => 'place_id is required'], 422);
+        }
+
+        // Check if we already have this studio
+        $existingStudio = Studio::where('google_place_id', $placeId)->first();
+
+        if ($existingStudio) {
+            return response()->json([
+                'studio' => $existingStudio,
+                'is_new' => false,
+                'is_claimed' => $existingStudio->is_claimed,
+            ]);
+        }
+
+        // Fetch details from Google and create new unclaimed studio
+        $studio = $this->googlePlacesService->createStudioFromPlaceId($placeId);
+
+        if (!$studio) {
+            return response()->json(['error' => 'Unable to fetch place details from Google'], 404);
+        }
+
+        return response()->json([
+            'studio' => $studio,
+            'is_new' => true,
+            'is_claimed' => false,
+        ]);
+    }
+
+    /**
+     * Claim an existing unclaimed studio.
+     * This is used when a studio owner signs up and selects their existing Google Places studio.
+     */
+    public function claim(Request $request, int $id): JsonResponse
+    {
+        $studio = Studio::find($id);
+
+        if (!$studio) {
+            return response()->json(['error' => 'Studio not found'], 404);
+        }
+
+        if ($studio->is_claimed) {
+            return response()->json(['error' => 'This studio has already been claimed'], 422);
+        }
+
+        $request->validate([
+            'owner_id' => 'required|integer|exists:users,id',
+            'name' => 'required|string|max:255',
+            'slug' => 'required|string|max:255',
+            'about' => 'nullable|string',
+            'location' => 'nullable|string',
+            'location_lat_long' => 'nullable|string',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string',
+        ]);
+
+        // Update the studio with the new owner's info and mark as claimed
+        $studio->update([
+            'owner_id' => $request->input('owner_id'),
+            'name' => $request->input('name'),
+            'slug' => $request->input('slug'),
+            'about' => $request->input('about'),
+            'location' => $request->input('location') ?: $studio->location,
+            'location_lat_long' => $request->input('location_lat_long') ?: $studio->location_lat_long,
+            'email' => $request->input('email'),
+            'phone' => $request->input('phone') ?: $studio->phone,
+            'is_claimed' => true,
+        ]);
+
+        return response()->json([
+            'studio' => new StudioResource($studio->fresh()),
+            'message' => 'Studio claimed successfully',
         ]);
     }
 
@@ -112,6 +197,7 @@ class StudioController extends Controller
                 'location_lat_long' => $data['location_lat_long'] ?? null,
                 'address_id' => $address->id ?? null,
                 'owner_id' => $data['owner_id'] ?? null,
+                'is_claimed' => true, // Studios created via registration are claimed
             ]);
 
             $studio->save();

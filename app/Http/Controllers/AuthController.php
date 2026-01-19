@@ -7,6 +7,7 @@ use App\Enums\UserTypes;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Models\Studio;
 use App\Services\AddressService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -41,6 +42,7 @@ class AuthController extends Controller
                 'regex:/^[a-zA-Z0-9._]+$/' // Only letters, numbers, periods, and underscores
             ],
             'slug' => 'required|string|max:30|unique:users',
+            'studio_id' => 'nullable|integer|exists:studios,id', // Optional studio affiliation for artists
         ]);
 
         if (isset($request->address)) {
@@ -64,12 +66,20 @@ class AuthController extends Controller
             'type_id' => $request->type == UserTypes::USER ? 1 : 2,
             'address_id' => $address->id ?? null,
             'experience_level' => $request->experience_level ?? null,
+            'studio_id' => $request->studio_id ?? null, // Studio affiliation for artists
         ]);
 
         // Store password in history
         $user->passwords()->create([
             'password' => $hashedPassword,
         ]);
+
+        // If artist affiliated with a studio, mark it as claimed
+        if ($request->studio_id) {
+            Studio::where('id', $request->studio_id)
+                ->where('is_claimed', false)
+                ->update(['is_claimed' => true]);
+        }
 
         // Create token for API authentication
         $token = $user->createToken('auth-token')->plainTextToken;

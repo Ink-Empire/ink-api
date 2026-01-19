@@ -146,7 +146,7 @@ class GooglePlacesService
         try {
             $response = Http::get('https://maps.googleapis.com/maps/api/place/details/json', [
                 'place_id' => $placeId,
-                'fields' => 'formatted_phone_number,website,opening_hours,formatted_address',
+                'fields' => 'name,formatted_phone_number,website,opening_hours,formatted_address,geometry,rating',
                 'key' => $this->apiKey,
             ]);
 
@@ -160,5 +160,42 @@ class GooglePlacesService
             Log::error('Google Places details error', ['message' => $e->getMessage()]);
             return null;
         }
+    }
+
+    /**
+     * Create a studio from a Google Place ID.
+     * Fetches full details from Google and creates an unclaimed studio.
+     */
+    public function createStudioFromPlaceId(string $placeId): ?Studio
+    {
+        // First check if we already have this studio
+        $existingStudio = Studio::where('google_place_id', $placeId)->first();
+        if ($existingStudio) {
+            return $existingStudio;
+        }
+
+        // Fetch details from Google
+        $details = $this->getPlaceDetails($placeId);
+        if (!$details) {
+            return null;
+        }
+
+        $location = $details['geometry']['location'] ?? null;
+        $lat = $location['lat'] ?? null;
+        $lng = $location['lng'] ?? null;
+
+        $studio = Studio::create([
+            'name' => $details['name'] ?? 'Unknown Studio',
+            'slug' => Str::slug($details['name'] ?? 'studio') . '-' . Str::random(6),
+            'location' => $details['formatted_address'] ?? null,
+            'location_lat_long' => $lat && $lng ? "{$lat},{$lng}" : null,
+            'phone' => $details['formatted_phone_number'] ?? null,
+            'website' => $details['website'] ?? null,
+            'google_place_id' => $placeId,
+            'rating' => $details['rating'] ?? null,
+            'is_claimed' => false,
+        ]);
+
+        return $studio;
     }
 }
