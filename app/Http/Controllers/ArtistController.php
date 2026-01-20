@@ -8,6 +8,7 @@ use App\Models\Appointment;
 use App\Models\Artist;
 use App\Models\ArtistAvailability;
 use App\Models\ArtistSettings;
+use App\Models\Message;
 use App\Models\ProfileView;
 use App\Models\User;
 use App\Services\ArtistService;
@@ -155,6 +156,35 @@ class ArtistController extends Controller
         }
 
         return $this->returnResponse('artist', $artist);
+    }
+
+    /**
+     * Record a profile view for an artist
+     */
+    public function recordView(Request $request, $id): JsonResponse
+    {
+        $artist = ModelLookup::findArtist($id);
+
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        // Don't record views of your own profile
+        $viewer = $request->user();
+        if ($viewer && $viewer->id === $artist->id) {
+            return response()->json(['success' => true, 'recorded' => false]);
+        }
+
+        ProfileView::create([
+            'viewer_id' => $viewer?->id,
+            'viewable_type' => User::class,
+            'viewable_id' => $artist->id,
+            'ip_address' => $request->ip(),
+            'user_agent' => $request->userAgent(),
+            'referrer' => $request->header('referer'),
+        ]);
+
+        return response()->json(['success' => true, 'recorded' => true]);
     }
 
     /**
@@ -312,6 +342,11 @@ class ArtistController extends Controller
 
         $settingsData = $request->only($validSettings);
 
+        // If books_open is being set to true, automatically enable accepts_appointments
+        if (!empty($settingsData['books_open'])) {
+            $settingsData['accepts_appointments'] = true;
+        }
+
         $settings = ArtistSettings::updateOrCreate(
             ['artist_id' => $artist->id],
             $settingsData
@@ -405,6 +440,11 @@ class ArtistController extends Controller
 
         $appointmentsTrend = $appointmentsThisWeek - $appointmentsLastWeek;
 
+        // Unread messages count
+        $unreadMessages = Message::where('recipient_id', $artist->id)
+            ->whereNull('read_at')
+            ->count();
+
         return response()->json([
             'data' => [
                 'profile_views' => $viewsThisWeek,
@@ -417,6 +457,7 @@ class ArtistController extends Controller
                 'saves_trend' => ($savesTrend >= 0 ? '+' : '') . $savesTrend,
                 'upcoming_appointments' => $upcomingAppointments,
                 'appointments_trend' => ($appointmentsTrend >= 0 ? '+' : '') . $appointmentsTrend,
+                'unread_messages' => $unreadMessages,
             ]
         ]);
     }

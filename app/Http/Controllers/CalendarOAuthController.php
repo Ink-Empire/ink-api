@@ -162,6 +162,7 @@ class CalendarOAuthController extends Controller
             'email' => $connection->provider_email,
             'last_synced_at' => $connection->last_synced_at?->toIso8601String(),
             'sync_enabled' => $connection->sync_enabled,
+            'requires_reauth' => $connection->requires_reauth ?? false,
         ]);
     }
 
