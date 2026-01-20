@@ -100,6 +100,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/history', [AppointmentController::class, 'history']);
         Route::post('/invite', [AppointmentController::class, 'invite']);
         Route::post('/event', [AppointmentController::class, 'createEvent']);
+        Route::post('/{id}/respond', [AppointmentController::class, 'respondToRequest']);
         Route::put('/{id}', [AppointmentController::class, 'update']);
         Route::delete('/{id}', [AppointmentController::class, 'delete']);
     });
