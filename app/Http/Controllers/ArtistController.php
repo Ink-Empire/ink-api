@@ -317,7 +317,8 @@ class ArtistController extends Controller
             $settingsData
         );
 
-        //we need to re-index the artist
+        // Refresh the settings relationship so searchable() gets fresh data
+        $artist->load('settings');
         $artist->searchable();
 
         return response()->json(['data' => $settings->only($validSettings)]);
