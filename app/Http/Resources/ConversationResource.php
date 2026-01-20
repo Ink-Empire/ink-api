@@ -46,6 +46,7 @@ class ConversationResource extends JsonResource
                     'title' => $this->appointment->title,
                     'description' => $this->appointment->description,
                     'placement' => $this->appointment->placement,
+                    'timezone' => $this->appointment->artist?->timezone,
                 ] : null;
             }),
             'created_at' => $this->created_at,

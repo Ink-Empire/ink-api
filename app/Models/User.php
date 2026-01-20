@@ -53,6 +53,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_login_at',
         'experience_level',
         'is_demo',
+        'timezone',
     ];
 
     /**
