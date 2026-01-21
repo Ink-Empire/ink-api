@@ -177,26 +177,32 @@ class BulkUploadController extends Controller
             'is_skipped' => 'nullable|boolean',
         ]);
 
-        $item->update($request->only([
-            'title',
-            'description',
-            'placement_id',
-            'primary_style_id',
-            'additional_style_ids',
-            'approved_tag_ids',
-            'is_skipped',
-        ]));
-
-        // If this is a group, optionally apply to all items in group
-        if ($request->boolean('apply_to_group') && $item->isPartOfGroup()) {
-            $groupData = $request->only([
+        $item->update(array_merge(
+            $request->only([
                 'title',
                 'description',
                 'placement_id',
                 'primary_style_id',
                 'additional_style_ids',
                 'approved_tag_ids',
-            ]);
+                'is_skipped',
+            ]),
+            ['is_edited' => true]
+        ));
+
+        // If this is a group, optionally apply to all items in group
+        if ($request->boolean('apply_to_group') && $item->isPartOfGroup()) {
+            $groupData = array_merge(
+                $request->only([
+                    'title',
+                    'description',
+                    'placement_id',
+                    'primary_style_id',
+                    'additional_style_ids',
+                    'approved_tag_ids',
+                ]),
+                ['is_edited' => true]
+            );
 
             BulkUploadItem::where('bulk_upload_id', $upload->id)
                 ->where('post_group_id', $item->post_group_id)
