@@ -40,7 +40,6 @@ class PublishBulkUploadItems implements ShouldQueue
         try {
             // Get all ready items, grouped by post_group_id
             $items = $bulkUpload->readyItems()
-                ->whereNotNull('primary_style_id') // Require at least a style
                 ->orderBy('post_group_id')
                 ->orderBy('is_primary_in_group', 'desc')
                 ->orderBy('sort_order')
