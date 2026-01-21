@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\WorkingHoursResource;
+use App\Jobs\NotifyWishlistUsersOfBooksOpen;
 use App\Models\Appointment;
 use App\Models\Artist;
 use App\Models\ArtistAvailability;
@@ -342,6 +343,11 @@ class ArtistController extends Controller
 
         $settingsData = $request->only($validSettings);
 
+        // Check if books_open is being changed from false to true
+        $existingSettings = ArtistSettings::where('artist_id', $artist->id)->first();
+        $wasBooksClosed = !$existingSettings || !$existingSettings->books_open;
+        $isOpeningBooks = !empty($settingsData['books_open']) && $wasBooksClosed;
+
         // If books_open is being set to true, automatically enable accepts_appointments
         if (!empty($settingsData['books_open'])) {
             $settingsData['accepts_appointments'] = true;
@@ -351,6 +357,11 @@ class ArtistController extends Controller
             ['artist_id' => $artist->id],
             $settingsData
         );
+
+        // Notify wishlist users if books just opened
+        if ($isOpeningBooks) {
+            NotifyWishlistUsersOfBooksOpen::dispatch($artist->id);
+        }
 
         // Refresh the settings relationship so searchable() gets fresh data
         $artist->load('settings');
