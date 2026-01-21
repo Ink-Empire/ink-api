@@ -46,13 +46,18 @@ class ScanBulkUploadZip implements ShouldQueue
                 throw new \Exception('Failed to open ZIP file');
             }
 
-            // Detect if this is an Instagram export
-            $isInstagram = $bulkUpload->source === 'instagram' || $this->detectInstagramExport($zip);
+            // Detect the type of ZIP (Instagram export vs simple images)
+            $zipType = $this->detectZipType($zip);
+            Log::info("Detected ZIP type for bulk upload {$this->bulkUploadId}: {$zipType}");
+
             $instagramData = [];
 
-            if ($isInstagram) {
+            if ($zipType === 'instagram') {
                 $instagramData = $instagramParser->parseFromZip($zip);
                 $bulkUpload->update(['source' => 'instagram']);
+            } else {
+                // Simple image zip
+                $bulkUpload->update(['source' => 'images']);
             }
 
             // Scan all files and create items
@@ -71,7 +76,7 @@ class ScanBulkUploadZip implements ShouldQueue
                 'cataloged_images' => $totalItems,
             ]);
 
-            Log::info("Scanned bulk upload {$this->bulkUploadId}: {$totalItems} images found");
+            Log::info("Scanned bulk upload {$this->bulkUploadId}: {$totalItems} images found (source: {$zipType})");
 
             // Auto-dispatch processing jobs in batches of 25
             $batchSize = 25;
@@ -109,7 +114,7 @@ class ScanBulkUploadZip implements ShouldQueue
         return $tempPath;
     }
 
-    private function detectInstagramExport(ZipArchive $zip): bool
+    private function detectZipType(ZipArchive $zip): string
     {
         // Look for Instagram's typical JSON files
         $instagramIndicators = [
@@ -119,16 +124,40 @@ class ScanBulkUploadZip implements ShouldQueue
             'your_instagram_activity/content/posts_1.json',
         ];
 
+        $allowedExtensions = config('bulk_upload.allowed_extensions', ['jpg', 'jpeg', 'png', 'webp', 'gif']);
+        $imageCount = 0;
+        $hasInstagramIndicator = false;
+
         for ($i = 0; $i < $zip->numFiles; $i++) {
             $filename = $zip->getNameIndex($i);
+            $lowerFilename = strtolower($filename);
+
+            // Check for Instagram indicators
             foreach ($instagramIndicators as $indicator) {
-                if (str_contains(strtolower($filename), strtolower($indicator))) {
-                    return true;
+                if (str_contains($lowerFilename, strtolower($indicator))) {
+                    $hasInstagramIndicator = true;
+                    break;
                 }
+            }
+
+            // Count image files
+            $ext = strtolower(pathinfo($filename, PATHINFO_EXTENSION));
+            if (in_array($ext, $allowedExtensions)) {
+                $imageCount++;
             }
         }
 
-        return false;
+        if ($hasInstagramIndicator) {
+            return 'instagram';
+        }
+
+        // If we have images but no Instagram indicators, it's a simple image zip
+        if ($imageCount > 0) {
+            return 'images';
+        }
+
+        // No images found - will fail later during cataloging
+        return 'unknown';
     }
 
     private function catalogImages(BulkUpload $bulkUpload, ZipArchive $zip, array $instagramData): array
@@ -196,6 +225,9 @@ class ScanBulkUploadZip implements ShouldQueue
                 $itemData['original_timestamp'] = $instagramInfo['timestamp'];
                 // Use caption as initial description
                 $itemData['description'] = $this->cleanCaption($instagramInfo['caption']);
+            } else {
+                // For simple image zips, extract a title from the filename
+                $itemData['title'] = $this->extractTitleFromFilename($filename);
             }
 
             $items[] = BulkUploadItem::create($itemData);
@@ -228,5 +260,29 @@ class ScanBulkUploadZip implements ShouldQueue
         $cleaned = trim($cleaned);
 
         return $cleaned ?: null;
+    }
+
+    private function extractTitleFromFilename(string $filepath): ?string
+    {
+        // Get just the filename without path
+        $filename = pathinfo($filepath, PATHINFO_FILENAME);
+
+        if (!$filename) {
+            return null;
+        }
+
+        // Replace common separators with spaces
+        $title = str_replace(['_', '-'], ' ', $filename);
+
+        // Remove common suffixes like unsplash, numbers, etc.
+        $title = preg_replace('/\s*(unsplash|pexels|pixabay|\d{10,})\s*/i', ' ', $title);
+
+        // Remove multiple spaces
+        $title = preg_replace('/\s+/', ' ', $title);
+
+        // Title case and trim
+        $title = trim(ucwords(strtolower($title)));
+
+        return $title ?: null;
     }
 }
