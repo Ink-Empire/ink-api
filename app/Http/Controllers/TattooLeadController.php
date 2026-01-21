@@ -2,9 +2,13 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\NotifyNearbyArtistsOfBeacon;
 use App\Models\TattooLead;
+use App\Notifications\TattooBeaconNotification;
+use App\Services\NotificationStatsService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Spatie\NotificationLog\Models\NotificationLogItem;
 
 class TattooLeadController extends Controller
 {
@@ -23,12 +27,20 @@ class TattooLeadController extends Controller
                 'has_lead' => false,
                 'is_active' => false,
                 'lead' => null,
+                'artists_notified' => 0,
             ]);
         }
+
+        // Count how many artists were notified about this lead
+        $artistsNotified = NotificationLogItem::query()
+            ->whereJsonContains('extra->event_type', TattooBeaconNotification::EVENT_TYPE)
+            ->whereJsonContains('extra->reference_id', $lead->id)
+            ->count();
 
         return response()->json([
             'has_lead' => true,
             'is_active' => $lead->is_active,
+            'artists_notified' => $artistsNotified,
             'lead' => [
                 'id' => $lead->id,
                 'timing' => $lead->timing,
@@ -80,6 +92,11 @@ class TattooLeadController extends Controller
             'description' => $request->input('description'),
             'is_active' => true,
         ]);
+
+        // Notify nearby artists if the user allows artist contact
+        if ($lead->allow_artist_contact) {
+            NotifyNearbyArtistsOfBeacon::dispatch($lead->id);
+        }
 
         return response()->json([
             'lead' => [
