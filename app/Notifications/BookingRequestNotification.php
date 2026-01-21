@@ -12,6 +12,8 @@ class BookingRequestNotification extends Notification
 {
     // Note: Removed ShouldQueue temporarily for testing - add back when queue is configured
 
+    public const EVENT_TYPE = 'booking_request';
+
     public function __construct(
         public Appointment $appointment
     ) {}
@@ -54,6 +56,17 @@ class BookingRequestNotification extends Notification
             'appointment_id' => $this->appointment->id,
             'type' => $this->appointment->type,
             'client_id' => $this->appointment->client_id,
+        ];
+    }
+
+    public function logExtra(): array
+    {
+        return [
+            'event_type' => self::EVENT_TYPE,
+            'sender_id' => $this->appointment->client_id,
+            'sender_type' => \App\Models\User::class,
+            'reference_id' => $this->appointment->id,
+            'reference_type' => Appointment::class,
         ];
     }
 }

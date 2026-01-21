@@ -11,6 +11,8 @@ class BooksOpenNotification extends Notification
 {
     use Queueable;
 
+    public const EVENT_TYPE = 'books_open';
+
     public function __construct(
         public User $artist
     ) {}
@@ -41,6 +43,18 @@ class BooksOpenNotification extends Notification
         return [
             'artist_id' => $this->artist->id,
             'artist_username' => $this->artist->username,
+        ];
+    }
+
+    /**
+     * Extra data to log with this notification (for spatie/laravel-notification-log).
+     */
+    public function logExtra(): array
+    {
+        return [
+            'event_type' => self::EVENT_TYPE,
+            'sender_id' => $this->artist->id,
+            'sender_type' => User::class,
         ];
     }
 }

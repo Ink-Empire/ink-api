@@ -9,6 +9,8 @@ use Illuminate\Notifications\Notification;
 
 class BookingDeclinedNotification extends Notification
 {
+    public const EVENT_TYPE = 'booking_declined';
+
     public function __construct(
         public Appointment $appointment,
         public ?string $reason = null
@@ -49,6 +51,17 @@ class BookingDeclinedNotification extends Notification
             'appointment_id' => $this->appointment->id,
             'type' => $this->appointment->type,
             'artist_id' => $this->appointment->artist_id,
+        ];
+    }
+
+    public function logExtra(): array
+    {
+        return [
+            'event_type' => self::EVENT_TYPE,
+            'sender_id' => $this->appointment->artist_id,
+            'sender_type' => \App\Models\User::class,
+            'reference_id' => $this->appointment->id,
+            'reference_type' => Appointment::class,
         ];
     }
 }
