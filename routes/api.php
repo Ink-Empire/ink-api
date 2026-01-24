@@ -22,6 +22,7 @@ use App\Http\Controllers\CalendarWebhookController;
 use App\Http\Controllers\TattooLeadController;
 use App\Http\Controllers\EmailTestController;
 use App\Http\Controllers\SubscriptionController;
+use App\Http\Controllers\FeedbackController;
 
 /*
 |--------------------------------------------------------------------------
@@ -57,6 +58,9 @@ Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'co
 
 // Subscription route (signed URL from email)
 Route::get('/subscribe', [SubscriptionController::class, 'subscribe'])->name('subscribe');
+
+// Feedback submission (public)
+Route::post('/feedback', [FeedbackController::class, 'submit']);
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
