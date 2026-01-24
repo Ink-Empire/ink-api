@@ -44,12 +44,11 @@ class EmailTestController extends Controller
         $type = $request->input('type');
         $email = $request->input('email');
 
-        // Create a temporary notifiable for routing
-        $notifiable = new AnonymousNotifiable($email);
-
         try {
             $notification = $this->createNotification($type);
-            $notifiable->notify($notification);
+
+            // Use Laravel's built-in on-demand notification routing
+            Notification::route('mail', $email)->notify($notification);
 
             return response()->json([
                 'success' => true,
@@ -145,33 +144,5 @@ class EmailTestController extends Controller
         }
 
         return $lead;
-    }
-}
-
-/**
- * Anonymous notifiable class for sending to arbitrary email addresses
- */
-class AnonymousNotifiable
-{
-    public string $email;
-
-    public function __construct(string $email)
-    {
-        $this->email = $email;
-    }
-
-    public function routeNotificationFor($driver)
-    {
-        return $this->email;
-    }
-
-    public function notify($notification)
-    {
-        Notification::send($this, $notification);
-    }
-
-    public function getKey()
-    {
-        return null;
     }
 }
