@@ -29,6 +29,8 @@ class UserResource extends JsonResource
             'is_admin' => (bool) $this->is_admin,
             'is_studio_admin' => $this->ownedStudio !== null,
             'owned_studio_id' => $this->ownedStudio?->id,
+            'is_email_verified' => (bool) $this->is_email_verified,
+            'email_verified_at' => $this->email_verified_at,
         ];
     }
 }

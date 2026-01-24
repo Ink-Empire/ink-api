@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\Studio;
 use App\Jobs\SendWelcomeNotification;
+use App\Jobs\SendVerifyEmailNotification;
 use App\Services\AddressService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -88,6 +89,9 @@ class AuthController extends Controller
         if ($request->has('selected_styles') && is_array($request->selected_styles)) {
             $user->styles()->sync($request->selected_styles);
         }
+
+        // Queue verification email job
+        SendVerifyEmailNotification::dispatch($user->id);
 
         // Queue welcome email job
         SendWelcomeNotification::dispatch($user->id);
