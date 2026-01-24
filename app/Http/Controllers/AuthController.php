@@ -8,7 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\Studio;
-use App\Notifications\WelcomeNotification;
+use App\Jobs\SendWelcomeNotification;
 use App\Services\AddressService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -89,18 +89,8 @@ class AuthController extends Controller
             $user->styles()->sync($request->selected_styles);
         }
 
-        // Send welcome email
-        try {
-            Log::info('Sending welcome notification to user', ['user_id' => $user->id, 'email' => $user->email]);
-            $user->notify(new WelcomeNotification());
-            Log::info('Welcome notification queued successfully', ['user_id' => $user->id]);
-        } catch (\Exception $e) {
-            Log::error('Failed to send welcome notification', [
-                'user_id' => $user->id,
-                'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-        }
+        // Queue welcome email job
+        SendWelcomeNotification::dispatch($user->id);
 
         // Create token for API authentication
         $token = $user->createToken('auth-token')->plainTextToken;
