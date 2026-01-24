@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 
 class WelcomeNotification extends Notification implements ShouldQueue
 {
@@ -25,7 +26,9 @@ class WelcomeNotification extends Notification implements ShouldQueue
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:4000');
         $exploreUrl = $frontendUrl . '/tattoos';
-        $updatesUrl = $frontendUrl . '/updates';
+
+        // Generate a signed URL for subscribing to updates (valid for 30 days)
+        $updatesUrl = URL::signedRoute('subscribe', ['user' => $notifiable->id], now()->addDays(30));
 
         return (new MailMessage)
             ->subject("You're in! Welcome to InkedIn")

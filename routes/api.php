@@ -21,6 +21,7 @@ use App\Http\Controllers\CalendarOAuthController;
 use App\Http\Controllers\CalendarWebhookController;
 use App\Http\Controllers\TattooLeadController;
 use App\Http\Controllers\EmailTestController;
+use App\Http\Controllers\SubscriptionController;
 
 /*
 |--------------------------------------------------------------------------
@@ -53,6 +54,9 @@ Route::post('/artists/appointments', [AppointmentController::class, 'getArtistAp
 
 // Google Places config (returns API key for frontend SDK use)
 Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'config']);
+
+// Subscription route (signed URL from email)
+Route::get('/subscribe', [SubscriptionController::class, 'subscribe'])->name('subscribe');
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
