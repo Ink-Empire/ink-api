@@ -64,7 +64,8 @@ class BulkUpload extends Model
             ->where('is_processed', true)
             ->where('is_published', false)
             ->where('is_skipped', false)
-            ->whereNotNull('primary_style_id'); // Must have style to be "ready"
+            ->whereNotNull('primary_style_id')
+            ->whereNotNull('placement_id');
     }
 
     public function publishedItems(): HasMany

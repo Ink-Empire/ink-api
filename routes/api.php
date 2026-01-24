@@ -19,6 +19,7 @@ use App\Http\Controllers\PlacementController;
 use App\Http\Controllers\BlockedTermController;
 use App\Http\Controllers\CalendarOAuthController;
 use App\Http\Controllers\CalendarWebhookController;
+use App\Http\Controllers\TattooLeadController;
 
 /*
 |--------------------------------------------------------------------------
@@ -101,6 +102,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/history', [AppointmentController::class, 'history']);
         Route::post('/invite', [AppointmentController::class, 'invite']);
         Route::post('/event', [AppointmentController::class, 'createEvent']);
+        Route::post('/{id}/respond', [AppointmentController::class, 'respondToRequest']);
         Route::put('/{id}', [AppointmentController::class, 'update']);
         Route::delete('/{id}', [AppointmentController::class, 'delete']);
     });
@@ -137,6 +139,15 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/process-range', [\App\Http\Controllers\BulkUploadController::class, 'processRange']);
         Route::post('/{id}/publish', [\App\Http\Controllers\BulkUploadController::class, 'publish']);
         Route::get('/{id}/publish-status', [\App\Http\Controllers\BulkUploadController::class, 'publishStatus']);
+    });
+
+    // Tattoo lead routes (for users looking for tattoos)
+    Route::prefix('leads')->group(function () {
+        Route::get('/status', [TattooLeadController::class, 'status']);
+        Route::get('/for-artists', [TattooLeadController::class, 'forArtists']);
+        Route::post('/', [TattooLeadController::class, 'store']);
+        Route::put('/', [TattooLeadController::class, 'update']);
+        Route::post('/toggle', [TattooLeadController::class, 'toggle']);
     });
 });
 

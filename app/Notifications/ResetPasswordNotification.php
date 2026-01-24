@@ -40,7 +40,7 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
-        $url = $frontendUrl . '/password-reset/' . $this->token . '?email=' . urlencode($notifiable->getEmailForPasswordReset());
+        $url = $frontendUrl . '/reset-password?token=' . $this->token . '&email=' . urlencode($notifiable->getEmailForPasswordReset());
 
         return (new MailMessage)
             ->subject('Reset Your Password - InkedIn')

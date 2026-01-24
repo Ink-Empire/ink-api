@@ -115,6 +115,14 @@ class Tattoo extends Model
     /** @var string */
     protected $indexConfigurator = TattooIndexConfigurator::class;
 
+    /**
+     * Get the index name for the model.
+     */
+    public function searchableAs(): string
+    {
+        return $this->getIndexConfigurator()->getName();
+    }
+
     public function searchableQuery()
     {
         $query = $this->newQuery();

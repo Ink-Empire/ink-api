@@ -21,7 +21,7 @@ class ConversationController extends Controller
     {
         $user = $request->user();
         $query = Conversation::forUser($user->id)
-            ->with(['users', 'latestMessage.sender', 'appointment'])
+            ->with(['users', 'latestMessage.sender', 'appointment.artist'])
             ->withCount(['messages as unread_count' => function ($q) use ($user) {
                 $q->where('sender_id', '!=', $user->id)
                     ->where(function ($sq) use ($user) {
@@ -85,7 +85,7 @@ class ConversationController extends Controller
         $user = $request->user();
 
         $conversation = Conversation::forUser($user->id)
-            ->with(['users', 'appointment'])
+            ->with(['users', 'appointment.artist'])
             ->findOrFail($id);
 
         // Get paginated messages (oldest first for display)
