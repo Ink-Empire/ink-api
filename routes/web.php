@@ -56,6 +56,7 @@ Route::prefix('api')->group(function () {
         Route::post('/', [ArtistController::class, 'search']);
         Route::get('/{id}', [ArtistController::class, 'getById']);
         Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
+        Route::post('/{id}/view', [ArtistController::class, 'recordView']);
 
         // Protected artist routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {

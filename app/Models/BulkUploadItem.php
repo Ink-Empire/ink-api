@@ -17,6 +17,7 @@ class BulkUploadItem extends Model
         'is_processed',
         'is_published',
         'is_skipped',
+        'is_edited',
         'image_id',
         'tattoo_id',
         'zip_path',
@@ -39,6 +40,7 @@ class BulkUploadItem extends Model
         'is_processed' => 'boolean',
         'is_published' => 'boolean',
         'is_skipped' => 'boolean',
+        'is_edited' => 'boolean',
         'original_timestamp' => 'datetime',
         'additional_style_ids' => 'array',
         'ai_suggested_tags' => 'array',
@@ -106,7 +108,8 @@ class BulkUploadItem extends Model
         return $this->is_processed
             && !$this->is_published
             && !$this->is_skipped
-            && $this->primary_style_id !== null;
+            && $this->primary_style_id !== null
+            && $this->placement_id !== null;
     }
 
     public function getFilenameFromPath(): string
@@ -150,7 +153,9 @@ class BulkUploadItem extends Model
     {
         return $query->where('is_processed', true)
             ->where('is_published', false)
-            ->where('is_skipped', false);
+            ->where('is_skipped', false)
+            ->whereNotNull('primary_style_id')
+            ->whereNotNull('placement_id');
     }
 
     public function scopePrimaryInGroup($query)

@@ -320,6 +320,7 @@ class ClientDashboardController extends Controller
                 'name' => $style->name,
             ])->take(3)->values()->toArray(),
             'books_open' => $settings?->books_open ?? false,
+            'is_demo' => $artist->is_demo ?? false,
         ];
     }
 

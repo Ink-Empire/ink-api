@@ -30,6 +30,7 @@ class BulkUploadItemResource extends JsonResource
             'is_processed' => $this->is_processed,
             'is_published' => $this->is_published,
             'is_skipped' => $this->is_skipped,
+            'is_edited' => $this->is_edited,
             'is_ready_for_publish' => $this->isReadyForPublish(),
 
             // Image

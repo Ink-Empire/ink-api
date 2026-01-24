@@ -7,6 +7,7 @@ use App\Models\Artist;
 use App\Models\CalendarConnection;
 use App\Services\GoogleCalendarService;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Encryption\DecryptException;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
@@ -62,6 +63,16 @@ class SyncAppointmentToGoogle implements ShouldQueue
                 $googleCalendar->updateEventFromAppointment($connection, $appointment);
                 Log::info("Synced appointment {$this->appointmentId} to Google Calendar");
             }
+        } catch (DecryptException $e) {
+            // Token encryption is invalid - user needs to re-authenticate
+            Log::warning("Calendar connection for user {$artist->id} has invalid tokens, marking for reauth");
+            $connection->update([
+                'sync_enabled' => false,
+                'requires_reauth' => true,
+                'access_token' => null,
+                'refresh_token' => null,
+            ]);
+            // Don't rethrow - this is not a retryable error
         } catch (\Exception $e) {
             Log::error("Failed to sync appointment {$this->appointmentId} to Google Calendar: " . $e->getMessage());
             throw $e;

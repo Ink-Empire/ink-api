@@ -21,6 +21,7 @@ class CalendarConnection extends Model
         'sync_token',
         'last_synced_at',
         'sync_enabled',
+        'requires_reauth',
         'webhook_channel_id',
         'webhook_resource_id',
         'webhook_expires_at',
@@ -31,6 +32,7 @@ class CalendarConnection extends Model
         'last_synced_at' => 'datetime',
         'webhook_expires_at' => 'datetime',
         'sync_enabled' => 'boolean',
+        'requires_reauth' => 'boolean',
     ];
 
     protected $hidden = [

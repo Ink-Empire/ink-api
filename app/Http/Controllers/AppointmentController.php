@@ -9,7 +9,12 @@ use App\Jobs\SyncAppointmentToGoogle;
 use App\Models\Appointment;
 use App\Models\Artist;
 use App\Models\CalendarConnection;
+use App\Models\Conversation;
+use App\Models\ConversationParticipant;
+use App\Models\Message;
 use App\Models\User;
+use App\Notifications\BookingRequestNotification;
+use App\Notifications\BookingAcceptedNotification;
 use App\Util\ModelLookup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -126,7 +131,7 @@ class AppointmentController extends Controller
             'start_time' => 'required',
             'end_time' => 'required',
             'all_day' => 'boolean',
-            'description' => 'string',
+            'description' => 'nullable|string',
             'type' => 'required|string|in:tattoo,consultation',
             'client_id' => 'required|exists:users,id',
             'date' => 'required|date',
@@ -140,7 +145,70 @@ class AppointmentController extends Controller
         $data['end_time'] = date('H:i:s', strtotime($request->get('end_time')));
 
         $appointment = $artist->appointments()->create($data);
-        //TODO add an event here that will email both artist and client
+
+        // Create a conversation for this appointment
+        $conversation = Conversation::create([
+            'type' => $data['type'],
+            'appointment_id' => $appointment->id,
+        ]);
+
+        // Add both client and artist as participants
+        ConversationParticipant::create([
+            'conversation_id' => $conversation->id,
+            'user_id' => $data['client_id'],
+        ]);
+        ConversationParticipant::create([
+            'conversation_id' => $conversation->id,
+            'user_id' => $artist->id,
+        ]);
+
+        // Create initial message from the client
+        $typeLabel = $data['type'] === 'consultation' ? 'consultation' : 'appointment';
+        $messageContent = "New {$typeLabel} request";
+        if (!empty($data['description'])) {
+            $messageContent .= ": " . $data['description'];
+        }
+
+        Message::create([
+            'conversation_id' => $conversation->id,
+            'appointment_id' => $appointment->id,
+            'sender_id' => $data['client_id'],
+            'recipient_id' => $artist->id,
+            'content' => $messageContent,
+            'message_type' => 'initial',
+            'type' => 'booking_card',
+            'metadata' => [
+                'appointment_id' => $appointment->id,
+                'type' => $data['type'],
+                'date' => $data['date'],
+                'start_time' => $data['start_time'],
+                'end_time' => $data['end_time'],
+            ],
+        ]);
+
+        // Send email notification to the artist
+        \Log::info('Dispatching booking notification', ['artist_id' => $artist->id, 'appointment_id' => $appointment->id]);
+        try {
+            $appointment->load('client'); // Load client relationship for notification
+            $artist->notify(new BookingRequestNotification($appointment));
+            \Log::info('Booking notification dispatched');
+        } catch (\Exception $e) {
+            \Log::error('Failed to send booking notification: ' . $e->getMessage());
+        }
+
+        // Sync to Google Calendar if artist has it connected (creates tentative event)
+        try {
+            $connection = CalendarConnection::where('user_id', $artist->id)
+                ->where('provider', 'google')
+                ->where('sync_enabled', true)
+                ->first();
+
+            if ($connection) {
+                SyncAppointmentToGoogle::dispatch($appointment->id, 'create');
+            }
+        } catch (\Exception $e) {
+            \Log::error('Failed to dispatch Google Calendar sync: ' . $e->getMessage());
+        }
 
         return new AppointmentResource($appointment);
     }
@@ -163,6 +231,135 @@ class AppointmentController extends Controller
         $appointment->save();
 
         return new AppointmentResource($appointment);
+    }
+
+    public function respondToRequest(Request $request, $id)
+    {
+        $user = $request->user();
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $data = $request->validate([
+            'action' => 'required|string|in:accept,decline',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $appointment = Appointment::with(['client', 'artist'])->find($id);
+        if (!$appointment) {
+            return response()->json(['error' => 'Appointment not found'], 404);
+        }
+
+        // Verify the user is the artist for this appointment
+        if ($appointment->artist_id !== $user->id) {
+            return response()->json(['error' => 'You can only respond to your own appointments'], 403);
+        }
+
+        // Check appointment is in pending status
+        if ($appointment->status !== AppointmentStatus::PENDING) {
+            return response()->json(['error' => 'Appointment is not pending'], 400);
+        }
+
+        $action = $data['action'];
+
+        if ($action === 'accept') {
+            $appointment->status = AppointmentStatus::BOOKED;
+            $appointment->save();
+
+            // Sync to Google Calendar if artist has it connected
+            try {
+                $connection = CalendarConnection::where('user_id', $user->id)
+                    ->where('provider', 'google')
+                    ->where('sync_enabled', true)
+                    ->first();
+
+                if ($connection) {
+                    SyncAppointmentToGoogle::dispatch($appointment->id, 'update');
+                    \Log::info('Dispatched Google Calendar sync for accepted appointment', ['appointment_id' => $appointment->id]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to dispatch Google Calendar sync for accepted appointment: ' . $e->getMessage());
+            }
+
+            // Send email notification to the client
+            try {
+                if ($appointment->client) {
+                    $appointment->client->notify(new BookingAcceptedNotification($appointment));
+                    \Log::info('Sent booking accepted notification to client', ['client_id' => $appointment->client_id]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to send booking accepted notification: ' . $e->getMessage());
+            }
+
+            // Add a system message to the conversation
+            $conversation = Conversation::where('appointment_id', $appointment->id)->first();
+            if ($conversation) {
+                Message::create([
+                    'conversation_id' => $conversation->id,
+                    'appointment_id' => $appointment->id,
+                    'sender_id' => $user->id,
+                    'recipient_id' => $appointment->client_id,
+                    'content' => 'Booking request accepted',
+                    'type' => 'system',
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Appointment accepted successfully',
+                'appointment' => new AppointmentResource($appointment),
+            ]);
+        } else {
+            // Decline
+            $appointment->status = AppointmentStatus::CANCELLED;
+            $appointment->save();
+
+            // Remove from Google Calendar if it was synced
+            try {
+                $connection = CalendarConnection::where('user_id', $user->id)
+                    ->where('provider', 'google')
+                    ->where('sync_enabled', true)
+                    ->first();
+
+                if ($connection && $appointment->google_event_id) {
+                    SyncAppointmentToGoogle::dispatch($appointment->id, 'delete');
+                    \Log::info('Dispatched Google Calendar delete for declined appointment', ['appointment_id' => $appointment->id]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to dispatch Google Calendar delete for declined appointment: ' . $e->getMessage());
+            }
+
+            // Send email notification to the client
+            try {
+                if ($appointment->client) {
+                    $appointment->client->notify(new \App\Notifications\BookingDeclinedNotification($appointment, $data['reason'] ?? null));
+                    \Log::info('Sent booking declined notification to client', ['client_id' => $appointment->client_id]);
+                }
+            } catch (\Exception $e) {
+                \Log::error('Failed to send booking declined notification: ' . $e->getMessage());
+            }
+
+            // Add a system message to the conversation
+            $conversation = Conversation::where('appointment_id', $appointment->id)->first();
+            if ($conversation) {
+                $content = 'Booking request declined';
+                if (!empty($data['reason'])) {
+                    $content .= ': ' . $data['reason'];
+                }
+                Message::create([
+                    'conversation_id' => $conversation->id,
+                    'appointment_id' => $appointment->id,
+                    'sender_id' => $user->id,
+                    'recipient_id' => $appointment->client_id,
+                    'content' => $content,
+                    'type' => 'system',
+                ]);
+            }
+
+            return response()->json([
+                'message' => 'Appointment declined',
+                'appointment' => new AppointmentResource($appointment),
+            ]);
+        }
     }
 
     public function delete($id)

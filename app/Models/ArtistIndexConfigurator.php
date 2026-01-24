@@ -183,8 +183,6 @@ class ArtistIndexConfigurator extends IndexConfigurator
 
     public function getName()
     {
-        $name = 'artists';
-
-        return $name;
+        return config('elastic.client.artists_index', 'artists');
     }
 }

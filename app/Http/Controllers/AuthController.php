@@ -8,6 +8,7 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\Studio;
+use App\Notifications\WelcomeNotification;
 use App\Services\AddressService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -43,6 +44,7 @@ class AuthController extends Controller
             ],
             'slug' => 'required|string|max:30|unique:users',
             'studio_id' => 'nullable|integer|exists:studios,id', // Optional studio affiliation for artists
+            'selected_styles.*' => 'integer|exists:styles,id',
         ]);
 
         if (isset($request->address)) {
@@ -80,6 +82,14 @@ class AuthController extends Controller
                 ->where('is_claimed', false)
                 ->update(['is_claimed' => true]);
         }
+
+        // Save selected styles if provided
+        if ($request->has('selected_styles') && is_array($request->selected_styles)) {
+            $user->styles()->sync($request->selected_styles);
+        }
+
+        // Send welcome email
+        $user->notify(new WelcomeNotification());
 
         // Create token for API authentication
         $token = $user->createToken('auth-token')->plainTextToken;

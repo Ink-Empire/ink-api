@@ -53,6 +53,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_login_at',
         'experience_level',
         'is_demo',
+        'timezone',
     ];
 
     /**
@@ -139,6 +140,21 @@ class User extends Authenticatable implements MustVerifyEmail
     public function ownedStudio()
     {
         return $this->hasOne(Studio::class, 'owner_id');
+    }
+
+    public function artistSettings()
+    {
+        return $this->hasOne(ArtistSettings::class, 'artist_id');
+    }
+
+    public function tattooLeads()
+    {
+        return $this->hasMany(TattooLead::class);
+    }
+
+    public function activeTattooLead()
+    {
+        return $this->hasOne(TattooLead::class)->where('is_active', true);
     }
 
     public function passwords()
