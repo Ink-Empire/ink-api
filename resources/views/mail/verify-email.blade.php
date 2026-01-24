@@ -3,72 +3,97 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="color-scheme" content="dark">
+    <meta name="supported-color-schemes" content="dark">
     <title>Verify Your Email - InkedIn</title>
 </head>
-<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #1A0E11;">
-    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #1A0E11; min-height: 100vh;">
+<body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
+    <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #0a0a0a;">
         <tr>
             <td align="center" style="padding: 40px 20px;">
-                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px; background-color: #2D1F23; border-radius: 12px; overflow: hidden;">
-                    <!-- Header with Logo -->
+                <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="max-width: 600px;">
+                    <!-- Logo -->
                     <tr>
-                        <td align="center" style="padding: 40px 40px 30px 40px; border-bottom: 1px solid rgba(255, 255, 255, 0.1);">
-                            <img src="{{ config('app.url') }}/assets/images/inkedin-logo.png" alt="InkedIn" width="200" style="display: block; height: auto; margin-bottom: 16px;">
-                            <h1 style="margin: 0; font-size: 32px; font-weight: 700; color: #D4A853; letter-spacing: 1px;">InkedIn</h1>
+                        <td align="center" style="padding: 0 0 32px 0;">
+                            <img src="{{ config('app.url') }}/assets/images/inkedin-logo.png" alt="InkedIn" width="200" style="display: block; height: auto;">
                         </td>
                     </tr>
 
-                    <!-- Content -->
+                    <!-- Main Card -->
                     <tr>
-                        <td style="padding: 40px;">
-                            <h2 style="margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #FFFFFF;">Verify Your Email Address</h2>
-
-                            <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #B0A0A5;">
-                                Welcome to InkedIn! Please click the button below to verify your email address.
-                            </p>
-
-                            <!-- Spam Warning -->
-                            <div style="padding: 16px; background-color: rgba(212, 168, 83, 0.1); border: 1px solid rgba(212, 168, 83, 0.3); border-radius: 8px; margin-bottom: 24px;">
-                                <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #D4A853;">
-                                    <strong>Can't find this email?</strong> Check your spam or junk folder. To ensure you receive our emails, add <strong>noreply@getinked.in</strong> to your contacts.
-                                </p>
-                            </div>
-
-                            <!-- Button -->
-                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                        <td>
+                            <table role="presentation" width="100%" cellspacing="0" cellpadding="0" style="background-color: #1a1a1a; border-radius: 16px; overflow: hidden;">
+                                <!-- Header Section -->
                                 <tr>
-                                    <td align="center" style="padding: 16px 0 32px 0;">
-                                        <a href="{{ $url }}" style="display: inline-block; padding: 16px 40px; background-color: #D4A853; color: #1A0E11; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 8px;">
-                                            Verify Email Address
-                                        </a>
+                                    <td style="padding: 48px 40px 32px 40px; text-align: center;">
+                                        <h1 style="margin: 0 0 16px 0; font-size: 36px; font-weight: 700; color: #ffffff;">You're almost there!</h1>
+                                        <p style="margin: 0; font-size: 18px; line-height: 1.5; color: #888888;">
+                                            Verify your email to start using InkedIn.
+                                        </p>
+                                    </td>
+                                </tr>
+
+                                <!-- Divider -->
+                                <tr>
+                                    <td style="padding: 0 40px;">
+                                        <div style="height: 1px; background-color: #333333;"></div>
+                                    </td>
+                                </tr>
+
+                                <!-- Content Section -->
+                                <tr>
+                                    <td style="padding: 32px 40px 40px 40px;">
+                                        <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
+                                            Click the button below to verify your email address and complete your account setup.
+                                        </p>
+
+                                        <!-- Spam Warning -->
+                                        <div style="padding: 16px; background-color: rgba(212, 168, 83, 0.1); border: 1px solid rgba(212, 168, 83, 0.3); border-radius: 8px; margin-bottom: 24px;">
+                                            <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #D4A853;">
+                                                <strong>Can't find this email?</strong> Check your spam or junk folder. To ensure you receive our emails, add <strong>noreply@getinked.in</strong> to your contacts.
+                                            </p>
+                                        </div>
+
+                                        <!-- Button -->
+                                        <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
+                                            <tr>
+                                                <td align="center" style="padding: 8px 0 32px 0;">
+                                                    <a href="{{ $url }}" style="display: inline-block; padding: 16px 48px; background-color: #D4A853; color: #1a1a1a; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 30px;">
+                                                        Verify Email Address
+                                                    </a>
+                                                </td>
+                                            </tr>
+                                        </table>
+
+                                        <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #666666;">
+                                            This verification link will expire in 60 minutes.
+                                        </p>
+
+                                        <p style="margin: 0; font-size: 14px; line-height: 1.6; color: #666666;">
+                                            If you did not create an account, no further action is required.
+                                        </p>
                                     </td>
                                 </tr>
                             </table>
-
-                            <p style="margin: 0 0 16px 0; font-size: 14px; line-height: 1.6; color: #B0A0A5;">
-                                This verification link will expire in 60 minutes.
-                            </p>
-
-                            <p style="margin: 0 0 24px 0; font-size: 14px; line-height: 1.6; color: #B0A0A5;">
-                                If you did not create an account, no further action is required.
-                            </p>
-
-                            <!-- Fallback Link -->
-                            <div style="padding: 20px; background-color: rgba(0, 0, 0, 0.2); border-radius: 8px;">
-                                <p style="margin: 0 0 8px 0; font-size: 12px; color: #B0A0A5;">
-                                    If you're having trouble clicking the button, copy and paste the URL below into your browser:
-                                </p>
-                                <p style="margin: 0; font-size: 12px; word-break: break-all; color: #D4A853;">
-                                    {{ $url }}
-                                </p>
-                            </div>
                         </td>
                     </tr>
 
-                    <!-- Footer -->
+                    <!-- Fallback Link -->
                     <tr>
-                        <td style="padding: 30px 40px; border-top: 1px solid rgba(255, 255, 255, 0.1); text-align: center;">
-                            <p style="margin: 0; font-size: 12px; color: #B0A0A5;">
+                        <td style="padding: 32px 40px; text-align: center;">
+                            <p style="margin: 0 0 8px 0; font-size: 12px; color: #666666;">
+                                If you're having trouble clicking the button, copy and paste this URL into your browser:
+                            </p>
+                            <p style="margin: 0; font-size: 12px; word-break: break-all; color: #D4A853;">
+                                {{ $url }}
+                            </p>
+                        </td>
+                    </tr>
+
+                    <!-- Copyright -->
+                    <tr>
+                        <td style="padding: 20px 40px; text-align: center;">
+                            <p style="margin: 0; font-size: 12px; color: #444444;">
                                 &copy; {{ date('Y') }} InkedIn. All rights reserved.
                             </p>
                         </td>
