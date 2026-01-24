@@ -89,18 +89,15 @@ class AuthController extends Controller
             $user->styles()->sync($request->selected_styles);
         }
 
-        \Log::info("Sending email verification via queued job to " . $user->id);
         // Fire Registered event - Laravel's listener will send verification email
         // (Welcome email is sent after verification in VerifyEmailController)
         event(new Registered($user));
 
-        // Create token for API authentication
-        $token = $user->createToken('auth-token')->plainTextToken;
-
+        // Don't create a token - user must verify email and login first
         return response()->json([
-            'user' => new UserResource($user),
-            'token' => $token,
-            'message' => 'User registered and logged in successfully'
+            'message' => 'Registration successful. Please check your email to verify your account.',
+            'requires_verification' => true,
+            'email' => $user->email,
         ], 201);
     }
 
@@ -179,6 +176,18 @@ class AuthController extends Controller
         }
 
         RateLimiter::clear($request->throttleKey());
+
+        // Check if email is verified
+        if (!$user->hasVerifiedEmail()) {
+            // Resend verification email
+            $user->sendEmailVerificationNotification();
+
+            return response()->json([
+                'message' => 'Please verify your email address before logging in.',
+                'requires_verification' => true,
+                'email' => $user->email,
+            ], 403);
+        }
 
         // Update last login timestamp
         $user->update(['last_login_at' => now()]);
