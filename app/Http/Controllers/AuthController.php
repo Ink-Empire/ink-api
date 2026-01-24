@@ -8,10 +8,9 @@ use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\Studio;
-use App\Jobs\SendWelcomeNotification;
-use App\Jobs\SendVerifyEmailNotification;
 use App\Services\AddressService;
 use App\Services\UserService;
+use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -91,8 +90,9 @@ class AuthController extends Controller
         }
 
         \Log::info("Sending email verification via queued job to " . $user->id);
-        // Queue verification email job (welcome email sent after verification)
-        SendVerifyEmailNotification::dispatch($user->id);
+        // Fire Registered event - Laravel's listener will send verification email
+        // (Welcome email is sent after verification in VerifyEmailController)
+        event(new Registered($user));
 
         // Create token for API authentication
         $token = $user->createToken('auth-token')->plainTextToken;
