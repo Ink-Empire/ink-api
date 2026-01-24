@@ -90,6 +90,7 @@ class AuthController extends Controller
             $user->styles()->sync($request->selected_styles);
         }
 
+        \Log::info("Sending email verification via queued job to " . $user->id);
         // Queue verification email job (welcome email sent after verification)
         SendVerifyEmailNotification::dispatch($user->id);
 
