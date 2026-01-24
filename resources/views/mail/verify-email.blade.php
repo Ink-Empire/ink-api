@@ -24,7 +24,7 @@
                             <h2 style="margin: 0 0 20px 0; font-size: 24px; font-weight: 600; color: #FFFFFF;">Verify Your Email Address</h2>
 
                             <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.6; color: #B0A0A5;">
-                                Welcome to InkedIn! Please click the button below to verify your email address and start discovering amazing tattoo artists.
+                                Welcome to InkedIn! Please click the button below to verify your email address.
                             </p>
 
                             <!-- Spam Warning -->
