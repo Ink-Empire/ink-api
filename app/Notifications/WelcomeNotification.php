@@ -4,18 +4,15 @@ namespace App\Notifications;
 
 use App\Models\User;
 use Illuminate\Bus\Queueable;
-use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
 
-class WelcomeNotification extends Notification implements ShouldQueue
+class WelcomeNotification extends Notification
 {
     use Queueable;
 
     public const EVENT_TYPE = 'welcome';
-
-    public function __construct() {}
 
     public function via(object $notifiable): array
     {
@@ -25,7 +22,12 @@ class WelcomeNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:4000');
-        $exploreUrl = $frontendUrl . '/tattoos';
+        $isArtist = $notifiable->type_id === 2;
+
+        // Different CTAs for artists vs clients
+        $ctaUrl = $isArtist
+            ? $frontendUrl . '/dashboard'
+            : $frontendUrl . '/tattoos';
 
         // Generate a signed URL for subscribing to updates (valid for 30 days)
         $updatesUrl = URL::signedRoute('subscribe', ['user' => $notifiable->id], now()->addDays(30));
@@ -33,8 +35,10 @@ class WelcomeNotification extends Notification implements ShouldQueue
         return (new MailMessage)
             ->subject("You're in! Welcome to InkedIn")
             ->view('mail.welcome', [
-                'exploreUrl' => $exploreUrl,
+                'ctaUrl' => $ctaUrl,
                 'updatesUrl' => $updatesUrl,
+                'isArtist' => $isArtist,
+                'userName' => $notifiable->name,
             ]);
     }
 
