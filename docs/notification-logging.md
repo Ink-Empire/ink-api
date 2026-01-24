@@ -102,6 +102,7 @@ public function logExtra(): array
 
 | Event Type | Notification Class | Sender | Reference |
 |------------|-------------------|--------|-----------|
+| `welcome` | WelcomeNotification | - | - |
 | `books_open` | BooksOpenNotification | Artist who opened books | - |
 | `beacon_request` | TattooBeaconNotification | Client seeking tattoo | TattooLead |
 | `booking_request` | BookingRequestNotification | Client requesting booking | Appointment |
@@ -192,6 +193,7 @@ php artisan model:prune --model="Spatie\NotificationLog\Models\NotificationLogIt
 - `App\Services\NotificationStatsService` - Helper methods for querying stats
 
 ### Notifications with logExtra()
+- `App\Notifications\WelcomeNotification`
 - `App\Notifications\BooksOpenNotification`
 - `App\Notifications\TattooBeaconNotification`
 - `App\Notifications\BookingRequestNotification`

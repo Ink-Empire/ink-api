@@ -15,7 +15,7 @@
                     <!-- Header with Logo -->
                     <tr>
                         <td align="center" style="padding: 40px 40px 30px 40px; background-color: #1a1a1a;">
-                            <img src="{{ config('app.frontend_url') }}/assets/img/logo.png" alt="InkedIn" width="60" height="60" style="display: block; margin-bottom: 12px;">
+                            <img src="{{ config('app.url') }}/assets/images/inkedin-logo.png" alt="InkedIn" width="60" height="60" style="display: block; margin-bottom: 12px;">
                             <h1 style="margin: 0; font-size: 28px; font-weight: 700; color: #339989; letter-spacing: 1px;">InkedIn</h1>
                         </td>
                     </tr>

@@ -7,6 +7,7 @@ use App\Enums\UserTypes;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
 use App\Models\User;
+use App\Notifications\WelcomeNotification;
 use App\Services\AddressService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
@@ -77,6 +78,9 @@ class AuthController extends Controller
         if ($request->has('selected_styles') && is_array($request->selected_styles)) {
             $user->styles()->sync($request->selected_styles);
         }
+
+        // Send welcome email
+        $user->notify(new WelcomeNotification());
 
         // Create token for API authentication
         $token = $user->createToken('auth-token')->plainTextToken;
