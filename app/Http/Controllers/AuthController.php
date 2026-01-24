@@ -90,11 +90,8 @@ class AuthController extends Controller
             $user->styles()->sync($request->selected_styles);
         }
 
-        // Queue verification email job
+        // Queue verification email job (welcome email sent after verification)
         SendVerifyEmailNotification::dispatch($user->id);
-
-        // Queue welcome email job
-        SendWelcomeNotification::dispatch($user->id);
 
         // Create token for API authentication
         $token = $user->createToken('auth-token')->plainTextToken;
