@@ -32,7 +32,8 @@ class VerifyEmailNotification extends Notification
 
         // Build frontend URL for verification
         $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
-        $url = $frontendUrl . '/verify-email?url=' . urlencode($verificationUrl);
+        $email = urlencode($notifiable->getEmailForVerification());
+        $url = $frontendUrl . '/verify-email?url=' . urlencode($verificationUrl) . '&email=' . $email;
 
         return (new MailMessage)
             ->subject('Verify Your Email Address - InkedIn')
