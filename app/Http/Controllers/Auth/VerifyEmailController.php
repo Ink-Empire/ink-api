@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Jobs\SendWelcomeNotification;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
 use Illuminate\Http\JsonResponse;
@@ -39,6 +40,9 @@ class VerifyEmailController extends Controller
             // Also set our custom is_email_verified boolean for easier filtering
             $user->update(['is_email_verified' => true]);
             event(new Verified($user));
+
+            // Send welcome email now that they're verified
+            SendWelcomeNotification::dispatch($user->id);
         }
 
         // Generate a new token for the user
