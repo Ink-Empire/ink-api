@@ -20,6 +20,7 @@ use App\Http\Controllers\BlockedTermController;
 use App\Http\Controllers\CalendarOAuthController;
 use App\Http\Controllers\CalendarWebhookController;
 use App\Http\Controllers\TattooLeadController;
+use App\Http\Controllers\EmailTestController;
 
 /*
 |--------------------------------------------------------------------------
@@ -201,6 +202,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('elastic/rebuild-bypass', [\App\Http\Controllers\ElasticController::class, 'rebuildBypass']);
     Route::post('elastic/rebuild-by-elastic', [\App\Http\Controllers\ElasticController::class, 'rebuildByElasticQuery']);
     Route::post('elastic/migrate', [\App\Http\Controllers\ElasticController::class, 'migrateAlias']);
+
+    // Email testing
+    Route::get('email-test/types', [EmailTestController::class, 'getTypes']);
+    Route::post('email-test/send', [EmailTestController::class, 'send']);
 
     // Tattoos
     Route::get('tattoos', [\App\Http\Controllers\TattooController::class, 'adminIndex']);

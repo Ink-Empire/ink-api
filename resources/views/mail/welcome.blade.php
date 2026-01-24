@@ -15,7 +15,7 @@
                     <!-- Logo -->
                     <tr>
                         <td align="center" style="padding: 0 0 32px 0;">
-                            <img src="{{ config('app.url') }}/assets/images/inkedin-logo.png" alt="InkedIn" width="60" height="60" style="display: block;">
+                            <img src="{{ config('app.url') }}/assets/images/inkedin-logo.png" alt="InkedIn" width="200" style="display: block; height: auto;">
                         </td>
                     </tr>
 
