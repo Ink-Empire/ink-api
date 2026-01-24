@@ -55,6 +55,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_demo',
         'timezone',
         'is_subscribed',
+        'is_email_verified',
     ];
 
     /**
@@ -78,6 +79,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'last_login_at' => 'datetime',
         'is_admin' => 'boolean',
         'is_demo' => 'boolean',
+        'is_email_verified' => 'boolean',
     ];
 
     public function scopeArtist(Builder $query): void

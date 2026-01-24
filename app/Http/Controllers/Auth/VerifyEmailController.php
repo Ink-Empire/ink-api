@@ -22,13 +22,22 @@ class VerifyEmailController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
+            // Generate token for already verified users too
+            $user->tokens()->delete();
+            $token = $user->createToken('authToken')->plainTextToken;
+
             return response()->json([
                 'message' => 'Email already verified.',
                 'already_verified' => true,
+                'token' => $token,
+                'user' => $user,
+                'redirect_url' => $user->type_id === 2 ? '/dashboard' : '/tattoos',
             ]);
         }
 
         if ($user->markEmailAsVerified()) {
+            // Also set our custom is_email_verified boolean for easier filtering
+            $user->update(['is_email_verified' => true]);
             event(new Verified($user));
         }
 
@@ -40,6 +49,7 @@ class VerifyEmailController extends Controller
             'message' => 'Email verified successfully.',
             'token' => $token,
             'user' => $user,
+            'redirect_url' => $user->type_id === 2 ? '/dashboard' : '/tattoos',
         ]);
     }
 }
