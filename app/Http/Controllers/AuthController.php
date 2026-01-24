@@ -13,6 +13,7 @@ use App\Services\AddressService;
 use App\Services\UserService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\RateLimiter;
 use Illuminate\Validation\ValidationException;
 
@@ -89,7 +90,17 @@ class AuthController extends Controller
         }
 
         // Send welcome email
-        $user->notify(new WelcomeNotification());
+        try {
+            Log::info('Sending welcome notification to user', ['user_id' => $user->id, 'email' => $user->email]);
+            $user->notify(new WelcomeNotification());
+            Log::info('Welcome notification queued successfully', ['user_id' => $user->id]);
+        } catch (\Exception $e) {
+            Log::error('Failed to send welcome notification', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString(),
+            ]);
+        }
 
         // Create token for API authentication
         $token = $user->createToken('auth-token')->plainTextToken;
