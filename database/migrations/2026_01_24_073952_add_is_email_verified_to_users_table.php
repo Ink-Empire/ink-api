@@ -12,7 +12,7 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('users', function (Blueprint $table) {
-            $table->timestamp('email_verified_at')->default(false)->after('timezone');
+            $table->timestamp('email_verified_at')->nullable()->after('timezone');
             $table->boolean('is_email_verified')->default(false)->after('is_subscribed');
         });
     }
