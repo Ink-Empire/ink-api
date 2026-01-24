@@ -6,6 +6,7 @@ use App\Enums\UserRelationships;
 use App\Enums\UserTypes;
 use App\Http\Resources\SelfUserResource;
 use App\Http\Resources\UserResource;
+use App\Models\ArtistSettings;
 use App\Models\User;
 use App\Services\AddressService;
 use App\Services\ImageService;
@@ -357,7 +358,7 @@ class UserController extends Controller
      */
     public function adminShow(int $id): JsonResponse
     {
-        $user = User::find($id);
+        $user = User::with('artistSettings')->find($id);
 
         if (!$user) {
             return response()->json([
@@ -366,8 +367,15 @@ class UserController extends Controller
             ], 404);
         }
 
+        $data = $user->toArray();
+
+        // Flatten artist_settings for easier form binding
+        if ($user->artistSettings) {
+            $data['artist_settings'] = $user->artistSettings->toArray();
+        }
+
         return response()->json([
-            'data' => $user,
+            'data' => $data,
         ]);
     }
 
@@ -387,6 +395,36 @@ class UserController extends Controller
 
         $data = $request->all();
 
+        // Handle artist_settings separately
+        if (isset($data['artist_settings']) && is_array($data['artist_settings'])) {
+            $artistSettingsData = $data['artist_settings'];
+            unset($data['artist_settings']);
+
+            $artistSettings = ArtistSettings::firstOrNew(['artist_id' => $user->id]);
+
+            $allowedFields = [
+                'books_open',
+                'accepts_walk_ins',
+                'accepts_deposits',
+                'accepts_consultations',
+                'accepts_appointments',
+                'hourly_rate',
+                'deposit_amount',
+                'consultation_fee',
+                'minimum_session',
+                'seeking_guest_spots',
+            ];
+
+            foreach ($artistSettingsData as $fieldName => $fieldVal) {
+                if (in_array($fieldName, $allowedFields)) {
+                    $artistSettings->{$fieldName} = $fieldVal;
+                }
+            }
+
+            $artistSettings->save();
+        }
+
+        // Update user fields
         foreach ($data as $fieldName => $fieldVal) {
             if (in_array($fieldName, $user->getFillable())) {
                 $user->{$fieldName} = $fieldVal;
@@ -395,8 +433,15 @@ class UserController extends Controller
 
         $user->save();
 
+        // Return user with artist_settings
+        $user->load('artistSettings');
+        $responseData = $user->toArray();
+        if ($user->artistSettings) {
+            $responseData['artist_settings'] = $user->artistSettings->toArray();
+        }
+
         return response()->json([
-            'data' => $user,
+            'data' => $responseData,
         ]);
     }
 
