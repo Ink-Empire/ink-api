@@ -10,15 +10,15 @@ class ArtistResource extends JsonResource
 {
     public function toArray($request)
     {
-        return [
+        $user = $request->user();
+        $canViewPrivate = $this->canViewPrivateDetails($user);
+
+        $data = [
             'id' => $this->id,
             'about' => $this->about,
-            'email' => $this->email,
             'image' => $this->image,
             'location' => $this->location,
-            'location_lat_long' => $this->location_lat_long,
             'name' => $this->name,
-            'phone' => $this->phone,
             'slug' => $this->slug,
             'studio' => $this->studio->name ?? "",
             'type' => $this->type->name ?? null,
@@ -28,10 +28,61 @@ class ArtistResource extends JsonResource
             'username' => $this->username,
             'working_hours' => $this->whenLoaded('working_hours', fn() => WorkingHoursResource::collection($this->working_hours)),
             'appointments' => $this->whenLoaded('appointments', fn() => AppointmentResource::collection($this->appointments)),
-            'settings' => $this->settings ?? [],
+            // Only include public settings (books_open status)
+            'settings' => $this->getPublicSettings(),
         ];
+
+        // Only include sensitive fields for authorized users
+        if ($canViewPrivate) {
+            $data['email'] = $this->email;
+            $data['phone'] = $this->phone;
+            $data['location_lat_long'] = $this->location_lat_long;
+        }
+
+        return $data;
     }
 
+    /**
+     * Check if the current user can view private details.
+     * Private details are visible to the artist themselves or admins.
+     */
+    private function canViewPrivateDetails($user): bool
+    {
+        if (!$user) {
+            return false;
+        }
+
+        // Artist viewing their own profile
+        if ($user->id === $this->id) {
+            return true;
+        }
+
+        // Admin users
+        if ($user->is_admin) {
+            return true;
+        }
+
+        return false;
+    }
+
+    /**
+     * Return only public-safe settings (excludes rates/financial info).
+     */
+    private function getPublicSettings(): array
+    {
+        $settings = $this->settings;
+        if (!$settings) {
+            return [];
+        }
+
+        // Only expose non-sensitive booking availability settings
+        return [
+            'books_open' => $settings->books_open ?? false,
+            'accepts_walk_ins' => $settings->accepts_walk_ins ?? false,
+            'accepts_consultations' => $settings->accepts_consultations ?? false,
+            'accepts_appointments' => $settings->accepts_appointments ?? false,
+        ];
+    }
 
     private function getIsUserFavorite(): bool
     {

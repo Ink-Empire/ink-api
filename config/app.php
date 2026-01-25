@@ -63,6 +63,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | API App Token
+    |--------------------------------------------------------------------------
+    |
+    | This token is used to authenticate API requests from authorized clients.
+    | All API requests must include this token in the X-App-Token header.
+    | If not set, app token verification is disabled (for local development).
+    |
+    */
+
+    'api_app_token' => env('API_APP_TOKEN'),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
