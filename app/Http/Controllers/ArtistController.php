@@ -52,8 +52,11 @@ class ArtistController extends Controller
         // Get unclaimed studios if we have location coordinates and not searching "Anywhere"
         $unclaimedStudios = $this->getUnclaimedStudios($params, $request);
 
+        // Sanitize response to remove sensitive fields from public search results
+        $sanitizedResponse = $this->sanitizeArtistData($response['response'], $request->user());
+
         return response()->json([
-            'response' => $response['response'],
+            'response' => $sanitizedResponse,
             'unclaimed_studios' => $unclaimedStudios,
             'total' => $response['total'] ?? null,
         ]);
@@ -155,6 +158,9 @@ class ArtistController extends Controller
 
             $artist['tattoos'] = $tattooData;
         }
+
+        // Sanitize sensitive fields for public access
+        $artist = $this->sanitizeSingleArtist($artist, request()->user());
 
         return $this->returnResponse('artist', $artist);
     }
@@ -368,6 +374,89 @@ class ArtistController extends Controller
         $artist->searchable();
 
         return response()->json(['data' => $settings->only($validSettings)]);
+    }
+
+    /**
+     * Sanitize a collection of artist data to remove sensitive fields for public access.
+     */
+    private function sanitizeArtistData($artists, $user): mixed
+    {
+        if ($artists instanceof \Illuminate\Support\Collection) {
+            return $artists->map(fn($artist) => $this->sanitizeSingleArtist($artist, $user));
+        }
+
+        if (is_array($artists)) {
+            return array_map(fn($artist) => $this->sanitizeSingleArtist($artist, $user), $artists);
+        }
+
+        return $artists;
+    }
+
+    /**
+     * Sanitize a single artist record to remove sensitive fields.
+     * Sensitive fields (email, phone, GPS coordinates, rates) are only visible to:
+     * - The artist themselves
+     * - Admin users
+     */
+    private function sanitizeSingleArtist($artist, $user): mixed
+    {
+        if (!$artist) {
+            return $artist;
+        }
+
+        // Determine artist ID from the data
+        $artistId = is_array($artist) ? ($artist['id'] ?? null) : ($artist->id ?? null);
+
+        // Check if user can view private details
+        $canViewPrivate = false;
+        if ($user) {
+            $canViewPrivate = $user->id === $artistId || $user->is_admin;
+        }
+
+        if ($canViewPrivate) {
+            return $artist;
+        }
+
+        // Define sensitive fields to remove for public access
+        $sensitiveFields = ['email', 'phone', 'location_lat_long'];
+
+        if (is_array($artist)) {
+            foreach ($sensitiveFields as $field) {
+                unset($artist[$field]);
+            }
+            // Sanitize settings to only show public info
+            if (isset($artist['settings'])) {
+                $artist['settings'] = $this->sanitizeSettings($artist['settings']);
+            }
+        } elseif (is_object($artist)) {
+            foreach ($sensitiveFields as $field) {
+                unset($artist->{$field});
+            }
+            if (isset($artist->settings)) {
+                $artist->settings = $this->sanitizeSettings($artist->settings);
+            }
+        }
+
+        return $artist;
+    }
+
+    /**
+     * Return only public-safe settings (excludes rates/financial info).
+     */
+    private function sanitizeSettings($settings): array
+    {
+        if (!$settings) {
+            return [];
+        }
+
+        $settingsArray = is_array($settings) ? $settings : (array) $settings;
+
+        return [
+            'books_open' => $settingsArray['books_open'] ?? false,
+            'accepts_walk_ins' => $settingsArray['accepts_walk_ins'] ?? false,
+            'accepts_consultations' => $settingsArray['accepts_consultations'] ?? false,
+            'accepts_appointments' => $settingsArray['accepts_appointments'] ?? false,
+        ];
     }
 
     /**
