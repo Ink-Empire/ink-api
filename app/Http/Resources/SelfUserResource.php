@@ -37,6 +37,8 @@ class SelfUserResource extends JsonResource
                 'name' => $this->ownedStudio->name,
                 'slug' => $this->ownedStudio->slug,
             ] : null,
+            // Blocked users - IDs of users this user has blocked
+            'blocked_user_ids' => $this->blockedUsers->pluck('id')->toArray(),
         ];
     }
 }

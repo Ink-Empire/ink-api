@@ -87,7 +87,7 @@ class ImageController extends Controller
             // Validate request
             $request->validate([
                 'content_type' => 'required|string|in:image/jpeg,image/png,image/webp,image/gif',
-                'purpose' => 'required|string|in:tattoo,profile,studio',
+                'purpose' => 'required|string|in:tattoo,profile,studio,message',
             ]);
 
             $contentType = $request->input('content_type');
@@ -159,7 +159,7 @@ class ImageController extends Controller
             $request->validate([
                 'files' => 'required|array|min:1|max:10',
                 'files.*.content_type' => 'required|string|in:image/jpeg,image/png,image/webp,image/gif',
-                'purpose' => 'required|string|in:tattoo,profile,studio',
+                'purpose' => 'required|string|in:tattoo,profile,studio,message',
             ]);
 
             $files = $request->input('files');

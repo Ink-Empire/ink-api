@@ -2,12 +2,15 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserTypes;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
+use App\Models\Image;
 use App\Models\Message;
 use App\Models\User;
+use App\Services\WatermarkService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -236,15 +239,20 @@ class ConversationController extends Controller
     /**
      * Send a message in a conversation.
      */
-    public function sendMessage(Request $request, int $id): JsonResponse
+    public function sendMessage(Request $request, int $id, WatermarkService $watermarkService): JsonResponse
     {
         $request->validate([
-            'content' => 'required_without:attachment_ids|string|max:5000',
-            'type' => 'in:text,image,booking_card,deposit_request',
+            'content' => 'nullable|string|max:5000',
+            'type' => 'in:text,image,design_share,booking_card,deposit_request,price_quote',
             'metadata' => 'nullable|array',
             'attachment_ids' => 'nullable|array',
             'attachment_ids.*' => 'exists:images,id',
         ]);
+
+        // Require content OR attachments
+        if (empty($request->content) && empty($request->attachment_ids)) {
+            return response()->json(['error' => 'Message content or attachments required'], 422);
+        }
 
         $user = $request->user();
 
@@ -265,10 +273,27 @@ class ConversationController extends Controller
                 'metadata' => $request->metadata,
             ]);
 
-            // Add attachments
+            // Add attachments (with watermark for design shares from artists)
             if ($request->attachment_ids) {
+                $messageType = $request->get('type', 'text');
+                $isArtist = $user->type_id === UserTypes::ARTIST_TYPE_ID;
+                $shouldWatermark = in_array($messageType, ['design_share', 'image']) && $isArtist;
+
                 foreach ($request->attachment_ids as $imageId) {
-                    $message->attachments()->create(['image_id' => $imageId]);
+                    $finalImageId = $imageId;
+
+                    // Apply watermark if applicable
+                    if ($shouldWatermark) {
+                        $sourceImage = Image::find($imageId);
+                        if ($sourceImage) {
+                            $watermarkedImage = $watermarkService->applyWatermark($sourceImage, $user->id);
+                            if ($watermarkedImage) {
+                                $finalImageId = $watermarkedImage->id;
+                            }
+                        }
+                    }
+
+                    $message->attachments()->create(['image_id' => $finalImageId]);
                 }
             }
 
@@ -282,7 +307,12 @@ class ConversationController extends Controller
             ], 201);
         } catch (\Exception $e) {
             DB::rollBack();
-            return response()->json(['error' => 'Failed to send message'], 500);
+            \Log::error('Failed to send message', [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile(),
+            ]);
+            return response()->json(['error' => 'Failed to send message: ' . $e->getMessage()], 500);
         }
     }
 

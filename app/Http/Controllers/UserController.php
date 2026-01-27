@@ -215,6 +215,54 @@ class UserController extends Controller
     }
 
     /**
+     * Block a user.
+     */
+    public function blockUser(Request $request): JsonResponse
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+            'reason' => 'nullable|string|max:500',
+        ]);
+
+        $user = $request->user();
+        $userIdToBlock = $request->input('user_id');
+
+        // Can't block yourself
+        if ($user->id === $userIdToBlock) {
+            return response()->json(['error' => 'You cannot block yourself'], 400);
+        }
+
+        $user->block($userIdToBlock, $request->input('reason'));
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User blocked successfully',
+            'blocked_user_ids' => $user->blockedUsers()->pluck('blocked_id')->toArray(),
+        ]);
+    }
+
+    /**
+     * Unblock a user.
+     */
+    public function unblockUser(Request $request): JsonResponse
+    {
+        $request->validate([
+            'user_id' => 'required|integer|exists:users,id',
+        ]);
+
+        $user = $request->user();
+        $userIdToUnblock = $request->input('user_id');
+
+        $user->unblock($userIdToUnblock);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'User unblocked successfully',
+            'blocked_user_ids' => $user->blockedUsers()->pluck('blocked_id')->toArray(),
+        ]);
+    }
+
+    /**
      * Get the user's saved/wishlisted artists with full details
      */
     public function getSavedArtists(Request $request)
@@ -413,6 +461,10 @@ class UserController extends Controller
                 'consultation_fee',
                 'minimum_session',
                 'seeking_guest_spots',
+                'watermark_image_id',
+                'watermark_opacity',
+                'watermark_position',
+                'watermark_enabled',
             ];
 
             foreach ($artistSettingsData as $fieldName => $fieldVal) {

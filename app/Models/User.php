@@ -247,4 +247,58 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return $this->calendarConnection()->exists();
     }
+
+    /**
+     * Users that this user has blocked.
+     */
+    public function blockedUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_blocks', 'blocker_id', 'blocked_id')
+            ->withPivot('reason')
+            ->withTimestamps();
+    }
+
+    /**
+     * Users who have blocked this user.
+     */
+    public function blockedByUsers()
+    {
+        return $this->belongsToMany(User::class, 'user_blocks', 'blocked_id', 'blocker_id')
+            ->withPivot('reason')
+            ->withTimestamps();
+    }
+
+    /**
+     * Check if this user has blocked another user.
+     */
+    public function hasBlocked(int $userId): bool
+    {
+        return $this->blockedUsers()->where('blocked_id', $userId)->exists();
+    }
+
+    /**
+     * Check if this user is blocked by another user.
+     */
+    public function isBlockedBy(int $userId): bool
+    {
+        return $this->blockedByUsers()->where('blocker_id', $userId)->exists();
+    }
+
+    /**
+     * Block a user.
+     */
+    public function block(int $userId, ?string $reason = null): void
+    {
+        if (!$this->hasBlocked($userId)) {
+            $this->blockedUsers()->attach($userId, ['reason' => $reason]);
+        }
+    }
+
+    /**
+     * Unblock a user.
+     */
+    public function unblock(int $userId): void
+    {
+        $this->blockedUsers()->detach($userId);
+    }
 }

@@ -11,15 +11,23 @@ WORKDIR /var/www/html
 ENV DEBIAN_FRONTEND=noninteractive
 ENV TZ=UTC
 
-# Install base dependencies
+# Install base dependencies including image processing libraries
 RUN apt-get update && apt-get install -y \
     gnupg gosu curl ca-certificates zip unzip git supervisor sqlite3 libcap2-bin \
-    libpng-dev python3 dnsutils libonig-dev libxml2-dev libzip-dev \
+    libpng-dev libjpeg-dev libwebp-dev libfreetype6-dev \
+    python3 dnsutils libonig-dev libxml2-dev libzip-dev \
     librsvg2-bin fswatch ffmpeg nano libcurl4-openssl-dev libpq-dev \
-    libmagickwand-dev --no-install-recommends
+    libmagickwand-dev imagemagick --no-install-recommends
+
+# Configure GD with JPEG, PNG, WebP, and FreeType support
+RUN docker-php-ext-configure gd --with-jpeg --with-webp --with-freetype
 
 # Install PHP extensions
 RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mysqli mbstring exif pcntl bcmath gd zip intl
+
+# Install Imagick via PECL
+RUN pecl install imagick \
+    && docker-php-ext-enable imagick
 
 # Install XDebug
 RUN pecl install xdebug \
