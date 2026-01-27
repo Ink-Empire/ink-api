@@ -21,11 +21,19 @@ class VerifyAppToken
     /**
      * Handle an incoming request.
      * Validates that requests include a valid app token to prevent unauthorized API access.
+     * Skips validation when a Bearer token is present (user auth takes precedence).
      */
     public function handle(Request $request, Closure $next): Response
     {
         // Skip verification for excluded routes
         if ($this->shouldSkip($request)) {
+            return $next($request);
+        }
+
+        // Skip app token verification if Bearer token is present
+        // User authentication via Bearer token is sufficient for user-specific actions
+        $authHeader = $request->header('Authorization');
+        if ($authHeader && str_starts_with($authHeader, 'Bearer ')) {
             return $next($request);
         }
 

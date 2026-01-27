@@ -111,6 +111,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/tattoos/{tattooId}/tags/add', [TagController::class, 'addTattooTag']);
 
     // Tattoo management (authenticated)
+    // Note: PUT /tattoos/{id} and PUT /tattoos/{id}/featured are in web.php
     Route::delete('/tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'destroy']);
 
     // Appointment routes
