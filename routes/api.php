@@ -90,6 +90,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/unblock', [UserController::class, 'unblockUser']);
     });
 
+    // Artist settings routes
+    Route::prefix('artists')->group(function () {
+        Route::get('/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'getSettings']);
+        Route::put('/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'updateSettings']);
+    });
+
     // Direct S3 upload routes (presigned URLs)
     Route::prefix('uploads')->group(function () {
         Route::post('/presign', [\App\Http\Controllers\ImageController::class, 'getPresignedUrl']);
