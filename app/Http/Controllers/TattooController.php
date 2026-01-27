@@ -346,7 +346,7 @@ class TattooController extends Controller
     {
         try {
             $user = $request->user();
-            $tattoo = $this->tattooService->getById($id);
+            $tattoo = Tattoo::find($id);
 
             if (!$tattoo) {
                 return $this->returnErrorResponse('Tattoo not found');
@@ -466,7 +466,7 @@ class TattooController extends Controller
     {
         try {
             $user = $request->user();
-            $tattoo = $this->tattooService->getById($id);
+            $tattoo = Tattoo::find($id);
 
             if (!$tattoo) {
                 return $this->returnErrorResponse('Tattoo not found');
