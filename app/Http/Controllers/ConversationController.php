@@ -10,6 +10,7 @@ use App\Models\ConversationParticipant;
 use App\Models\Image;
 use App\Models\Message;
 use App\Models\User;
+use App\Notifications\NewMessageNotification;
 use App\Services\WatermarkService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -301,6 +302,18 @@ class ConversationController extends Controller
             $conversation->touch();
 
             DB::commit();
+
+            // Notify the recipient about the new message
+            if ($otherParticipant) {
+                try {
+                    $otherParticipant->notify(new NewMessageNotification($message, $user));
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send new message notification', [
+                        'recipient_id' => $otherParticipant->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
 
             return response()->json([
                 'message' => new MessageResource($message->load(['sender', 'attachments.image'])),
