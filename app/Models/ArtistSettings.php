@@ -21,6 +21,10 @@ class ArtistSettings extends Model
         'minimum_session',
         'seeking_guest_spots',
         'guest_spot_regions',
+        'watermark_image_id',
+        'watermark_opacity',
+        'watermark_position',
+        'watermark_enabled',
     ];
 
     protected $casts = [
@@ -36,11 +40,18 @@ class ArtistSettings extends Model
         'minimum_session' => 'integer',
         'seeking_guest_spots' => 'boolean',
         'guest_spot_regions' => 'array',
+        'watermark_opacity' => 'integer',
+        'watermark_enabled' => 'boolean',
     ];
 
     public function artist()
     {
         return $this->belongsTo(Artist::class);
+    }
+
+    public function watermarkImage()
+    {
+        return $this->belongsTo(Image::class, 'watermark_image_id');
     }
 }
 

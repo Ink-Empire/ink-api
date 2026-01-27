@@ -286,7 +286,7 @@ class ArtistController extends Controller
             return response()->json(['error' => 'Artist not found'], 404);
         }
 
-        $settings = ArtistSettings::where('artist_id', $artist->id)->first();
+        $settings = ArtistSettings::where('artist_id', $artist->id)->with('watermarkImage')->first();
 
         if (!$settings) {
             // Return default settings if none exist
@@ -299,13 +299,17 @@ class ArtistController extends Controller
                 'hourly_rate' => 0,
                 'deposit_amount' => 0,
                 'consultation_fee' => 0,
-                'minimum_session' => null
+                'minimum_session' => null,
+                'watermark_enabled' => false,
+                'watermark_opacity' => 50,
+                'watermark_position' => 'bottom-right',
+                'watermark_image' => null,
             ];
 
             return response()->json(['data' => $defaultSettings]);
         }
 
-        return response()->json(['data' => $settings->only([
+        $data = $settings->only([
             'books_open',
             'accepts_walk_ins',
             'accepts_deposits',
@@ -314,8 +318,20 @@ class ArtistController extends Controller
             'hourly_rate',
             'deposit_amount',
             'consultation_fee',
-            'minimum_session'
-        ])]);
+            'minimum_session',
+            'watermark_enabled',
+            'watermark_opacity',
+            'watermark_position',
+            'watermark_image_id',
+        ]);
+
+        // Include watermark image details
+        $data['watermark_image'] = $settings->watermarkImage ? [
+            'id' => $settings->watermarkImage->id,
+            'uri' => $settings->watermarkImage->uri,
+        ] : null;
+
+        return response()->json(['data' => $data]);
     }
 
     /**
@@ -344,10 +360,22 @@ class ArtistController extends Controller
             'hourly_rate',
             'deposit_amount',
             'consultation_fee',
-            'minimum_session'
+            'minimum_session',
+            'watermark_image_id',
+            'watermark_opacity',
+            'watermark_position',
+            'watermark_enabled',
         ];
 
         $settingsData = $request->only($validSettings);
+
+        // Validate watermark_image_id if provided
+        if (isset($settingsData['watermark_image_id']) && $settingsData['watermark_image_id']) {
+            $imageExists = \App\Models\Image::where('id', $settingsData['watermark_image_id'])->exists();
+            if (!$imageExists) {
+                return response()->json(['error' => 'Invalid watermark image'], 400);
+            }
+        }
 
         // Check if books_open is being changed from false to true
         $existingSettings = ArtistSettings::where('artist_id', $artist->id)->first();
@@ -373,7 +401,15 @@ class ArtistController extends Controller
         $artist->load('settings');
         $artist->searchable();
 
-        return response()->json(['data' => $settings->only($validSettings)]);
+        // Load watermark image for response
+        $settings->load('watermarkImage');
+        $responseData = $settings->only($validSettings);
+        $responseData['watermark_image'] = $settings->watermarkImage ? [
+            'id' => $settings->watermarkImage->id,
+            'uri' => $settings->watermarkImage->uri,
+        ] : null;
+
+        return response()->json(['data' => $responseData]);
     }
 
     /**
