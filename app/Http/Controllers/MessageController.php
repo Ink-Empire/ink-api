@@ -106,7 +106,7 @@ class MessageController extends Controller
             'sender_id' => $senderId,
             'recipient_id' => $recipientId,
             'parent_message_id' => $request->parent_message_id,
-            'content' => $request->content ?? '',
+            'content' => $request->content,
             'message_type' => $request->parent_message_id ? 'reply' : 'initial',
             'type' => $type,
             'metadata' => $request->metadata,
