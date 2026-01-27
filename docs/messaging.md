@@ -371,6 +371,143 @@ $messageService->sendAftercare($conversationId, $senderId, [
 $messageService->sendSystemNotification($conversationId, 'Your session has been rescheduled');
 ```
 
+## Image Attachments
+
+Messages can include image attachments. Images are uploaded via presigned S3 URLs, then attached to messages.
+
+### Uploading Images for Messages
+
+1. Request presigned URL(s):
+```
+POST /api/images/presigned
+```
+
+**Request Body:**
+```json
+{
+  "purpose": "message",
+  "files": [
+    { "filename": "design.jpg", "content_type": "image/jpeg" }
+  ]
+}
+```
+
+2. Upload image directly to S3 using the presigned URL
+
+3. Send message with attachment IDs:
+```
+POST /api/conversations/{id}/messages
+```
+
+**Request Body:**
+```json
+{
+  "content": "Here's the reference image",
+  "type": "image",
+  "attachment_ids": [123, 124]
+}
+```
+
+### Supported Formats
+- JPEG (.jpg, .jpeg)
+- PNG (.png)
+- WebP (.webp)
+- GIF (.gif)
+
+**Note:** SVG files are not supported for security reasons.
+
+## Artist Watermark Protection
+
+Artists can configure automatic watermarking to protect their designs when sharing with clients.
+
+### How It Works
+
+1. Artist uploads a watermark image (logo, signature, etc.) in their profile settings
+2. Artist configures watermark settings:
+   - **Enabled/Disabled** - Toggle watermarking on or off
+   - **Opacity** - 0-100% transparency (default: 50%)
+   - **Position** - Where to place the watermark:
+     - `top-left`
+     - `top-right`
+     - `bottom-left`
+     - `bottom-right` (default)
+     - `center`
+3. When the artist sends a `design_share` or `image` type message, the watermark is automatically applied
+4. The watermarked image is saved as a new file (original is preserved)
+
+### Watermark Settings API
+
+#### Get Artist Settings (includes watermark)
+```
+GET /api/artists/{id}/settings
+```
+
+**Response includes:**
+```json
+{
+  "watermark_enabled": true,
+  "watermark_opacity": 50,
+  "watermark_position": "bottom-right",
+  "watermark_image": {
+    "id": 123,
+    "uri": "https://..."
+  }
+}
+```
+
+#### Update Watermark Settings
+```
+PUT /api/artists/{id}/settings
+```
+
+**Request Body (any combination):**
+```json
+{
+  "watermark_enabled": true,
+  "watermark_opacity": 75,
+  "watermark_position": "center",
+  "watermark_image_id": 123
+}
+```
+
+### Technical Details
+
+- Watermarks are scaled to max 20% of the source image width
+- WebP images are automatically converted for processing
+- Uses Imagick driver when available (better format support), falls back to GD
+- Watermarked images are saved as JPEG at 90% quality
+- Original images are never modified
+
+### Database Schema
+
+Added to `artist_settings` table:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| `watermark_image_id` | bigint | FK to images table |
+| `watermark_opacity` | int | 0-100 (default: 50) |
+| `watermark_position` | string | Position enum (default: bottom-right) |
+| `watermark_enabled` | boolean | Toggle (default: false) |
+
+## Email Notifications
+
+### New Message Notification
+
+When a user receives a new message, they get an email notification.
+
+**Trigger:** `ConversationController::sendMessage()` after successful message creation
+
+**Notification Class:** `App\Notifications\NewMessageNotification`
+
+**Email Template:** `resources/views/mail/new-message.blade.php`
+
+**Content:**
+- Subject: "New message from {sender} - InkedIn"
+- Body: Simple notification directing recipient to check their inbox
+- CTA: "View Message" button linking to `/inbox`
+
+**Note:** Notification failures are logged but don't block message sending.
+
 ## Future Enhancements
 
 ### Additional Message Types (Planned)
@@ -397,6 +534,12 @@ $messageService->sendSystemNotification($conversationId, 'Your session has been 
 - [ ] Auto-responses / away messages
 - [ ] Conversation archiving
 - [ ] Block/report functionality
+
+### Completed Features
+
+- [x] Image attachments in messages
+- [x] Artist watermark protection for designs
+- [x] New message email notifications
 
 ## Seed Data
 
