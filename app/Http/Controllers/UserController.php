@@ -34,7 +34,8 @@ class UserController extends Controller
      */
     public function me(Request $request): SelfUserResource
     {
-        return new SelfUserResource($request->user());
+        $user = $request->user()->load('blockedUsers');
+        return new SelfUserResource($user);
     }
 
     /**
@@ -43,6 +44,12 @@ class UserController extends Controller
      */
     public function getById($id)
     {
+        // Check if blocked
+        $currentUser = request()->user();
+        if ($currentUser && $currentUser->isBlocked((int) $id)) {
+            return response()->json(['error' => 'User not found'], 404);
+        }
+
         $user = $this->userService->getById($id);
         return $this->returnResponse(UserTypes::USER, new UserResource($user));
     }

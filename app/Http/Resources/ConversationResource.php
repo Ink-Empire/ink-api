@@ -18,6 +18,7 @@ class ConversationResource extends JsonResource
                 'id' => $otherParticipant->id,
                 'name' => $otherParticipant->name,
                 'username' => $otherParticipant->username,
+                'slug' => $otherParticipant->slug,
                 'initials' => $this->getInitials($otherParticipant->name ?? $otherParticipant->username),
                 'image' => $otherParticipant->image ? [
                     'id' => $otherParticipant->image->id,

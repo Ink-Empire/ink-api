@@ -52,7 +52,7 @@ class ArtistController extends Controller
         // Get unclaimed studios if we have location coordinates and not searching "Anywhere"
         $unclaimedStudios = $this->getUnclaimedStudios($params, $request);
 
-        // Sanitize response to remove sensitive fields from public search results
+        // Sanitize response - $request->user() works via auth.optional middleware
         $sanitizedResponse = $this->sanitizeArtistData($response['response'], $request->user());
 
         return response()->json([
@@ -130,16 +130,23 @@ class ArtistController extends Controller
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getById($id): JsonResponse
+    public function getById(Request $request, $id): JsonResponse
     {
-        if (request()->query('db')) {
-            $artist = ModelLookup::findArtist($id);
+        // Resolve slug/id to get the artist model for block checking
+        $artistModel = ModelLookup::findArtist($id);
 
-            if (!$artist) {
-                return response()->json(['error' => 'Artist not found'], 404);
-            }
+        if (!$artistModel) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
 
-            return $this->returnResponse('artist', new ArtistResource($artist));
+        // Check if the authenticated user has blocked or is blocked by this artist
+        $user = $request->user();
+        if ($user && $user->isBlocked($artistModel->id)) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        if ($request->query('db')) {
+            return $this->returnResponse('artist', new ArtistResource($artistModel));
         }
 
         $params = request()->all();
@@ -249,6 +256,16 @@ class ArtistController extends Controller
         //id may be a slug, support this
         $artist = ModelLookup::findArtist($id);
 
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        // Check if blocked
+        $user = $request->user();
+        if ($user && $user->isBlocked($artist->id)) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
         $availability = ArtistAvailability::where('artist_id', $artist->id)->get();
 
         return WorkingHoursResource::collection($availability);
@@ -285,6 +302,12 @@ class ArtistController extends Controller
         $artist = ModelLookup::findArtist($id);
 
         if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        // Check if blocked
+        $user = $request->user();
+        if ($user && $user->isBlocked($artist->id)) {
             return response()->json(['error' => 'Artist not found'], 404);
         }
 
@@ -415,21 +438,30 @@ class ArtistController extends Controller
     }
 
     /**
-     * Sanitize a collection of artist data to remove PII for unauthenticated access.
+     * Sanitize and filter artist data.
+     * - Filters out blocked users (for authenticated users)
+     * - Removes PII (for unauthenticated users)
      */
     private function sanitizeArtistData($artists, $user): mixed
     {
-        // If user is authenticated, return full data
-        if ($user) {
-            return $artists;
-        }
+        // Get blocked user IDs if authenticated
+        $blockedIds = $user ? $user->getAllBlockedIds() : [];
+
+        // Filter function to remove blocked artists
+        $filterBlocked = function ($artist) use ($blockedIds) {
+            if (empty($blockedIds)) return true;
+            $artistId = is_array($artist) ? ($artist['id'] ?? null) : ($artist->id ?? null);
+            return !in_array($artistId, $blockedIds);
+        };
 
         if ($artists instanceof \Illuminate\Support\Collection) {
-            return $artists->map(fn($artist) => $this->sanitizeSingleArtist($artist));
+            $filtered = $artists->filter($filterBlocked);
+            return $user ? $filtered->values() : $filtered->map(fn($artist) => $this->sanitizeSingleArtist($artist))->values();
         }
 
         if (is_array($artists)) {
-            return array_map(fn($artist) => $this->sanitizeSingleArtist($artist), $artists);
+            $filtered = array_filter($artists, $filterBlocked);
+            return $user ? array_values($filtered) : array_values(array_map(fn($artist) => $this->sanitizeSingleArtist($artist), $filtered));
         }
 
         return $artists;

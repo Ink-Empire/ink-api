@@ -126,6 +126,16 @@ class AppointmentController extends Controller
 
         $artist = Artist::find($artist_id);
 
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        // Check if either user has blocked the other
+        $user = $request->user();
+        if ($user->hasBlocked($artist_id) || $user->isBlockedBy($artist_id)) {
+            return response()->json(['error' => 'Cannot book with this artist'], 403);
+        }
+
         $data = $request->validate([
             'title' => 'required|string',
             'start_time' => 'required',

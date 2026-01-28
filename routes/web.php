@@ -28,10 +28,12 @@ Route::get('/test', function () {
 });
 
 Route::prefix('api')->group(function () {
-    // Public tattoo routes - for guests to search and view
-    Route::group(['prefix' => 'tattoos'], function () {
-        Route::post('/', [TattooController::class, 'search']);
-        Route::get('/{id}', [TattooController::class, 'getById']);
+    // Public tattoo routes - optional auth to filter blocked artists
+    Route::middleware('auth.optional')->group(function () {
+        Route::group(['prefix' => 'tattoos'], function () {
+            Route::post('/', [TattooController::class, 'search']);
+            Route::get('/{id}', [TattooController::class, 'getById']);
+        });
     });
 
     Route::middleware('auth:sanctum')->group(function () {
@@ -52,10 +54,12 @@ Route::prefix('api')->group(function () {
     });
 
     Route::group(['prefix' => 'artists'], function () {
-        // Public artist routes - for guests to view and search
-        Route::post('/', [ArtistController::class, 'search']);
-        Route::get('/{id}', [ArtistController::class, 'getById']);
-        Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
+        // Public artist routes - optional auth to filter blocked users
+        Route::middleware('auth.optional')->group(function () {
+            Route::post('/', [ArtistController::class, 'search']);
+            Route::get('/{id}', [ArtistController::class, 'getById']);
+            Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
+        });
         Route::post('/{id}/view', [ArtistController::class, 'recordView']);
 
         // Protected artist routes - require authentication

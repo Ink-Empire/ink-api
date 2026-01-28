@@ -301,4 +301,23 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         $this->blockedUsers()->detach($userId);
     }
+
+    /**
+     * Get all user IDs that are blocked (either direction).
+     */
+    public function getAllBlockedIds(): array
+    {
+        $blockedUserIds = $this->blockedUsers()->pluck('blocked_id')->toArray();
+        $blockedByUserIds = $this->blockedByUsers()->pluck('blocker_id')->toArray();
+
+        return array_unique(array_merge($blockedUserIds, $blockedByUserIds));
+    }
+
+    /**
+     * Check if a user ID is in the blocked list (either direction).
+     */
+    public function isBlocked(int $userId): bool
+    {
+        return $this->hasBlocked($userId) || $this->isBlockedBy($userId);
+    }
 }
