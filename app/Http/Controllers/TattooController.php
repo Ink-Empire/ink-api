@@ -93,10 +93,10 @@ class TattooController extends Controller
             $blockedIds = $user->getAllBlockedIds();
 
             if (!empty($blockedIds)) {
-                $response['response'] = array_values(array_filter($response['response'], function ($tattoo) use ($blockedIds) {
+                $response['response'] = $response['response']->filter(function ($tattoo) use ($blockedIds) {
                     $artistId = is_array($tattoo) ? ($tattoo['artist_id'] ?? null) : ($tattoo->artist_id ?? null);
                     return !in_array($artistId, $blockedIds);
-                }));
+                })->values();
             }
         }
 
