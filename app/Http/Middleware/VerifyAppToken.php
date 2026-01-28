@@ -20,6 +20,8 @@ class VerifyAppToken
         'api/login',
         'api/forgot-password',
         'api/reset-password',
+        'api/verify-email/*',
+        'api/email/verification-notification',
         'sanctum/csrf-cookie',
     ];
 
