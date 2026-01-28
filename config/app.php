@@ -76,6 +76,30 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | User Online Timeout
+    |--------------------------------------------------------------------------
+    |
+    | The number of minutes after which a user is considered offline.
+    | If a user's last_seen_at is older than this, isOnline() returns false.
+    |
+    */
+
+    'online_timeout_minutes' => env('USER_ONLINE_TIMEOUT_MINUTES', 5),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Last Seen Update Throttle
+    |--------------------------------------------------------------------------
+    |
+    | The number of minutes between last_seen_at updates to reduce DB writes.
+    | Should be less than online_timeout_minutes.
+    |
+    */
+
+    'last_seen_throttle_minutes' => env('USER_LAST_SEEN_THROTTLE_MINUTES', 1),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Timezone
     |--------------------------------------------------------------------------
     |
