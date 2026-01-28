@@ -43,4 +43,4 @@ jobs:
           fi
 
           echo "Running smoke tests against: $API_URL"
-          php artisan smoke:test --base-url="$API_URL"
+          php artisan smoke:test --base-url="$API_URL" -v

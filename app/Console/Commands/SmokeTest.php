@@ -55,8 +55,14 @@ class SmokeTest extends Command
                     $passed++;
                 } else {
                     $this->line("<fg=red>FAIL</> {$name} - HTTP {$response->status()} ({$duration}ms)");
-                    if ($this->output->isVerbose()) {
-                        $this->line("  Response: " . substr($response->body(), 0, 200));
+                    $body = $response->body();
+                    $json = json_decode($body, true);
+                    if ($json && isset($json['message'])) {
+                        $this->line("  Error: {$json['message']}");
+                    } elseif ($json && isset($json['error'])) {
+                        $this->line("  Error: {$json['error']}");
+                    } else {
+                        $this->line("  Response: " . substr($body, 0, 500));
                     }
                     $failed++;
                 }
