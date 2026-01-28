@@ -56,6 +56,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'timezone',
         'is_subscribed',
         'is_email_verified',
+        'last_seen_at',
     ];
 
     /**
@@ -222,7 +223,7 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Check if user is online (seen in last 5 minutes).
+     * Check if user is online (seen within the configured timeout).
      */
     public function isOnline(): bool
     {
@@ -230,7 +231,8 @@ class User extends Authenticatable implements MustVerifyEmail
             return false;
         }
 
-        return $this->last_seen_at->gt(now()->subMinutes(5));
+        $timeoutMinutes = config('app.online_timeout_minutes', 5);
+        return $this->last_seen_at->gt(now()->subMinutes($timeoutMinutes));
     }
 
     /**
