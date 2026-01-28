@@ -34,7 +34,7 @@ class UserController extends Controller
      */
     public function me(Request $request): SelfUserResource
     {
-        $user = $request->user()->load('blockedUsers');
+        $user = $request->user()->load('blockedUsers.image');
         return new SelfUserResource($user);
     }
 

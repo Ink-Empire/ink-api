@@ -66,7 +66,8 @@ class ClientDashboardController extends Controller
     {
         $user = $request->user();
 
-        $wishlistItems = $user->wishlistArtists()->notBlockedBy($user)
+        $wishlistItems = $user->wishlistArtists()
+            ->notBlockedBy($user)
             ->with(['image', 'studio', 'styles'])
             ->withPivot('notify_booking_open', 'notified_at', 'created_at')
             ->get()
@@ -87,6 +88,7 @@ class ClientDashboardController extends Controller
 
         // Query users_artists table (favorites)
         $favoriteArtists = $user->artists()
+            ->notBlockedBy($user)
             ->with(['image', 'studio', 'styles'])
             ->get()
             ->map(fn ($artist) => $this->formatFavoriteArtist($artist));
