@@ -17,6 +17,7 @@ use App\Services\ImageService;
 use App\Services\TattooService;
 use App\Services\GooglePlacesService;
 use App\Services\SearchImpressionService;
+use App\Services\PaginationService;
 use App\Util\ModelLookup;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -31,12 +32,12 @@ class ArtistController extends Controller
 {
     public function __construct(
         protected ArtistService $artistService,
-        protected ImageService  $imageService,
+        protected ImageService $imageService,
         protected TattooService $tattooService,
         protected GooglePlacesService $googlePlacesService,
-        protected SearchImpressionService $impressionService
-    )
-    {
+        protected SearchImpressionService $impressionService,
+        protected PaginationService $paginationService
+    ) {
     }
 
     /**
@@ -46,19 +47,23 @@ class ArtistController extends Controller
     public function search(Request $request): JsonResponse
     {
         $params = $request->all();
+        $pagination = $this->paginationService->extractParams($params);
 
         $response = $this->artistService->search($params);
 
-        // Get unclaimed studios if we have location coordinates and not searching "Anywhere"
-        $unclaimedStudios = $this->getUnclaimedStudios($params, $request);
+        // Get unclaimed studios only on first page
+        $unclaimedStudios = $pagination['page'] === 1 ? $this->getUnclaimedStudios($params, $request) : [];
 
         // Sanitize response - $request->user() works via auth.optional middleware
         $sanitizedResponse = $this->sanitizeArtistData($response['response'], $request->user());
 
+        $total = $response['total'] ?? 0;
+        $paginationMeta = $this->paginationService->buildMeta($total, $pagination['page'], $pagination['per_page']);
+
         return response()->json([
             'response' => $sanitizedResponse,
             'unclaimed_studios' => $unclaimedStudios,
-            'total' => $response['total'] ?? null,
+            ...$paginationMeta,
         ]);
     }
 

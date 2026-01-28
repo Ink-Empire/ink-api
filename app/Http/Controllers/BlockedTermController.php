@@ -3,18 +3,23 @@
 namespace App\Http\Controllers;
 
 use App\Models\BlockedTerm;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class BlockedTermController extends Controller
 {
+    public function __construct(
+        protected PaginationService $paginationService
+    ) {
+    }
+
     /**
      * List all blocked terms with pagination for admin
      */
     public function adminIndex(Request $request): JsonResponse
     {
-        $perPage = min($request->input('per_page', 25), 100);
-        $page = $request->input('page', 1);
+        $pagination = $this->paginationService->extractParams($request);
         $sort = $request->input('sort', 'term');
         $order = $request->input('order', 'asc');
         $filter = $request->input('filter', []);
@@ -40,7 +45,7 @@ class BlockedTermController extends Controller
         $query->orderBy($sort, $order);
 
         $total = $query->count();
-        $terms = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+        $terms = $this->paginationService->applyToQuery($query, $pagination['offset'], $pagination['per_page'])->get();
 
         return response()->json([
             'data' => $terms,
