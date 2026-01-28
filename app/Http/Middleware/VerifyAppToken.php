@@ -15,6 +15,7 @@ class VerifyAppToken
     protected array $except = [
         'api/webhooks/*',
         'api/calendar/callback',
+        'api/places/config',
         'sanctum/csrf-cookie',
     ];
 
