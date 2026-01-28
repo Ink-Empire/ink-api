@@ -16,6 +16,10 @@ class VerifyAppToken
         'api/webhooks/*',
         'api/calendar/callback',
         'api/places/config',
+        'api/register',
+        'api/login',
+        'api/forgot-password',
+        'api/reset-password',
         'sanctum/csrf-cookie',
     ];
 
