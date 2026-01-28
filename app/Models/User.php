@@ -82,9 +82,26 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_email_verified' => 'boolean',
     ];
 
+    /**SCOPES**/
+
     public function scopeArtist(Builder $query): void
     {
         $query->where(['type_id' => UserTypes::ARTIST_TYPE_ID]);
+    }
+
+    public function scopeNotBlockedBy($query, ?User $user = null)
+    {
+        $user = $user ?? auth()->user();
+
+        if (!$user) {
+            return $query;
+        }
+
+        return $query->whereNotIn('users.id', function ($q) use ($user) {
+            $q->select('blocked_id')
+                ->from('user_blocks')
+                ->where('blocker_id', $user->id);
+        });
     }
 
     public function type()
@@ -120,6 +137,9 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(User::class, 'artist_wishlists', 'user_id', 'artist_id')
             ->withPivot('notify_booking_open', 'notified_at')
             ->withTimestamps();
+
+        //return artists that are not on the block list
+
     }
 
     /**
