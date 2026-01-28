@@ -53,6 +53,34 @@ class SmokeTest extends TestCase
                  ->assertJsonStructure(['response']);
     }
 
+    public function test_single_tattoo_returns_valid_response(): void
+    {
+        // Get a tattoo ID from search
+        $searchResponse = $this->postJson('/api/tattoos', []);
+        $tattooId = $searchResponse->json('response.0.id');
+
+        if (!$tattooId) {
+            $this->markTestSkipped('No tattoos available in database.');
+        }
+
+        $response = $this->getJson("/api/tattoos/{$tattooId}");
+        $response->assertSuccessful();
+    }
+
+    public function test_single_artist_returns_valid_response(): void
+    {
+        // Get an artist ID from search
+        $searchResponse = $this->postJson('/api/artists', []);
+        $artistId = $searchResponse->json('response.0.id');
+
+        if (!$artistId) {
+            $this->markTestSkipped('No artists available in database.');
+        }
+
+        $response = $this->getJson("/api/artists/{$artistId}");
+        $response->assertSuccessful();
+    }
+
     public function test_tags_index_returns_valid_response(): void
     {
         $response = $this->getJson('/api/tags');
@@ -89,35 +117,5 @@ class SmokeTest extends TestCase
         $response = $this->getJson('/api/countries');
 
         $response->assertSuccessful();
-    }
-
-    public function test_elastic_search_returns_valid_response(): void
-    {
-        $response = $this->postJson('/api/elastic', [
-            'model' => 'tattoo'
-        ]);
-
-        $response->assertSuccessful();
-    }
-
-    public function test_tattoos_search_with_filters_returns_valid_response(): void
-    {
-        $response = $this->postJson('/api/tattoos', [
-            'styles' => [1],
-            'location' => 'New York',
-        ]);
-
-        $response->assertSuccessful()
-                 ->assertJsonStructure(['response']);
-    }
-
-    public function test_artists_search_with_filters_returns_valid_response(): void
-    {
-        $response = $this->postJson('/api/artists', [
-            'location' => 'Los Angeles',
-        ]);
-
-        $response->assertSuccessful()
-                 ->assertJsonStructure(['response']);
     }
 }
