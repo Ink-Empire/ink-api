@@ -45,7 +45,8 @@ class ClientDashboardController extends Controller
             ->get();
 
         // Wishlist count
-        $wishlistCount = $user->wishlistArtists()->count();
+        $wishlistCount = $user->wishlistArtists()->notBlockedBy($user)->count();
+
 
         // Suggested artists (6)
         $suggestedArtists = $this->getSuggestedArtists($user, 6);
@@ -65,7 +66,7 @@ class ClientDashboardController extends Controller
     {
         $user = $request->user();
 
-        $wishlistItems = $user->wishlistArtists()
+        $wishlistItems = $user->wishlistArtists()->notBlockedBy($user)
             ->with(['image', 'studio', 'styles'])
             ->withPivot('notify_booking_open', 'notified_at', 'created_at')
             ->get()
@@ -210,7 +211,7 @@ class ClientDashboardController extends Controller
 
         // Get IDs of already-followed artists and wishlist artists
         $excludeArtistIds = $user->artists()->pluck('users.id')->toArray();
-        $wishlistArtistIds = $user->wishlistArtists()->pluck('users.id')->toArray();
+        $wishlistArtistIds = $user->wishlistArtists()->notBlockedBy($user)->pluck('users.id')->toArray();
         $excludeArtistIds = array_merge($excludeArtistIds, $wishlistArtistIds);
 
         // Find artists with matching styles
