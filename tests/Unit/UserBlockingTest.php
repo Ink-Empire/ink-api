@@ -11,12 +11,19 @@ class UserBlockingTest extends TestCase
 {
     use RefreshDatabase;
 
+    protected function migrateFreshUsing()
+    {
+        return [
+            '--path' => 'database/migrations/testing',
+        ];
+    }
+
     public function test_user_can_block_another_user(): void
     {
         $blocker = User::factory()->create();
         $blocked = User::factory()->create();
 
-        $blocker->blockUser($blocked->id, 'Test reason');
+        $blocker->block($blocked->id, 'Test reason');
 
         $this->assertTrue($blocker->hasBlocked($blocked->id));
         $this->assertDatabaseHas('user_blocks', [
@@ -31,10 +38,10 @@ class UserBlockingTest extends TestCase
         $blocker = User::factory()->create();
         $blocked = User::factory()->create();
 
-        $blocker->blockUser($blocked->id);
+        $blocker->block($blocked->id);
         $this->assertTrue($blocker->hasBlocked($blocked->id));
 
-        $blocker->unblockUser($blocked->id);
+        $blocker->unblock($blocked->id);
         $this->assertFalse($blocker->hasBlocked($blocked->id));
     }
 
@@ -43,7 +50,7 @@ class UserBlockingTest extends TestCase
         $blocker = User::factory()->create();
         $blocked = User::factory()->create();
 
-        $blocker->blockUser($blocked->id);
+        $blocker->block($blocked->id);
 
         $this->assertTrue($blocked->isBlockedBy($blocker->id));
     }
@@ -55,10 +62,10 @@ class UserBlockingTest extends TestCase
         $blocksUser = User::factory()->create();
 
         // User blocks someone
-        $user->blockUser($blockedByUser->id);
+        $user->block($blockedByUser->id);
 
         // Someone blocks user
-        $blocksUser->blockUser($user->id);
+        $blocksUser->block($user->id);
 
         $blockedIds = $user->getAllBlockedIds();
 
@@ -72,13 +79,13 @@ class UserBlockingTest extends TestCase
         $other = User::factory()->create();
 
         // Test when user blocks other
-        $user->blockUser($other->id);
+        $user->block($other->id);
         $this->assertTrue($user->isBlocked($other->id));
 
-        $user->unblockUser($other->id);
+        $user->unblock($other->id);
 
         // Test when other blocks user
-        $other->blockUser($user->id);
+        $other->block($user->id);
         $this->assertTrue($user->isBlocked($other->id));
     }
 
@@ -90,7 +97,7 @@ class UserBlockingTest extends TestCase
         $artist3 = User::factory()->asArtist()->create();
 
         // User blocks artist1
-        $user->blockUser($artist1->id);
+        $user->block($artist1->id);
 
         // Query artists excluding blocked ones
         $artists = User::artist()->notBlockedBy($user)->get();
@@ -117,8 +124,8 @@ class UserBlockingTest extends TestCase
         $blocker = User::factory()->create();
         $blocked = User::factory()->create();
 
-        $blocker->blockUser($blocked->id);
-        $blocker->blockUser($blocked->id);
+        $blocker->block($blocked->id);
+        $blocker->block($blocked->id);
 
         $this->assertEquals(1, UserBlock::where('blocker_id', $blocker->id)
             ->where('blocked_id', $blocked->id)
