@@ -39,6 +39,16 @@ class SelfUserResource extends JsonResource
             ] : null,
             // Blocked users - IDs of users this user has blocked
             'blocked_user_ids' => $this->blockedUsers->pluck('id')->toArray(),
+            // Blocked users with full details for management UI
+            'blocked_users' => $this->blockedUsers->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'slug' => $user->slug,
+                    'image' => $user->image ? $user->image->uri : null,
+                ];
+            })->values()->toArray(),
         ];
     }
 }
