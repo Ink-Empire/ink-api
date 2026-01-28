@@ -136,11 +136,9 @@ class User extends Authenticatable implements MustVerifyEmail
     public function wishlistArtists()
     {
         return $this->belongsToMany(User::class, 'artist_wishlists', 'user_id', 'artist_id')
+            ->notBlockedBy($this)
             ->withPivot('notify_booking_open', 'notified_at')
             ->withTimestamps();
-
-        //return artists that are not on the block list
-
     }
 
     /**
