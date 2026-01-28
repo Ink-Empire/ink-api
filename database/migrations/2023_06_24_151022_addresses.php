@@ -25,8 +25,7 @@ return new class extends Migration
             $table->string('country_code');
             $table->string('phone')->nullable();
             $table->tinyInteger('is_active')->default(1);
-            $table->timestamp('created_at')->default(\DB::raw('CURRENT_TIMESTAMP'));
-            $table->timestamp('updated_at')->default(\DB::raw('NULL ON UPDATE CURRENT_TIMESTAMP'))->nullable();
+            $table->timestamps();
         });
     }
 
