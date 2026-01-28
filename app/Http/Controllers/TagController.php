@@ -126,7 +126,7 @@ class TagController extends Controller
      */
     public function setTattooTags(Request $request, int $tattooId): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([
@@ -175,7 +175,7 @@ class TagController extends Controller
      */
     public function addTattooTag(Request $request, int $tattooId): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([
@@ -238,7 +238,7 @@ class TagController extends Controller
      */
     public function removeTattooTag(int $tattooId, int $tagId): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([
@@ -280,7 +280,7 @@ class TagController extends Controller
      */
     public function generateTattooTags(int $tattooId): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([
@@ -323,7 +323,7 @@ class TagController extends Controller
      */
     public function create(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([
@@ -357,7 +357,7 @@ class TagController extends Controller
      */
     public function createFromAiSuggestion(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([
@@ -393,7 +393,7 @@ class TagController extends Controller
      */
     public function suggestFromImages(Request $request): JsonResponse
     {
-        $user = auth()->user();
+        $user = $request->user();
 
         if (!$user) {
             return response()->json([

@@ -5,6 +5,7 @@ namespace App\Http\Middleware;
 use Closure;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
+use Laravel\Sanctum\PersonalAccessToken;
 use Symfony\Component\HttpFoundation\Response;
 
 /**
@@ -17,14 +18,13 @@ class OptionalSanctumAuth
     public function handle(Request $request, Closure $next): Response
     {
         // Only attempt authentication if a Bearer token is present
-        if ($request->bearerToken()) {
-            // Try to authenticate via Sanctum - this sets $request->user() if valid
-            Auth::shouldUse('sanctum');
+        if ($token = $request->bearerToken()) {
+            $accessToken = PersonalAccessToken::findToken($token);
 
-            try {
-                Auth::authenticate();
-            } catch (\Exception $e) {
-                // Token invalid/expired - continue as guest
+            if ($accessToken && $accessToken->tokenable) {
+                // Set the user on the request and Auth guard
+                Auth::shouldUse('sanctum');
+                Auth::setUser($accessToken->tokenable);
             }
         }
 

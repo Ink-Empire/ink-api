@@ -42,10 +42,10 @@ class UserController extends Controller
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getById($id)
+    public function getById(Request $request, $id)
     {
         // Check if blocked
-        $currentUser = request()->user();
+        $currentUser = $request->user();
         if ($currentUser && $currentUser->isBlocked((int) $id)) {
             return response()->json(['error' => 'User not found'], 404);
         }
