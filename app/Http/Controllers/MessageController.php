@@ -9,7 +9,6 @@ use App\Models\Image;
 use App\Services\WatermarkService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\Auth;
 use Illuminate\Validation\ValidationException;
 
 class MessageController extends Controller
@@ -26,7 +25,7 @@ class MessageController extends Controller
         $appointment = Appointment::findOrFail($appointmentId);
         
         // Ensure user is either the artist or client for this appointment
-        $userId = Auth::id();
+        $userId = $request->user()->id;
         if ($appointment->artist_id !== $userId && $appointment->client_id !== $userId) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
@@ -72,7 +71,7 @@ class MessageController extends Controller
         }
 
         $appointment = Appointment::findOrFail($request->appointment_id);
-        $senderId = Auth::id();
+        $senderId = $request->user()->id;
 
         // Ensure user is either the artist or client for this appointment
         if ($appointment->artist_id !== $senderId && $appointment->client_id !== $senderId) {
@@ -154,7 +153,7 @@ class MessageController extends Controller
         $message = Message::findOrFail($messageId);
         
         // Ensure current user is the recipient
-        if ($message->recipient_id !== Auth::id()) {
+        if ($message->recipient_id !== $request->user()->id) {
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
@@ -168,7 +167,7 @@ class MessageController extends Controller
      */
     public function getUnreadCount(Request $request): JsonResponse
     {
-        $userId = Auth::id();
+        $userId = $request->user()->id;
         $unreadCount = Message::unreadFor($userId)->count();
 
         return response()->json(['unread_count' => $unreadCount]);
@@ -179,7 +178,7 @@ class MessageController extends Controller
      */
     public function getInboxThreads(Request $request): JsonResponse
     {
-        $artistId = Auth::id();
+        $artistId = $request->user()->id;
         
         // Get appointments with messages for this artist
         $appointments = Appointment::where('artist_id', $artistId)

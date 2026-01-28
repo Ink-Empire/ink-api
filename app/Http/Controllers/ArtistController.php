@@ -149,7 +149,7 @@ class ArtistController extends Controller
             return $this->returnResponse('artist', new ArtistResource($artistModel));
         }
 
-        $params = request()->all();
+        $params = $request->all();
 
         $artist = $this->artistService->getById($id);
         $tattoos = $this->tattooService->getByArtistId($id, $params);
@@ -167,7 +167,7 @@ class ArtistController extends Controller
         }
 
         // Only sanitize PII if no auth token (unauthenticated request)
-        if (!request()->user()) {
+        if (!$request->user()) {
             $artist = $this->sanitizeSingleArtist($artist);
         }
 

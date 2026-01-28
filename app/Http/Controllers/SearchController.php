@@ -33,18 +33,18 @@ class SearchController extends Controller
         $filters = $request->except('model');
 
         if ($model == 'tattoo') {
-            $response = $this->checkResponse($this->tattooService->search_tattoo($filters), $model);
+            $response = $this->checkResponse($this->tattooService->search_tattoo($filters), $model, $request);
         } else {
-            $response = $this->checkResponse($this->artistService->search_artist($filters), $model);
+            $response = $this->checkResponse($this->artistService->search_artist($filters), $model, $request);
         }
 
         return $this->returnElasticResponse($response);
     }
 
-    private function checkResponse($response, $model)
+    private function checkResponse($response, $model, Request $request)
     {
         //we dont want to return generic results if we are asking for saved items
-        if (!request()->has('saved_artists') && !request()->has('saved_tattoos')) {
+        if (!$request->has('saved_artists') && !$request->has('saved_tattoos')) {
             if ($response['response']->count() == 0 && !isset($params['search_again'])) {
                 //instead we will need to formulate a popularity system and use GeoSort here, once we have more data
                 $params['artist_near_me'] = false;
