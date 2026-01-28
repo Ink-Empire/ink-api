@@ -56,9 +56,18 @@ class TattooController extends Controller
      * @param $id
      * @return \Illuminate\Http\JsonResponse
      */
-    public function getById($id): JsonResponse
+    public function getById(Request $request, $id): JsonResponse
     {
         $tattoo = $this->tattooService->getById($id);
+
+        // Check if blocked - tattoo from Elasticsearch is an array
+        $user = $request->user();
+        if ($user && $tattoo) {
+            $artistId = is_array($tattoo) ? ($tattoo['artist_id'] ?? null) : ($tattoo->artist_id ?? null);
+            if ($artistId && $user->isBlocked($artistId)) {
+                return response()->json(['error' => 'Tattoo not found'], 404);
+            }
+        }
 
         return $this->returnResponse('tattoo', $tattoo);
     }
@@ -76,6 +85,19 @@ class TattooController extends Controller
                 "1. Try searching for a different tattoo style or artist.\n" .
                 "2. Check your spelling and try again.\n" .
                 "3. Broaden your search radius to find more results.";
+        }
+
+        // Filter out tattoos from blocked artists
+        $user = $request->user();
+        if ($user) {
+            $blockedIds = $user->getAllBlockedIds();
+
+            if (!empty($blockedIds)) {
+                $response['response'] = array_values(array_filter($response['response'], function ($tattoo) use ($blockedIds) {
+                    $artistId = is_array($tattoo) ? ($tattoo['artist_id'] ?? null) : ($tattoo->artist_id ?? null);
+                    return !in_array($artistId, $blockedIds);
+                }));
+            }
         }
 
         // Determine if this is an active search query (has filters/search terms)

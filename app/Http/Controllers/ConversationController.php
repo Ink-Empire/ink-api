@@ -24,6 +24,10 @@ class ConversationController extends Controller
     public function index(Request $request): JsonResponse
     {
         $user = $request->user();
+
+        // Get IDs of users this user has blocked or is blocked by
+        $allBlockedIds = $user->getAllBlockedIds();
+
         $query = Conversation::forUser($user->id)
             ->with(['users', 'latestMessage.sender', 'appointment.artist'])
             ->withCount(['messages as unread_count' => function ($q) use ($user) {
@@ -36,6 +40,13 @@ class ConversationController extends Controller
                         });
                     });
             }]);
+
+        // Filter out conversations with blocked users
+        if (!empty($allBlockedIds)) {
+            $query->whereDoesntHave('users', function ($q) use ($allBlockedIds) {
+                $q->whereIn('users.id', $allBlockedIds);
+            });
+        }
 
         // Filter by type
         if ($request->has('type')) {
@@ -124,6 +135,11 @@ class ConversationController extends Controller
 
         $user = $request->user();
         $participantId = $request->participant_id;
+
+        // Check if either user has blocked the other
+        if ($user->hasBlocked($participantId) || $user->isBlockedBy($participantId)) {
+            return response()->json(['error' => 'Cannot start conversation with this user'], 403);
+        }
 
         // Check if conversation already exists between these users
         $existingConversation = Conversation::forUser($user->id)
@@ -260,11 +276,16 @@ class ConversationController extends Controller
         // Verify user is participant
         $conversation = Conversation::forUser($user->id)->findOrFail($id);
 
+        // Get the other participant
+        $otherParticipant = $conversation->getOtherParticipant($user->id);
+
+        // Check if either user has blocked the other
+        if ($otherParticipant && ($user->hasBlocked($otherParticipant->id) || $user->isBlockedBy($otherParticipant->id))) {
+            return response()->json(['error' => 'Cannot send message to this user'], 403);
+        }
+
         DB::beginTransaction();
         try {
-            // Get the other participant as recipient
-            $otherParticipant = $conversation->getOtherParticipant($user->id);
-
             $message = Message::create([
                 'conversation_id' => $conversation->id,
                 'sender_id' => $user->id,
