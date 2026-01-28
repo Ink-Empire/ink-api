@@ -1,0 +1,46 @@
+name: Smoke Test
+
+on:
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+    inputs:
+      api_url:
+        description: 'API URL to test against'
+        required: false
+        default: ''
+
+jobs:
+  smoke-test:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.2'
+          extensions: mbstring, xml, curl, json
+
+      - name: Install dependencies
+        run: composer install --no-interaction --prefer-dist
+
+      - name: Run smoke tests
+        env:
+          API_APP_TOKEN: ${{ secrets.API_APP_TOKEN }}
+        run: |
+          # Use input URL, or fall back to secret, or fail
+          API_URL="${{ github.event.inputs.api_url }}"
+          if [ -z "$API_URL" ]; then
+            API_URL="${{ secrets.STAGING_API_URL }}"
+          fi
+
+          if [ -z "$API_URL" ]; then
+            echo "::error::No API URL configured. Set STAGING_API_URL secret or provide api_url input."
+            exit 1
+          fi
+
+          echo "Running smoke tests against: $API_URL"
+          php artisan smoke:test --base-url="$API_URL" -v
