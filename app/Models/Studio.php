@@ -64,7 +64,7 @@ class Studio extends Model
     public function artists()
     {
         return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
-            ->withPivot('is_verified', 'verified_at')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
             ->withTimestamps();
     }
 
@@ -74,7 +74,7 @@ class Studio extends Model
     public function verifiedArtists()
     {
         return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
-            ->withPivot('is_verified', 'verified_at')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
             ->wherePivot('is_verified', true)
             ->withTimestamps();
     }
@@ -85,8 +85,32 @@ class Studio extends Model
     public function pendingArtists()
     {
         return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
-            ->withPivot('is_verified', 'verified_at')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
             ->wherePivot('is_verified', false)
+            ->withTimestamps();
+    }
+
+    /**
+     * Get artists invited by this studio (awaiting artist acceptance).
+     */
+    public function pendingInvitations()
+    {
+        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->wherePivot('is_verified', false)
+            ->wherePivot('initiated_by', 'studio')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get artists who requested to join this studio (awaiting studio approval).
+     */
+    public function pendingRequests()
+    {
+        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->wherePivot('is_verified', false)
+            ->wherePivot('initiated_by', 'artist')
             ->withTimestamps();
     }
 

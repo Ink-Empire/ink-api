@@ -95,7 +95,7 @@ class StudioService
         }
     }
 
-    public function addArtistByUsernameOrEmail(Studio $studio, string $identifier): ?User
+    public function addArtistByUsernameOrEmail(Studio $studio, string $identifier, string $initiatedBy = 'studio'): ?User
     {
         // Search by username or email
         $user = User::where('type_id', 2) // Artist type
@@ -107,8 +107,12 @@ class StudioService
 
         if ($user) {
             // Add with is_verified = false (pending verification)
+            // initiated_by tracks who initiated: 'studio' = invitation, 'artist' = request
             $studio->artists()->syncWithoutDetaching([
-                $user->id => ['is_verified' => false]
+                $user->id => [
+                    'is_verified' => false,
+                    'initiated_by' => $initiatedBy,
+                ]
             ]);
             return $user;
         }
