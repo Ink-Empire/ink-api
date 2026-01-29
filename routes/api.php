@@ -95,6 +95,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('artists')->group(function () {
         Route::get('/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'getSettings']);
         Route::put('/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'updateSettings']);
+
+        // Studio invitation management for artists
+        Route::get('/me/studio-invitations', [\App\Http\Controllers\ArtistController::class, 'getStudioInvitations']);
+        Route::post('/me/studio-invitations/{studioId}/accept', [\App\Http\Controllers\ArtistController::class, 'acceptStudioInvitation']);
+        Route::post('/me/studio-invitations/{studioId}/decline', [\App\Http\Controllers\ArtistController::class, 'declineStudioInvitation']);
     });
 
     // Direct S3 upload routes (presigned URLs)
