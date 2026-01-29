@@ -14,8 +14,10 @@ abstract class SearchService
     protected $latLongString;
     protected $searchContext;
 
-    public function __construct(protected UserService $userService)
-    {
+    public function __construct(
+        protected UserService $userService,
+        protected PaginationService $paginationService
+    ) {
         $this->searchContext = $this->getSearchContext();
     }
 
@@ -58,8 +60,20 @@ abstract class SearchService
 
         $this->applyCommonFilters();
         $this->applySpecificFilters();
+        $this->applyPagination();
 
         return $this->search->get();
+    }
+
+    /**
+     * Apply pagination to the search query
+     */
+    protected function applyPagination(): void
+    {
+        $pagination = $this->paginationService->extractParams($this->filters);
+
+        $this->search->from($pagination['offset']);
+        $this->search->take($pagination['per_page']);
     }
 
     /**

@@ -13,10 +13,10 @@ class TattooService extends SearchService
 {
     public function __construct(
         protected UserService $userService,
-        public ImageService   $imageService
-    )
-    {
-        parent::__construct($userService);
+        protected PaginationService $paginationService,
+        public ImageService $imageService
+    ) {
+        parent::__construct($userService, $paginationService);
     }
 
     public function upload(array $files, User $user): array
