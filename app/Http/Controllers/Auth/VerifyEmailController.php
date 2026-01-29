@@ -32,7 +32,7 @@ class VerifyEmailController extends Controller
                 'already_verified' => true,
                 'token' => $token,
                 'user' => $user,
-                'redirect_url' => $user->type_id === 2 ? '/dashboard' : '/tattoos',
+                'redirect_url' => in_array($user->type_id, [2, 3]) ? '/dashboard' : '/tattoos',
             ]);
         }
 
@@ -53,7 +53,7 @@ class VerifyEmailController extends Controller
             'message' => 'Email verified successfully.',
             'token' => $token,
             'user' => $user,
-            'redirect_url' => $user->type_id === 2 ? '/dashboard' : '/tattoos',
+            'redirect_url' => in_array($user->type_id, [2, 3]) ? '/dashboard' : '/tattoos',
         ]);
     }
 }

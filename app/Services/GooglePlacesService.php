@@ -7,6 +7,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
+/**
+ * TODO: Add a search method that queries our studios table first before hitting Google.
+ * - Create searchStudiosLocal($query, $location) that searches our DB by name/location
+ * - Frontend should call this first to show existing studios
+ * - Only fall back to Google API when needed (reduces API costs)
+ * - Consider adding a /api/studios/search endpoint for this
+ */
 class GooglePlacesService
 {
     protected ?string $apiKey;
