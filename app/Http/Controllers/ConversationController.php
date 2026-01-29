@@ -48,6 +48,11 @@ class ConversationController extends Controller
             });
         }
 
+        // Filter out conversations where the other participant has been deleted
+        $query->whereHas('users', function ($q) use ($user) {
+            $q->where('users.id', '!=', $user->id);
+        });
+
         // Filter by type
         if ($request->has('type')) {
             $query->ofType($request->type);

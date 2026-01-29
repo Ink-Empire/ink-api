@@ -29,9 +29,12 @@ class ClientDashboardController extends Controller
             ->get()
             ->map(fn ($apt) => $this->formatAppointment($apt));
 
-        // Recent conversations (last 3)
+        // Recent conversations (last 3) - excluding conversations with deleted users
         $conversations = Conversation::forUser($user->id)
             ->with(['users', 'latestMessage.sender'])
+            ->whereHas('users', function ($q) use ($user) {
+                $q->where('users.id', '!=', $user->id);
+            })
             ->withCount(['messages as unread_count' => function ($q) use ($user) {
                 $q->where('sender_id', '!=', $user->id)
                     ->whereDoesntHave('conversation.participants', function ($pq) use ($user) {
