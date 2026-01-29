@@ -252,21 +252,99 @@ Supports two flows:
 
 ## Artist Management
 
+### Artist-Studio Relationship
+
+The `users_studios` pivot table tracks artist affiliations with verification status:
+
+| Column | Type | Description |
+|--------|------|-------------|
+| user_id | FK | Artist user ID |
+| studio_id | FK | Studio ID |
+| is_verified | boolean | Whether studio has verified the artist (default: false) |
+| verified_at | timestamp | When verification occurred (nullable) |
+
+### Artist Verification Flow
+
+```mermaid
+flowchart TD
+    A[Artist Claims Studio] --> B{How?}
+    B --> |Registration| C[Artist registers with studio_id]
+    B --> |Studio Adds| D[Studio adds by username/email]
+    C --> E[Added to users_studios with is_verified=false]
+    D --> E
+    E --> F[Appears in 'Artists to Verify' panel]
+    F --> G{Studio Action}
+    G --> |Verify| H[is_verified=true, verified_at=now]
+    G --> |Reject| I[Removed from users_studios]
+    H --> J[Artist shows as verified in studio]
+```
+
+### Artist Registration with Studio Affiliation
+
+When an artist registers and selects a studio during signup:
+1. `studio_id` is saved on the user record
+2. Artist is automatically added to `users_studios` pivot with `is_verified = false`
+3. Studio owner sees them in the "Artists to Verify" dashboard panel
+
 ### Add Artist
 
 Endpoint: `POST /api/studios/{id}/artists`
 
+Accepts username OR email:
 ```json
 { "username": "artist_username" }
+// or
+{ "email": "artist@email.com" }
+// or
+{ "identifier": "username_or_email" }
 ```
+
+Artist is added with `is_verified = false` (pending verification).
+
+### Verify Artist
+
+Endpoint: `POST /api/studios/{id}/artists/{userId}/verify`
+
+Marks an artist as verified at the studio. Sets `is_verified = true` and `verified_at = now()`.
+
+### Unverify Artist
+
+Endpoint: `POST /api/studios/{id}/artists/{userId}/unverify`
+
+Reverts artist to pending status. Sets `is_verified = false` and `verified_at = null`.
 
 ### Remove Artist
 
 Endpoint: `DELETE /api/studios/{id}/artists/{userId}`
 
+Completely removes artist from studio (removes from `users_studios` pivot).
+
 ### Get Artists
 
 Endpoint: `GET /api/studios/{id}/artists`
+
+Returns all studio artists with verification status:
+```json
+{
+  "data": [
+    {
+      "id": 1,
+      "name": "Artist Name",
+      "username": "artistuser",
+      "is_verified": true,
+      "verified_at": "2026-01-29T12:00:00Z"
+    }
+  ]
+}
+```
+
+### Dashboard: Artists to Verify Panel
+
+The studio dashboard displays an "Artists to Verify" panel that:
+- Always shows (even with no pending artists)
+- Displays pending artists with Verify/Reject buttons
+- Includes an "Add Artist" card to add artists by username or email
+- Opens `AddArtistModal` for adding new artists
 
 ## Studio Public Profile
 
@@ -301,7 +379,7 @@ Route: `/studios/[slug]`
 | `studios` | Studio records |
 | `addresses` | Physical addresses |
 | `studio_availability` | Weekly working hours (studio_id, day_of_week 0-6, start_time, end_time, is_day_off) |
-| `users_studios` | Artist-studio relationships |
+| `users_studios` | Artist-studio relationships with verification (user_id, studio_id, is_verified, verified_at) |
 | `studio_announcements` | Studio announcements |
 | `profile_views` | Polymorphic view tracking |
 
@@ -312,10 +390,15 @@ Route: `/studios/[slug]`
 | POST | `/api/studios` | Create new studio |
 | POST | `/api/studios/{id}/claim` | Claim existing studio |
 | PUT | `/api/studios/studio/{id}` | Update studio details |
-| GET | `/api/studios/{id}/working-hours` | Get studio working hours |
-| POST | `/api/studios/{id}/working-hours` | Set studio working hours |
+| GET | `/api/studios/{id}/working-hours` | Get studio working hours (public) |
+| POST | `/api/studios/{id}/working-hours` | Set studio working hours (auth) |
 | POST | `/api/studios/{id}/image` | Upload studio image |
 | GET | `/api/studios/{id}` | Get studio by ID |
+| GET | `/api/studios/{id}/artists` | Get studio artists with verification status |
+| POST | `/api/studios/{id}/artists` | Add artist by username or email |
+| DELETE | `/api/studios/{id}/artists/{userId}` | Remove artist from studio |
+| POST | `/api/studios/{id}/artists/{userId}/verify` | Verify an artist |
+| POST | `/api/studios/{id}/artists/{userId}/unverify` | Unverify an artist |
 | GET | `/api/studios/{id}/dashboard-stats` | Get dashboard statistics |
 | POST | `/api/studios/lookup-or-create` | Lookup/create from Google Places |
 | POST | `/api/studios/check-availability` | Check username/email availability |
@@ -328,13 +411,16 @@ Route: `/studios/[slug]`
 | Studio Details Form | `inked-in-www/nextjs/components/Onboarding/StudioDetails.tsx` |
 | Dashboard | `inked-in-www/nextjs/pages/dashboard.tsx` |
 | Edit Studio Modal | `inked-in-www/nextjs/components/EditStudioModal.tsx` |
+| Add Artist Modal | `inked-in-www/nextjs/components/AddArtistModal.tsx` |
 | Working Hours Modal | `inked-in-www/nextjs/components/WorkingHoursModal.tsx` |
 | Working Hours Editor | `inked-in-www/nextjs/components/WorkingHoursEditor.tsx` |
 | Studio Profile Page | `inked-in-www/nextjs/pages/studios/[slug].tsx` |
 | Studio Controller | `ink-api/app/Http/Controllers/StudioController.php` |
+| Studio Service | `ink-api/app/Services/StudioService.php` |
 | Studio Resource | `ink-api/app/Http/Resources/StudioResource.php` |
 | Studio Model | `ink-api/app/Models/Studio.php` |
 | Studio Availability Model | `ink-api/app/Models/StudioAvailability.php` |
+| Auth Controller | `ink-api/app/Http/Controllers/AuthController.php` |
 | Address Model | `ink-api/app/Models/Address.php` |
 | Verify Email Controller | `ink-api/app/Http/Controllers/Auth/VerifyEmailController.php` |
 | Google Places Service | `ink-api/app/Services/GooglePlacesService.php` |
