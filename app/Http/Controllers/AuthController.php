@@ -78,11 +78,15 @@ class AuthController extends Controller
             'password' => $hashedPassword,
         ]);
 
-        // If artist affiliated with a studio, mark it as claimed
+        // If artist affiliated with a studio, add them to the studio's artists (pending verification)
         if ($request->studio_id) {
-            Studio::where('id', $request->studio_id)
-                ->where('is_claimed', false)
-                ->update(['is_claimed' => true]);
+            $studio = Studio::find($request->studio_id);
+            if ($studio) {
+                // Add artist to users_studios pivot with is_verified = false (pending)
+                $studio->artists()->syncWithoutDetaching([
+                    $user->id => ['is_verified' => false]
+                ]);
+            }
         }
 
         // Save selected styles if provided

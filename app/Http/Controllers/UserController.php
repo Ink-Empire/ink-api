@@ -9,6 +9,7 @@ use App\Http\Resources\UserResource;
 use App\Models\ArtistSettings;
 use App\Models\User;
 use App\Services\AddressService;
+use App\Services\ElasticService;
 use App\Services\ImageService;
 use App\Services\UserService;
 use App\Services\PaginationService;
@@ -26,7 +27,8 @@ class UserController extends Controller
         protected UserService $userService,
         protected ImageService $imageService,
         protected AddressService $addressService,
-        protected PaginationService $paginationService
+        protected PaginationService $paginationService,
+        protected ElasticService $elasticService
     ) {
     }
 
@@ -403,6 +405,8 @@ class UserController extends Controller
             'about' => $request->input('about'),
         ]);
 
+        $user->searchable();
+
         return response()->json([
             'data' => $user,
         ], 201);
@@ -491,6 +495,7 @@ class UserController extends Controller
         }
 
         $user->save();
+        $user->searchable(); //just in case
 
         // Return user with artist_settings
         $user->load('artistSettings');
@@ -518,7 +523,13 @@ class UserController extends Controller
             ], 404);
         }
 
+        if ($user->type == UserTypes::ARTIST) {
+            //clear all tattoos from elastic index
+            $this->elasticService->deleteByQuery('artist_id', $user->id, 'tattoos');
+        }
+
         $user->delete();
+        $user->searchable();
 
         return response()->json([
             'data' => ['id' => $id],

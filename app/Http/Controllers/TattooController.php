@@ -657,6 +657,7 @@ class TattooController extends Controller
         }
 
         $tattoo->save();
+        $tattoo->searchable();
 
         // Handle tags if provided
         if ($request->has('tag_names')) {

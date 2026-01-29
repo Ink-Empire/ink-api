@@ -571,4 +571,54 @@ class ElasticService
         }
         return true;
     }
+
+    /**
+     * Delete all documents matching a field/value query.
+     *
+     * @param string $field The field to match on (e.g., 'artist_id')
+     * @param mixed $value The value to match
+     * @param string|null $index Optional index name, defaults to configured index
+     * @return array Response with deleted count
+     * @throws ElasticException
+     */
+    public function deleteByQuery(string $field, $value, ?string $index = null): array
+    {
+        $targetIndex = $index ?? $this->elastic_index;
+
+        try {
+            $params = [
+                'query' => [
+                    'term' => [
+                        $field => $value
+                    ]
+                ]
+            ];
+
+            $response = $this->post("/{$targetIndex}/_delete_by_query", $params);
+
+            Log::info("Deleted documents by query", [
+                'index' => $targetIndex,
+                'field' => $field,
+                'value' => $value,
+                'deleted' => $response['deleted'] ?? 0
+            ]);
+
+            return [
+                'status' => true,
+                'deleted' => $response['deleted'] ?? 0
+            ];
+
+        } catch (Exception $e) {
+            Log::error("Unable to delete by query", [
+                'index' => $targetIndex,
+                'field' => $field,
+                'value' => $value,
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine()
+            ]);
+
+            throw new ElasticException("Unable to delete documents by query: " . $e->getMessage());
+        }
+    }
 }

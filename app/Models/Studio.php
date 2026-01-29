@@ -13,7 +13,7 @@ class Studio extends Model
 
     protected $touches = ['artists'];
 
-    protected $with = ['image'];
+    protected $with = ['image', 'address', 'business_hours'];
 
     protected $fillable = [
         'name',
@@ -64,6 +64,29 @@ class Studio extends Model
     public function artists()
     {
         return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+            ->withPivot('is_verified', 'verified_at')
+            ->withTimestamps();
+    }
+
+    /**
+     * Get only verified artists for this studio.
+     */
+    public function verifiedArtists()
+    {
+        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+            ->withPivot('is_verified', 'verified_at')
+            ->wherePivot('is_verified', true)
+            ->withTimestamps();
+    }
+
+    /**
+     * Get only pending (unverified) artists for this studio.
+     */
+    public function pendingArtists()
+    {
+        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+            ->withPivot('is_verified', 'verified_at')
+            ->wherePivot('is_verified', false)
             ->withTimestamps();
     }
 
