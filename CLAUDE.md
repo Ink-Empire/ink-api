@@ -10,6 +10,29 @@
 - **Error Handling**: Use Laravel exceptions and proper try/catch blocks
 - **Testing**: PHPUnit for backend, Laravel Dusk for frontend
 - **Documentation**: DocBlocks on classes and complex methods
+- When asked to document a flow or process, generate
+- Mermaid diagrams and save to `docs/flows/`.
+
+### Standard prompts for generating flow docs:
+
+**Auth flow:**
+Analyze auth controllers, middleware, and models. Generate a mermaid flowchart for registration, login, email verification, and session handling.
+
+**Booking flow:**
+Trace booking requests from client submission through artist notification. Create a sequence diagram showing frontend -> API -> database -> notifications.
+
+**Image upload flow:**
+Document the tattoo upload pipeline including storage, AI tagging, user confirmation, and Elasticsearch indexing.
+
+**Search flow:**
+Map search from user input through Elasticsearch, filters, notBlockedBy scope, and result ranking.
+
+### Mermaid conventions:
+- Use `([text])` for start/end terminals
+- Use `[text]` for processes
+- Use `{text}` for decisions
+- Use `-->|label|` for labeled arrows
+- Save output to `docs/flows/[flow-name].md`
 - **Git Flow**: Create branches from develop, request code review before merging
 - Protected methods are often not needed. This is not an SDK for others to use, this is our internal code. Focus on writing very clear, testable code, rather than adhering to old-school PHP patterns.
 - Do not create protected or private methods in a class unless absolutely necessary. this is not public code and does not need to be overly controlled.

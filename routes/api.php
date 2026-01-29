@@ -231,5 +231,5 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
     // Documentation
     Route::get('docs', [\App\Http\Controllers\Admin\DocsController::class, 'index']);
-    Route::get('docs/{name}', [\App\Http\Controllers\Admin\DocsController::class, 'show']);
+    Route::get('docs/{name}', [\App\Http\Controllers\Admin\DocsController::class, 'show'])->where('name', '.*');
 });
