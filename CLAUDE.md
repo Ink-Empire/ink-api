@@ -2,7 +2,7 @@
 
 ## Code Style Guidelines
 - **Framework**: Laravel PHP (PSR standards)
-- **PHP Version**: 8.2+
+- **PHP Version**: 8.3+
 - **Formatting**: Laravel Pint (preset: laravel)
 - **Namespacing**: PSR-4 with App\\ namespace
 - **Models**: Located in app/Models with appropriate relationships
@@ -34,8 +34,6 @@ Map search from user input through Elasticsearch, filters, notBlockedBy scope, a
 - Use `-->|label|` for labeled arrows
 - Save output to `docs/flows/[flow-name].md`
 - **Git Flow**: Create branches from develop, request code review before merging
-- Protected methods are often not needed. This is not an SDK for others to use, this is our internal code. Focus on writing very clear, testable code, rather than adhering to old-school PHP patterns.
-- Do not create protected or private methods in a class unless absolutely necessary. this is not public code and does not need to be overly controlled.
 - Don't automatically perform any git operations; I'll handle git and version control
 
 ## Testing Guidelines

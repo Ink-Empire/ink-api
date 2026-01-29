@@ -17,6 +17,7 @@ use App\Services\TagService;
 use App\Services\UserService;
 use App\Services\GooglePlacesService;
 use App\Services\SearchImpressionService;
+use App\Services\PaginationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -31,13 +32,13 @@ class TattooController extends Controller
 
     public function __construct(
         protected TattooService $tattooService,
-        protected ImageService  $imageService,
-        protected UserService   $userService,
+        protected ImageService $imageService,
+        protected UserService $userService,
         protected TagService $tattooTagService,
         protected GooglePlacesService $googlePlacesService,
-        protected SearchImpressionService $impressionService
-    )
-    {
+        protected SearchImpressionService $impressionService,
+        protected PaginationService $paginationService
+    ) {
     }
 
     /**
@@ -75,6 +76,7 @@ class TattooController extends Controller
     public function search(Request $request): JsonResponse
     {
         $params = $request->all();
+        $pagination = $this->paginationService->extractParams($params);
 
         $response = $this->tattooService->search($params);
 
@@ -100,25 +102,16 @@ class TattooController extends Controller
             }
         }
 
-        // Determine if this is an active search query (has filters/search terms)
-        $hasActiveQuery = !empty($params['searchString']) ||
-                          !empty($params['styles']) ||
-                          !empty($params['tags']) ||
-                          !empty($params['tagNames']);
+        $total = $response['total'] ?? 0;
+        $paginationMeta = $this->paginationService->buildMeta($total, $pagination['page'], $pagination['per_page']);
 
-        // Only include total count if there's an active search query
-        // For browsing without filters, we don't show "X tattoos available"
-        if (!$hasActiveQuery) {
-            unset($response['total']);
-        }
-
-        // Get unclaimed studios if we have location coordinates and not searching "Anywhere"
-        $unclaimedStudios = $this->getUnclaimedStudios($params, $request);
+        // Get unclaimed studios only on first page
+        $unclaimedStudios = $pagination['page'] === 1 ? $this->getUnclaimedStudios($params, $request) : [];
 
         return response()->json([
             'response' => $response['response'],
             'unclaimed_studios' => $unclaimedStudios,
-            'total' => $response['total'] ?? null,
+            ...$paginationMeta,
             'none_found' => $response['none_found'] ?? null,
         ]);
     }
@@ -734,8 +727,7 @@ class TattooController extends Controller
      */
     public function adminIndex(Request $request): JsonResponse
     {
-        $perPage = min($request->input('per_page', 25), 100);
-        $page = $request->input('page', 1);
+        $pagination = $this->paginationService->extractParams($request);
         $sort = $request->input('sort', 'id');
         $order = $request->input('order', 'desc');
         $filter = $request->input('filter', []);
@@ -783,7 +775,7 @@ class TattooController extends Controller
         $query->orderBy($sort, $order);
 
         $total = $query->count();
-        $tattoos = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+        $tattoos = $this->paginationService->applyToQuery($query, $pagination['offset'], $pagination['per_page'])->get();
 
         return response()->json([
             'data' => $tattoos->map(fn($t) => [

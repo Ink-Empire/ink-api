@@ -5,16 +5,16 @@ namespace App\Http\Controllers;
 use App\Models\Tag;
 use App\Models\Tattoo;
 use App\Services\TagService;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class TagController extends Controller
 {
-    protected TagService $tagService;
-
-    public function __construct(TagService $tagService)
-    {
-        $this->tagService = $tagService;
+    public function __construct(
+        protected TagService $tagService,
+        protected PaginationService $paginationService
+    ) {
     }
 
     /**
@@ -443,8 +443,7 @@ class TagController extends Controller
      */
     public function adminIndex(Request $request): JsonResponse
     {
-        $perPage = min($request->input('per_page', 25), 100);
-        $page = $request->input('page', 1);
+        $pagination = $this->paginationService->extractParams($request);
         $sort = $request->input('sort', 'id');
         $order = $request->input('order', 'desc');
         $filter = $request->input('filter', []);
@@ -476,7 +475,7 @@ class TagController extends Controller
         $query->orderBy($sort, $order);
 
         $total = $query->count();
-        $tags = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+        $tags = $this->paginationService->applyToQuery($query, $pagination['offset'], $pagination['per_page'])->get();
 
         return response()->json([
             'data' => $tags,

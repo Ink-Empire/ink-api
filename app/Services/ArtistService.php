@@ -12,9 +12,10 @@ use App\Models\Image;
 class ArtistService extends SearchService
 {
     public function __construct(
-        protected UserService $userService
+        protected UserService $userService,
+        protected PaginationService $paginationService
     ) {
-        parent::__construct($userService);
+        parent::__construct($userService, $paginationService);
     }
 
     /**

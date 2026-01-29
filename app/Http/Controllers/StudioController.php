@@ -14,6 +14,7 @@ use App\Services\ImageService;
 use App\Services\StudioService;
 use App\Services\UserService;
 use App\Services\GooglePlacesService;
+use App\Services\PaginationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 
@@ -21,12 +22,12 @@ class StudioController extends Controller
 {
     public function __construct(
         protected AddressService $addressService,
-        protected ImageService   $imageService,
-        protected StudioService  $studioService,
-        protected UserService    $userService,
+        protected ImageService $imageService,
+        protected StudioService $studioService,
+        protected UserService $userService,
         protected GooglePlacesService $googlePlacesService,
-    )
-    {
+        protected PaginationService $paginationService
+    ) {
     }
 
     /**
@@ -479,8 +480,7 @@ class StudioController extends Controller
      */
     public function adminIndex(Request $request): JsonResponse
     {
-        $perPage = min($request->input('per_page', 25), 100);
-        $page = $request->input('page', 1);
+        $pagination = $this->paginationService->extractParams($request);
         $sort = $request->input('sort', 'id');
         $order = $request->input('order', 'desc');
         $filter = $request->input('filter', []);
@@ -505,7 +505,7 @@ class StudioController extends Controller
         $query->orderBy($sort, $order);
 
         $total = $query->count();
-        $studios = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+        $studios = $this->paginationService->applyToQuery($query, $pagination['offset'], $pagination['per_page'])->get();
 
         return response()->json([
             'data' => $studios,
