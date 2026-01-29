@@ -560,7 +560,6 @@ class StudioController extends Controller
         // Use Elasticsearch for speed
         $limit = $request->get('limit', 20);
         $page = $request->get('page', 1);
-        $from = ($page - 1) * $limit;
 
         $search = \App\Models\Tattoo::search();
 
@@ -576,10 +575,17 @@ class StudioController extends Controller
         $search->sort('created_at', 'desc');
 
         // Pagination
-        $search->from($from);
         $search->take($limit);
 
         $results = $search->get();
+
+        \Log::info('Studio gallery search', [
+            'studio_id' => $id,
+            'artist_ids' => $artistIds,
+            'results_keys' => array_keys($results),
+            'total' => $results['total'] ?? 'not set',
+            'response_count' => isset($results['response']) ? count($results['response']) : 'no response key',
+        ]);
 
         $tattoos = $results['response'] ?? collect();
         $total = $results['total'] ?? 0;
