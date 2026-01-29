@@ -83,9 +83,26 @@ class AuthController extends Controller
             $studio = Studio::find($request->studio_id);
             if ($studio) {
                 // Add artist to users_studios pivot with is_verified = false (pending)
+                // initiated_by = 'artist' means the artist requested to join
                 $studio->artists()->syncWithoutDetaching([
-                    $user->id => ['is_verified' => false]
+                    $user->id => [
+                        'is_verified' => false,
+                        'initiated_by' => 'artist',
+                    ]
                 ]);
+
+                // Notify the studio owner about the join request
+                if ($studio->owner) {
+                    try {
+                        $studio->owner->notify(new \App\Notifications\ArtistJoinRequestNotification($user, $studio));
+                    } catch (\Exception $e) {
+                        Log::warning('Failed to send artist join request notification', [
+                            'artist_id' => $user->id,
+                            'studio_id' => $studio->id,
+                            'error' => $e->getMessage(),
+                        ]);
+                    }
+                }
             }
         }
 

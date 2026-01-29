@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Requests\TattooCreateRequest;
 use App\Http\Resources\Elastic\TattooResource;
 use App\Jobs\GenerateAiTagsJob;
 use App\Models\Artist;

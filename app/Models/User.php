@@ -164,6 +164,51 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasOne(Studio::class, 'owner_id');
     }
 
+    /**
+     * Studios this user is affiliated with (via users_studios pivot table).
+     */
+    public function affiliatedStudios()
+    {
+        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->withTimestamps();
+    }
+
+    /**
+     * Verified studio affiliations.
+     */
+    public function verifiedStudios()
+    {
+        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->wherePivot('is_verified', true)
+            ->withTimestamps();
+    }
+
+    /**
+     * Pending studio invitations (studio invited this artist, awaiting acceptance).
+     */
+    public function pendingStudioInvitations()
+    {
+        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->wherePivot('is_verified', false)
+            ->wherePivot('initiated_by', 'studio')
+            ->withTimestamps();
+    }
+
+    /**
+     * Pending studio requests (artist requested to join, awaiting studio approval).
+     */
+    public function pendingStudioRequests()
+    {
+        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->wherePivot('is_verified', false)
+            ->wherePivot('initiated_by', 'artist')
+            ->withTimestamps();
+    }
+
     public function artistSettings()
     {
         return $this->hasOne(ArtistSettings::class, 'artist_id');

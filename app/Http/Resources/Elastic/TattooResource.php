@@ -10,24 +10,32 @@ class TattooResource extends JsonResource
 {
     public function toArray($request)
     {
-        return [
-            'id' => $this->id,
-            'artist_id' => $this->artist?->id,
-            'artist_slug' => $this->artist?->slug,
-            'artist_image_uri' => $this->artist?->primary_image?->uri ?? '',
-            'studio_id' => $this->studio?->id ?? null,
-            'title' => $this->title,
-            'description' => $this->description,
-            'placement' => $this->placement,
-            'duration' => $this->duration,
-            'studio' => $this->studio?->name ?? "",
-            'primary_style' => $this->primary_style?->name ?? "",
-            'primary_subject' => $this->subject?->name ?? "",
-            'primary_image' => $this->primary_image ?? null,
-            'images' => $this->images ?? [],
-            'styles' => $this->styles ?? [],
-            'tags' => $this->tags ?? [],
-            'is_featured' => (int) $this->is_featured
-        ];
+        try {
+            return [
+                'id' => $this->id,
+                'artist_id' => $this->artist?->id,
+                'artist_slug' => $this->artist?->slug,
+                'artist_image_uri' => $this->artist?->primary_image?->uri ?? '',
+                'studio_id' => $this->studio?->id ?? null,
+                'title' => $this->title,
+                'description' => $this->description,
+                'placement' => $this->placement,
+                'duration' => $this->duration,
+                'studio' => $this->studio?->name ?? "",
+                'primary_style' => $this->primary_style?->name ?? "",
+                'primary_subject' => $this->subject?->name ?? "",
+                'primary_image' => $this->primary_image->uri ?? null,
+                'images' => $this->images ?? [],
+                'styles' => $this->styles ?? [],
+                'tags' => $this->tags ?? [],
+                'is_featured' => (int)$this->is_featured
+            ];
+        } catch (\Exception $e) {
+            \Log::error([
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+        }
     }
 }
