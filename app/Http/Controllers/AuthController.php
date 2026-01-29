@@ -98,11 +98,16 @@ class AuthController extends Controller
         // (Welcome email is sent after verification in VerifyEmailController)
         event(new Registered($user));
 
-        // Don't create a token - user must verify email and login first
+        // Create a temporary token for profile image upload
+        // User still needs to verify email before normal login
+        $token = $user->createToken('registration-upload')->plainTextToken;
+
         return response()->json([
             'message' => 'Registration successful. Please check your email to verify your account.',
             'requires_verification' => true,
             'email' => $user->email,
+            'user' => ['id' => $user->id],
+            'token' => $token,
         ], 201);
     }
 

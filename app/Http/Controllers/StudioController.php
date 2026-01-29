@@ -525,6 +525,76 @@ class StudioController extends Controller
         ]);
     }
 
+    // Gallery - tattoos from affiliated artists
+    public function getGallery(Request $request, $id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        // Get artist IDs from verified affiliated artists
+        $artistIds = $studio->verifiedArtists()->pluck('users.id')->toArray();
+
+        // Also include the studio owner if they are an artist
+        if ($studio->owner_id) {
+            $owner = User::find($studio->owner_id);
+            if ($owner && $owner->type_id === \App\Enums\UserTypes::ARTIST_TYPE_ID) {
+                $artistIds[] = $studio->owner_id;
+                $artistIds = array_unique($artistIds);
+            }
+        }
+
+        if (empty($artistIds)) {
+            return response()->json([
+                'gallery' => [],
+                'meta' => [
+                    'current_page' => 1,
+                    'last_page' => 1,
+                    'per_page' => $request->get('limit', 20),
+                    'total' => 0,
+                ],
+            ]);
+        }
+
+        // Use Elasticsearch for speed
+        $limit = $request->get('limit', 20);
+        $page = $request->get('page', 1);
+        $from = ($page - 1) * $limit;
+
+        $search = \App\Models\Tattoo::search();
+
+        // Filter by artist IDs using orWhere with clauses
+        $clauses = [];
+        foreach ($artistIds as $artistId) {
+            $clauses[] = ['artist_id', '=', (int)$artistId];
+        }
+        $search->orWhere($clauses, 1); // minimum_should_match = 1
+
+        // Sort by featured first, then newest
+        $search->sort('is_featured', 'desc');
+        $search->sort('created_at', 'desc');
+
+        // Pagination
+        $search->from($from);
+        $search->take($limit);
+
+        $results = $search->get();
+
+        $tattoos = $results['response'] ?? collect();
+        $total = $results['total'] ?? 0;
+
+        return response()->json([
+            'gallery' => \App\Http\Resources\Elastic\TattooResource::collection($tattoos),
+            'meta' => [
+                'current_page' => $page,
+                'last_page' => ceil($total / $limit) ?: 1,
+                'per_page' => $limit,
+                'total' => $total,
+            ],
+        ]);
+    }
+
     // Announcements
     public function getAnnouncements($id): JsonResponse
     {
