@@ -6,6 +6,7 @@ use App\Actions\Fortify\PasswordValidationRules;
 use App\Enums\UserTypes;
 use App\Http\Requests\Auth\LoginRequest;
 use App\Http\Resources\UserResource;
+use App\Http\Resources\SelfUserResource;
 use App\Models\User;
 use App\Models\Studio;
 use App\Services\AddressService;
@@ -66,7 +67,7 @@ class AuthController extends Controller
             'phone' => $request->phone ?? null,
             'location' => $request->location ?? null,
             'location_lat_long' => $request->location_lat_long ?? null,
-            'type_id' => $request->type == UserTypes::USER ? 1 : 2,
+            'type_id' => UserTypes::getTypeId($request->type ?? UserTypes::USER),
             'address_id' => $address->id ?? null,
             'experience_level' => $request->experience_level ?? null,
             'studio_id' => $request->studio_id ?? null, // Studio affiliation for artists
@@ -197,7 +198,7 @@ class AuthController extends Controller
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([
-            'user' => new UserResource($user),
+            'user' => new SelfUserResource($user),
             'token' => $token,
             'message' => 'Logged in successfully'
         ]);
