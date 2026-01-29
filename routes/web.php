@@ -116,18 +116,23 @@ Route::prefix('api')->group(function () {
         Route::get('/{id}/announcements', [StudioController::class, 'getAnnouncements']);
         Route::get('/{id}/spotlights', [StudioController::class, 'getSpotlights']);
         Route::get('/{id}/artists', [StudioController::class, 'getArtists']);
+        Route::get('/{id}/working-hours', [StudioController::class, 'getAvailability']);
 
         // Protected studio routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', [StudioController::class, 'create']);
+            Route::post('/{id}/claim', [StudioController::class, 'claim']);
             Route::post('/{id}/image', [StudioController::class, 'uploadImage']);
             Route::put('/studio/{id}', [StudioController::class, 'update']);
             Route::put('/studios/studio-hours/{id}', [StudioController::class, 'updateBusinessHours']);
+            Route::post('/{id}/working-hours', [StudioController::class, 'setAvailability']);
             Route::get('/{id}/dashboard-stats', [StudioController::class, 'getDashboardStats']);
 
             // Artist management
             Route::post('/{id}/artists', [StudioController::class, 'addArtist']);
             Route::delete('/{id}/artists/{userId}', [StudioController::class, 'removeArtist']);
+            Route::post('/{id}/artists/{userId}/verify', [StudioController::class, 'verifyArtist']);
+            Route::post('/{id}/artists/{userId}/unverify', [StudioController::class, 'unverifyArtist']);
 
             // Announcements
             Route::post('/{id}/announcements', [StudioController::class, 'createAnnouncement']);

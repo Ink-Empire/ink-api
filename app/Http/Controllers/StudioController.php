@@ -4,8 +4,10 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserTypes;
 use App\Http\Resources\StudioResource;
+use App\Http\Resources\StudioWorkingHoursResource;
 use App\Http\Resources\UserResource;
 use App\Models\Appointment;
+use App\Models\StudioAvailability;
 use App\Models\ProfileView;
 use App\Models\Studio;
 use App\Models\StudioAnnouncement;
@@ -224,7 +226,36 @@ class StudioController extends Controller
         $data = $request->all();
         $studio = $this->studioService->getById($id);
 
+        // Handle address fields - create or update Address record
+        $addressFields = ['address', 'address2', 'city', 'state', 'postal_code'];
+        $hasAddressData = collect($addressFields)->contains(fn($field) => isset($data[$field]) && $data[$field] !== '');
+
+        if ($hasAddressData) {
+            $addressData = [
+                'address1' => $data['address'] ?? '',
+                'address2' => $data['address2'] ?? null,
+                'city' => $data['city'] ?? '',
+                'state' => $data['state'] ?? '',
+                'postal_code' => $data['postal_code'] ?? '',
+                'country_code' => 'US',
+            ];
+
+            if ($studio->address_id && $studio->address) {
+                // Update existing address
+                $studio->address->update($addressData);
+            } else {
+                // Create new address
+                $address = \App\Models\Address::create($addressData);
+                $studio->address_id = $address->id;
+            }
+        }
+
         foreach ($data as $fieldName => $fieldVal) {
+            // Skip address fields as they're handled above
+            if (in_array($fieldName, $addressFields)) {
+                continue;
+            }
+
             if (in_array($fieldName, $studio->getFillable())) {
                 $studio->{$fieldName} = $fieldVal;
             }
@@ -247,6 +278,9 @@ class StudioController extends Controller
         }
         $studio->save();
 
+        // Reload the address relationship to include it in the response
+        $studio->load('address');
+
         return $this->returnResponse('studio', new StudioResource($studio));
 
     }
@@ -263,6 +297,58 @@ class StudioController extends Controller
         }
 
         return $this->returnResponse('studio', new StudioResource($studio));
+    }
+
+    /**
+     * Get studio availability/working hours.
+     */
+    public function getAvailability(Request $request, $id)
+    {
+        $studio = $this->studioService->getById($id);
+
+        if (!$studio) {
+            return response()->json(['error' => 'Studio not found'], 404);
+        }
+
+        $availability = StudioAvailability::where('studio_id', $studio->id)->get();
+
+        return StudioWorkingHoursResource::collection($availability);
+    }
+
+    /**
+     * Set studio availability/working hours.
+     */
+    public function setAvailability(Request $request, $id)
+    {
+        $studio = $this->studioService->getById($id);
+
+        if (!$studio) {
+            return response()->json(['error' => 'Studio not found'], 404);
+        }
+
+        // Verify the current user owns this studio
+        $user = $request->user();
+        if (!$user || $studio->owner_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $availabilityArray = $request->get('availability');
+
+        foreach ($availabilityArray as $availability) {
+            StudioAvailability::updateOrCreate(
+                [
+                    'studio_id' => $studio->id,
+                    'day_of_week' => $availability['day_of_week']
+                ],
+                [
+                    'start_time' => $availability['start_time'],
+                    'end_time' => $availability['end_time'],
+                    'is_day_off' => $availability['is_day_off']
+                ]
+            );
+        }
+
+        return response()->json(['success' => true]);
     }
 
     /**
@@ -335,7 +421,16 @@ class StudioController extends Controller
         }
 
         $artists = $this->studioService->getStudioArtists($studio);
-        return $this->returnResponse('artists', UserResource::collection($artists));
+
+        // Include pivot data (is_verified, verified_at) in the response
+        $artistsWithVerification = $artists->map(function ($artist) {
+            $artistArray = (new UserResource($artist))->toArray(request());
+            $artistArray['is_verified'] = (bool) ($artist->pivot->is_verified ?? false);
+            $artistArray['verified_at'] = $artist->pivot->verified_at ?? null;
+            return $artistArray;
+        });
+
+        return $this->returnResponse('artists', $artistsWithVerification);
     }
 
     public function addArtist(Request $request, $id): JsonResponse
@@ -371,6 +466,62 @@ class StudioController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Verify an artist at this studio.
+     */
+    public function verifyArtist(Request $request, $id, $userId): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        // Check if artist is associated with this studio
+        $artist = $studio->artists()->where('users.id', $userId)->first();
+        if (!$artist) {
+            return $this->returnErrorResponse('Artist is not associated with this studio', 404);
+        }
+
+        // Update the pivot to mark as verified
+        $studio->artists()->updateExistingPivot($userId, [
+            'is_verified' => true,
+            'verified_at' => now(),
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Artist verified successfully',
+        ]);
+    }
+
+    /**
+     * Unverify (reject) an artist at this studio.
+     */
+    public function unverifyArtist(Request $request, $id, $userId): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        // Check if artist is associated with this studio
+        $artist = $studio->artists()->where('users.id', $userId)->first();
+        if (!$artist) {
+            return $this->returnErrorResponse('Artist is not associated with this studio', 404);
+        }
+
+        // Update the pivot to mark as unverified
+        $studio->artists()->updateExistingPivot($userId, [
+            'is_verified' => false,
+            'verified_at' => null,
+        ]);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Artist verification removed',
+        ]);
     }
 
     // Announcements
