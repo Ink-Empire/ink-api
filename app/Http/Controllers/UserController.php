@@ -525,7 +525,7 @@ class UserController extends Controller
 
         if ($user->type == UserTypes::ARTIST) {
             //clear all tattoos from elastic index
-            $this->elasticService->rebuild()
+            $this->elasticService->deleteByQuery('artist_id', $user->id, 'tattoos');
         }
 
         $user->delete();

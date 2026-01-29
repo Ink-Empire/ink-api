@@ -440,14 +440,15 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Studio not found', 404);
         }
 
-        $username = $request->input('username');
-        if (!$username) {
-            return $this->returnErrorResponse('Username is required', 422);
+        // Accept either username or email
+        $identifier = $request->input('username') ?? $request->input('email') ?? $request->input('identifier');
+        if (!$identifier) {
+            return $this->returnErrorResponse('Username or email is required', 422);
         }
 
-        $artist = $this->studioService->addArtistByUsername($studio, $username);
+        $artist = $this->studioService->addArtistByUsernameOrEmail($studio, $identifier);
         if (!$artist) {
-            return $this->returnErrorResponse('Artist not found with that username', 404);
+            return $this->returnErrorResponse('Artist not found with that username or email', 404);
         }
 
         return $this->returnResponse('artist', new UserResource($artist));
