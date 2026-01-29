@@ -647,4 +647,112 @@ class ArtistController extends Controller
 
         return response()->json(['data' => $schedule]);
     }
+
+    /**
+     * Get pending studio invitations for the authenticated artist.
+     */
+    public function getStudioInvitations(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $invitations = $user->pendingStudioInvitations()
+            ->with(['image', 'owner'])
+            ->get()
+            ->map(function ($studio) {
+                return [
+                    'id' => $studio->id,
+                    'name' => $studio->name,
+                    'slug' => $studio->slug,
+                    'location' => $studio->location,
+                    'image' => $studio->image ? [
+                        'id' => $studio->image->id,
+                        'uri' => $studio->image->uri,
+                    ] : null,
+                    'owner' => $studio->owner ? [
+                        'id' => $studio->owner->id,
+                        'name' => $studio->owner->name,
+                    ] : null,
+                    'invited_at' => $studio->pivot->created_at,
+                ];
+            });
+
+        return response()->json(['invitations' => $invitations]);
+    }
+
+    /**
+     * Accept a studio invitation.
+     */
+    public function acceptStudioInvitation(Request $request, int $studioId): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if this invitation exists
+        $invitation = $user->pendingStudioInvitations()
+            ->where('studios.id', $studioId)
+            ->first();
+
+        if (!$invitation) {
+            return response()->json(['error' => 'Invitation not found'], 404);
+        }
+
+        // Accept: update the pivot to mark as verified
+        $user->affiliatedStudios()->updateExistingPivot($studioId, [
+            'is_verified' => true,
+            'verified_at' => now(),
+        ]);
+
+        // Optionally notify the studio owner
+        $studio = \App\Models\Studio::find($studioId);
+        if ($studio && $studio->owner) {
+            try {
+                $studio->owner->notify(new \App\Notifications\AffiliationAcceptedNotification($user, $studio, 'artist'));
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send affiliation accepted notification', [
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Studio invitation accepted',
+        ]);
+    }
+
+    /**
+     * Decline a studio invitation.
+     */
+    public function declineStudioInvitation(Request $request, int $studioId): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if this invitation exists
+        $invitation = $user->pendingStudioInvitations()
+            ->where('studios.id', $studioId)
+            ->first();
+
+        if (!$invitation) {
+            return response()->json(['error' => 'Invitation not found'], 404);
+        }
+
+        // Decline: remove the pivot record
+        $user->affiliatedStudios()->detach($studioId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Studio invitation declined',
+        ]);
+    }
 }

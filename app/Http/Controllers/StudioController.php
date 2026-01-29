@@ -422,11 +422,12 @@ class StudioController extends Controller
 
         $artists = $this->studioService->getStudioArtists($studio);
 
-        // Include pivot data (is_verified, verified_at) in the response
+        // Include pivot data (is_verified, verified_at, initiated_by) in the response
         $artistsWithVerification = $artists->map(function ($artist) {
             $artistArray = (new UserResource($artist))->toArray(request());
             $artistArray['is_verified'] = (bool) ($artist->pivot->is_verified ?? false);
             $artistArray['verified_at'] = $artist->pivot->verified_at ?? null;
+            $artistArray['initiated_by'] = $artist->pivot->initiated_by ?? 'artist';
             return $artistArray;
         });
 
@@ -446,9 +447,21 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Username or email is required', 422);
         }
 
-        $artist = $this->studioService->addArtistByUsernameOrEmail($studio, $identifier);
+        $artist = $this->studioService->addArtistByUsernameOrEmail($studio, $identifier, 'studio');
         if (!$artist) {
             return $this->returnErrorResponse('Artist not found with that username or email', 404);
+        }
+
+        // Send notification to the artist
+        try {
+            $invitedBy = $request->user();
+            $artist->notify(new \App\Notifications\StudioInvitationNotification($studio, $invitedBy));
+        } catch (\Exception $e) {
+            \Log::warning('Failed to send studio invitation notification', [
+                'artist_id' => $artist->id,
+                'studio_id' => $studio->id,
+                'error' => $e->getMessage(),
+            ]);
         }
 
         return $this->returnResponse('artist', new UserResource($artist));
@@ -485,11 +498,27 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Artist is not associated with this studio', 404);
         }
 
+        // Check if this was an artist-initiated request (so we can notify them)
+        $wasArtistRequest = $artist->pivot->initiated_by === 'artist';
+
         // Update the pivot to mark as verified
         $studio->artists()->updateExistingPivot($userId, [
             'is_verified' => true,
             'verified_at' => now(),
         ]);
+
+        // If the artist requested to join, notify them that they've been approved
+        if ($wasArtistRequest) {
+            try {
+                $artist->notify(new \App\Notifications\AffiliationAcceptedNotification($studio->owner ?? $request->user(), $studio, 'studio'));
+            } catch (\Exception $e) {
+                \Log::warning('Failed to send affiliation accepted notification', [
+                    'artist_id' => $userId,
+                    'studio_id' => $studio->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
 
         return response()->json([
             'success' => true,
@@ -563,12 +592,8 @@ class StudioController extends Controller
 
         $search = \App\Models\Tattoo::search();
 
-        // Filter by artist IDs using orWhere with clauses
-        $clauses = [];
-        foreach ($artistIds as $artistId) {
-            $clauses[] = ['artist_id', '=', (int)$artistId];
-        }
-        $search->orWhere($clauses, 1); // minimum_should_match = 1
+        // Filter by artist IDs
+        $search->whereIn('artist_id', $artistIds);
 
         // Sort by featured first, then newest
         $search->sort('is_featured', 'desc');
@@ -579,19 +604,21 @@ class StudioController extends Controller
 
         $results = $search->get();
 
-        \Log::info('Studio gallery search', [
-            'studio_id' => $id,
-            'artist_ids' => $artistIds,
-            'results_keys' => array_keys($results),
-            'total' => $results['total'] ?? 'not set',
-            'response_count' => isset($results['response']) ? count($results['response']) : 'no response key',
-        ]);
-
         $tattoos = $results['response'] ?? collect();
         $total = $results['total'] ?? 0;
 
+        // Mix tattoos from different artists together (shuffle within featured/non-featured groups)
+        // This prevents one artist's work from being stacked together
+        if ($tattoos->count() > 1) {
+            $featured = $tattoos->filter(fn($t) => !empty($t['is_featured']))->shuffle();
+            $nonFeatured = $tattoos->filter(fn($t) => empty($t['is_featured']))->shuffle();
+            $tattoos = $featured->concat($nonFeatured)->values();
+        }
+
+        // Elasticsearch returns data already formatted via TattooIndexResource during indexing
+        // So we return it directly without passing through TattooResource again
         return response()->json([
-            'gallery' => \App\Http\Resources\Elastic\TattooResource::collection($tattoos),
+            'gallery' => $tattoos,
             'meta' => [
                 'current_page' => $page,
                 'last_page' => ceil($total / $limit) ?: 1,
