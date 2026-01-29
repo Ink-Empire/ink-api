@@ -247,9 +247,18 @@ class User extends Authenticatable implements MustVerifyEmail
             return Appointment::forClientWithStatus($this->id, $status);
         } elseif ($this->type_id === UserTypes::ARTIST_TYPE_ID) {
             return Appointment::forArtistWithStatus($this->id, $status);
+        } elseif ($this->type_id === UserTypes::STUDIO_TYPE_ID) {
+            // For studio accounts, get appointments for all artists in the studio
+            $studio = $this->owned_studio;
+            if ($studio) {
+                $artistIds = $studio->artists()->pluck('users.id')->toArray();
+                return Appointment::whereIn('artist_id', $artistIds)
+                    ->whereIn('status', is_array($status) ? $status : [$status]);
+            }
         }
 
-        return collect(); // fallback: no appointments
+        // Return empty query builder (not collection) so ->with() still works
+        return Appointment::whereRaw('1 = 0');
     }
 
     /**
