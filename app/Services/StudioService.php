@@ -95,14 +95,21 @@ class StudioService
         }
     }
 
-    public function addArtistByUsername(Studio $studio, string $username): ?User
+    public function addArtistByUsernameOrEmail(Studio $studio, string $identifier): ?User
     {
-        $user = User::where('username', $username)
-            ->where('type_id', 2) // Artist type
+        // Search by username or email
+        $user = User::where('type_id', 2) // Artist type
+            ->where(function ($query) use ($identifier) {
+                $query->where('username', $identifier)
+                      ->orWhere('email', $identifier);
+            })
             ->first();
 
         if ($user) {
-            $studio->artists()->syncWithoutDetaching([$user->id]);
+            // Add with is_verified = false (pending verification)
+            $studio->artists()->syncWithoutDetaching([
+                $user->id => ['is_verified' => false]
+            ]);
             return $user;
         }
 

@@ -66,15 +66,29 @@ The link from the email directs to the frontend at `/verify-email?url={encoded_a
   "message": "Email verified successfully.",
   "token": "1|abc123...",
   "user": { ... },
-  "redirect_url": "/dashboard"  // or "/tattoos" for clients
+  "redirect_url": "/dashboard"  // or "/tattoos" for clients (type_id=1)
 }
 ```
+
+**Redirect URL by User Type:**
+| type_id | User Type | Redirect |
+|---------|-----------|----------|
+| 1 | Client | `/tattoos` |
+| 2 | Artist | `/dashboard` |
+| 3 | Studio | `/dashboard` |
 
 **After Verification:**
 - `email_verified_at` timestamp is set
 - `is_email_verified` boolean is set to `true`
 - Welcome email is sent via `SendWelcomeNotification` job
 - User receives an authentication token and is logged in
+
+**Studio Accounts (type_id=3):**
+- Pending studio data stored in `localStorage` during registration
+- After redirect to `/dashboard`, the pending data is processed
+- If `existingStudioId` present: `POST /api/studios/{id}/claim` (claims Google Places studio)
+- Otherwise: `POST /api/studios` (creates new studio)
+- See `docs/flows/studio-registration-management.md` for full flow
 
 ### Already Verified
 
@@ -170,7 +184,13 @@ Both are set when the user verifies their email.
 | `pages/register.tsx` | Registration flow |
 | `pages/login.tsx` | Login with verification check |
 | `pages/verify-email.tsx` | Verification status page |
+| `pages/dashboard.tsx` | Post-verification studio creation |
 | `contexts/AuthContext.tsx` | Auth state and login handler |
+
+## Related Documentation
+
+- [Artist Signup and Onboarding](flows/artist-signup-onboarding.md)
+- [Studio Registration and Management](flows/studio-registration-management.md)
 
 ## Flow Diagrams
 
