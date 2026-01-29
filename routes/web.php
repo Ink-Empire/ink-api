@@ -123,6 +123,7 @@ Route::prefix('api')->group(function () {
             Route::post('/{id}/image', [StudioController::class, 'uploadImage']);
             Route::put('/studio/{id}', [StudioController::class, 'update']);
             Route::put('/studios/studio-hours/{id}', [StudioController::class, 'updateBusinessHours']);
+            Route::get('/{id}/dashboard-stats', [StudioController::class, 'getDashboardStats']);
 
             // Artist management
             Route::post('/{id}/artists', [StudioController::class, 'addArtist']);

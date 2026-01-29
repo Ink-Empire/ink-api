@@ -5,11 +5,14 @@ namespace App\Http\Controllers;
 use App\Enums\UserTypes;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
+use App\Models\Appointment;
+use App\Models\ProfileView;
 use App\Models\Studio;
 use App\Models\StudioAnnouncement;
 use App\Models\StudioSpotlight;
 use App\Models\User;
 use App\Services\AddressService;
+use Carbon\Carbon;
 use App\Services\ImageService;
 use App\Services\StudioService;
 use App\Services\UserService;
@@ -603,6 +606,88 @@ class StudioController extends Controller
 
         return response()->json([
             'data' => ['id' => $id],
+        ]);
+    }
+
+    /**
+     * Get dashboard statistics for a studio.
+     */
+    public function getDashboardStats(Request $request, int $id): JsonResponse
+    {
+        $studio = Studio::find($id);
+
+        if (!$studio) {
+            return response()->json(['error' => 'Studio not found'], 404);
+        }
+
+        // Validate that the authenticated user is the studio owner
+        $user = $request->user();
+        if (!$user || $studio->owner_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
+
+        $now = Carbon::now();
+        $sevenDaysAgo = $now->copy()->subDays(7);
+        $fourteenDaysAgo = $now->copy()->subDays(14);
+
+        // Page views - this week vs last week
+        $viewsThisWeek = ProfileView::where('viewable_type', Studio::class)
+            ->where('viewable_id', $studio->id)
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->count();
+
+        $viewsLastWeek = ProfileView::where('viewable_type', Studio::class)
+            ->where('viewable_id', $studio->id)
+            ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
+            ->count();
+
+        $viewsTrend = $viewsLastWeek > 0
+            ? round((($viewsThisWeek - $viewsLastWeek) / $viewsLastWeek) * 100)
+            : ($viewsThisWeek > 0 ? 100 : 0);
+
+        // Studio artists (excluding owner if they're type 3)
+        $artistIds = $studio->artists()->pluck('users.id')->toArray();
+
+        // Get bookings for studio artists this week
+        $bookingsThisWeek = Appointment::whereIn('artist_id', $artistIds)
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->count();
+
+        $bookingsLastWeek = Appointment::whereIn('artist_id', $artistIds)
+            ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
+            ->count();
+
+        $bookingsTrend = $bookingsThisWeek - $bookingsLastWeek;
+
+        // Studio inquiries (conversations started with studio artists this week)
+        // Using conversations where artist_id is in our studio artists
+        $inquiriesThisWeek = \App\Models\Conversation::whereIn('artist_id', $artistIds)
+            ->where('created_at', '>=', $sevenDaysAgo)
+            ->count();
+
+        $inquiriesLastWeek = \App\Models\Conversation::whereIn('artist_id', $artistIds)
+            ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
+            ->count();
+
+        $inquiriesTrend = $inquiriesThisWeek - $inquiriesLastWeek;
+
+        return response()->json([
+            'page_views' => [
+                'count' => $viewsThisWeek,
+                'trend' => $viewsTrend,
+                'trend_label' => $viewsTrend >= 0 ? "+{$viewsTrend}%" : "{$viewsTrend}%",
+            ],
+            'bookings' => [
+                'count' => $bookingsThisWeek,
+                'trend' => $bookingsTrend,
+                'trend_label' => $bookingsTrend >= 0 ? "+{$bookingsTrend}" : "{$bookingsTrend}",
+            ],
+            'inquiries' => [
+                'count' => $inquiriesThisWeek,
+                'trend' => $inquiriesTrend,
+                'trend_label' => $inquiriesTrend > 0 ? 'New' : '',
+            ],
+            'artists_count' => count($artistIds),
         ]);
     }
 }

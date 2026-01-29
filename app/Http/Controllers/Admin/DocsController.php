@@ -17,9 +17,10 @@ class DocsController extends Controller
         $docsPath = base_path('docs');
 
         if (!File::isDirectory($docsPath)) {
-            return response()->json(['files' => []]);
+            return response()->json(['files' => [], 'folders' => []]);
         }
 
+        // Get root level files
         $files = File::files($docsPath);
         $docs = [];
 
@@ -40,14 +41,52 @@ class DocsController extends Controller
             }
         }
 
-        // Sort by title
-        usort($docs, fn($a, $b) => strcmp($a['title'], $b['title']));
+        // Get subdirectories and their files
+        $folders = [];
+        $directories = File::directories($docsPath);
 
-        return response()->json(['files' => $docs]);
+        foreach ($directories as $directory) {
+            $folderName = basename($directory);
+            $folderFiles = File::files($directory);
+            $folderDocs = [];
+
+            foreach ($folderFiles as $file) {
+                if ($file->getExtension() === 'md') {
+                    $filename = $file->getFilename();
+                    $name = str_replace('.md', '', $filename);
+                    $id = $folderName . '/' . $name;
+
+                    $folderDocs[] = [
+                        'id' => $id,
+                        'filename' => $filename,
+                        'title' => $this->formatTitle($name),
+                        'path' => $file->getRealPath(),
+                        'size' => $file->getSize(),
+                        'modified' => $file->getMTime(),
+                    ];
+                }
+            }
+
+            if (!empty($folderDocs)) {
+                usort($folderDocs, fn($a, $b) => strcmp($a['title'], $b['title']));
+                $folders[] = [
+                    'name' => $folderName,
+                    'title' => $this->formatTitle($folderName),
+                    'files' => $folderDocs,
+                ];
+            }
+        }
+
+        // Sort files and folders by title
+        usort($docs, fn($a, $b) => strcmp($a['title'], $b['title']));
+        usort($folders, fn($a, $b) => strcmp($a['title'], $b['title']));
+
+        return response()->json(['files' => $docs, 'folders' => $folders]);
     }
 
     /**
      * Get content of a specific documentation file.
+     * Supports subdirectories via path like "flows/artist-signup-onboarding"
      */
     public function show(string $name): JsonResponse
     {
@@ -59,12 +98,13 @@ class DocsController extends Controller
         }
 
         $content = File::get($filePath);
-        $filename = $name . '.md';
+        $filename = basename($name) . '.md';
+        $displayTitle = $this->formatTitle(basename($name));
 
         return response()->json([
             'id' => $name,
             'filename' => $filename,
-            'title' => $this->formatTitle($name),
+            'title' => $displayTitle,
             'content' => $content,
             'size' => File::size($filePath),
             'modified' => File::lastModified($filePath),
