@@ -14,6 +14,7 @@ use App\Services\UserService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Password;
 
 /**
  *
@@ -522,6 +523,64 @@ class UserController extends Controller
 
         return response()->json([
             'data' => ['id' => $id],
+        ]);
+    }
+
+    /**
+     * Send password reset email to a user (admin only)
+     */
+    public function adminSendPasswordReset(int $id): JsonResponse
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        $status = Password::sendResetLink(['email' => $user->email]);
+
+        if ($status !== Password::RESET_LINK_SENT) {
+            return response()->json([
+                'success' => false,
+                'message' => __($status),
+            ], 400);
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Password reset email sent',
+        ]);
+    }
+
+    /**
+     * Resend email verification to a user (admin only)
+     */
+    public function adminResendVerification(int $id): JsonResponse
+    {
+        $user = User::find($id);
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'User not found',
+            ], 404);
+        }
+
+        if ($user->hasVerifiedEmail()) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Email already verified',
+            ], 400);
+        }
+
+        $user->sendEmailVerificationNotification();
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Verification email sent',
         ]);
     }
 }

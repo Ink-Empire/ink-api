@@ -183,6 +183,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('users/{id}', [UserController::class, 'adminShow']);
     Route::put('users/{id}', [UserController::class, 'adminUpdate']);
     Route::delete('users/{id}', [UserController::class, 'adminDestroy']);
+    Route::post('users/{id}/send-password-reset', [UserController::class, 'adminSendPasswordReset']);
+    Route::post('users/{id}/resend-verification', [UserController::class, 'adminResendVerification']);
 
     // Studios
     Route::get('studios', [StudioController::class, 'adminIndex']);
