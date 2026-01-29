@@ -3,11 +3,16 @@
 namespace App\Http\Controllers;
 
 use App\Models\Placement;
+use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
 
 class PlacementController extends Controller
 {
+    public function __construct(
+        protected PaginationService $paginationService
+    ) {
+    }
     /**
      * Get all active placements (public endpoint, cached)
      */
@@ -28,8 +33,7 @@ class PlacementController extends Controller
      */
     public function adminIndex(Request $request): JsonResponse
     {
-        $perPage = min($request->input('per_page', 25), 100);
-        $page = $request->input('page', 1);
+        $pagination = $this->paginationService->extractParams($request);
         $sort = $request->input('sort', 'sort_order');
         $order = $request->input('order', 'asc');
         $filter = $request->input('filter', []);
@@ -51,7 +55,7 @@ class PlacementController extends Controller
         $query->orderBy($sort, $order);
 
         $total = $query->count();
-        $placements = $query->skip(($page - 1) * $perPage)->take($perPage)->get();
+        $placements = $this->paginationService->applyToQuery($query, $pagination['offset'], $pagination['per_page'])->get();
 
         return response()->json([
             'data' => $placements,
