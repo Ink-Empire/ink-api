@@ -3,7 +3,11 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserTypes;
+use App\Http\Resources\ClientDashboardAppointmentResource;
 use App\Http\Resources\ConversationResource;
+use App\Http\Resources\DashboardArtistResource;
+use App\Http\Resources\SuggestedArtistResource;
+use App\Http\Resources\WishlistArtistResource;
 use App\Models\Artist;
 use App\Models\ArtistWishlist;
 use App\Models\Conversation;
@@ -23,11 +27,11 @@ class ClientDashboardController extends Controller
         // Upcoming appointments (next 5, sorted by date)
         $appointments = $user->appointmentsWithStatus('booked')
             ->where('date', '>=', now()->toDateString())
+            ->with(['artist.image', 'studio'])
             ->orderBy('date')
             ->orderBy('start_time')
             ->take(5)
-            ->get()
-            ->map(fn ($apt) => $this->formatAppointment($apt));
+            ->get();
 
         // Recent conversations (last 3) - excluding conversations with deleted users
         $conversations = Conversation::forUser($user->id)
@@ -50,12 +54,11 @@ class ClientDashboardController extends Controller
         // Wishlist count
         $wishlistCount = $user->wishlistArtists()->notBlockedBy($user)->count();
 
-
         // Suggested artists (6)
         $suggestedArtists = $this->getSuggestedArtists($user, 6);
 
         return response()->json([
-            'appointments' => $appointments,
+            'appointments' => ClientDashboardAppointmentResource::collection($appointments),
             'conversations' => ConversationResource::collection($conversations),
             'wishlist_count' => $wishlistCount,
             'suggested_artists' => $suggestedArtists,
@@ -71,13 +74,12 @@ class ClientDashboardController extends Controller
 
         $wishlistItems = $user->wishlistArtists()
             ->notBlockedBy($user)
-            ->with(['image', 'studio', 'styles'])
+            ->with(['image', 'studio', 'styles', 'settings'])
             ->withPivot('notify_booking_open', 'notified_at', 'created_at')
-            ->get()
-            ->map(fn ($artist) => $this->formatWishlistArtist($artist));
+            ->get();
 
         return response()->json([
-            'wishlist' => $wishlistItems,
+            'wishlist' => WishlistArtistResource::collection($wishlistItems),
         ]);
     }
 
@@ -89,15 +91,14 @@ class ClientDashboardController extends Controller
     {
         $user = $request->user();
 
-        // Query users_artists table (favorites)
+        // Query users_artists table (favorites) with settings eager loaded
         $favoriteArtists = $user->artists()
             ->notBlockedBy($user)
-            ->with(['image', 'studio', 'styles'])
-            ->get()
-            ->map(fn ($artist) => $this->formatFavoriteArtist($artist));
+            ->with(['image', 'studio', 'styles', 'settings'])
+            ->get();
 
         return response()->json([
-            'favorites' => $favoriteArtists,
+            'favorites' => DashboardArtistResource::collection($favoriteArtists),
         ]);
     }
 
@@ -236,125 +237,8 @@ class ClientDashboardController extends Controller
 
         $artists = $query->inRandomOrder()
             ->take($limit)
-            ->get()
-            ->map(fn ($artist) => $this->formatSuggestedArtist($artist));
+            ->get();
 
-        return $artists->toArray();
-    }
-
-    /**
-     * Format an appointment for the dashboard.
-     */
-    private function formatAppointment($appointment): array
-    {
-        return [
-            'id' => $appointment->id,
-            'title' => $appointment->title,
-            'date' => $appointment->date,
-            'start_time' => $appointment->start_time,
-            'end_time' => $appointment->end_time,
-            'status' => $appointment->status,
-            'type' => $appointment->type,
-            'description' => $appointment->description,
-            'artist' => [
-                'id' => $appointment->artist->id,
-                'name' => $appointment->artist->name,
-                'username' => $appointment->artist->username,
-                'image' => $appointment->artist->image ? [
-                    'id' => $appointment->artist->image->id,
-                    'uri' => $appointment->artist->image->uri,
-                ] : null,
-            ],
-            'studio' => $appointment->studio ? [
-                'id' => $appointment->studio->id,
-                'name' => $appointment->studio->name,
-            ] : null,
-        ];
-    }
-
-    /**
-     * Format an artist for the wishlist.
-     */
-    private function formatWishlistArtist($artist): array
-    {
-        $settings = $artist->settings ?? null;
-
-        return [
-            'id' => $artist->id,
-            'name' => $artist->name,
-            'username' => $artist->username,
-            'image' => $artist->image ? [
-                'id' => $artist->image->id,
-                'uri' => $artist->image->uri,
-            ] : null,
-            'studio' => $artist->studio ? [
-                'id' => $artist->studio->id,
-                'name' => $artist->studio->name,
-            ] : null,
-            'styles' => $artist->styles->map(fn ($style) => [
-                'id' => $style->id,
-                'name' => $style->name,
-            ])->take(3)->values()->toArray(),
-            'books_open' => $settings?->books_open ?? false,
-            'notify_booking_open' => $artist->pivot->notify_booking_open,
-            'notified_at' => $artist->pivot->notified_at,
-            'added_at' => $artist->pivot->created_at,
-        ];
-    }
-
-    /**
-     * Format a suggested artist.
-     */
-    private function formatSuggestedArtist($artist): array
-    {
-        $settings = $artist->settings ?? null;
-
-        return [
-            'id' => $artist->id,
-            'name' => $artist->name,
-            'username' => $artist->username,
-            'image' => $artist->image ? [
-                'id' => $artist->image->id,
-                'uri' => $artist->image->uri,
-            ] : null,
-            'studio' => $artist->studio ? [
-                'id' => $artist->studio->id,
-                'name' => $artist->studio->name,
-            ] : null,
-            'styles' => $artist->styles->map(fn ($style) => [
-                'id' => $style->id,
-                'name' => $style->name,
-            ])->take(3)->values()->toArray(),
-            'books_open' => $settings?->books_open ?? false,
-            'is_demo' => $artist->is_demo ?? false,
-        ];
-    }
-
-    /**
-     * Format a favorited artist (from users_artists).
-     */
-    private function formatFavoriteArtist($artist): array
-    {
-        // Get artist settings separately since artists() returns User models
-        $settings = \App\Models\ArtistSettings::where('artist_id', $artist->id)->first();
-
-        return [
-            'id' => $artist->id,
-            'name' => $artist->name,
-            'username' => $artist->username,
-            'image' => $artist->image ? [
-                'id' => $artist->image->id,
-                'uri' => $artist->image->uri,
-            ] : null,
-            'studio' => $artist->studio ? [
-                'id' => $artist->studio->id,
-                'name' => $artist->studio->name,
-            ] : null,
-            'styles' => $artist->styles ? $artist->styles->map(fn ($style) => [
-                'id' => $style->id,
-                'name' => $style->name,
-            ])->take(3)->values()->toArray() : [],
-            'books_open' => $settings?->books_open ?? false,
-        ];
+        return SuggestedArtistResource::collection($artists)->resolve();
     }
 }
