@@ -208,16 +208,35 @@ class ElasticController
     public function reindex(Request $request)
     {
         $model = $request->get('model');
+        $flush = $request->get('flush', true); // Default to flushing to remove stale documents
 
         $class = 'App\\Models\\' . $model;
 
         try {
+            // Flush the index first to remove documents that no longer exist in DB
+            if ($flush) {
+                Log::info("Flushing index for {$model} before reindex");
+                Artisan::call('scout:flush', [
+                    'model' => $class,
+                ]);
+            }
+
+            // Import all documents from the database
             Artisan::call('scout:import', [
                 'model' => $class,
             ]);
-            return response()->json(['message' => "Reindex started for {$model}"]);
+
+            $message = $flush
+                ? "Reindex completed for {$model} (index flushed and rebuilt)"
+                : "Reindex completed for {$model} (documents updated/added only)";
+
+            return response()->json(['message' => $message]);
         } catch (\Exception $e) {
-            return response()->json(['message' => 'Error starting reindex: ' . $e->getMessage()], 500);
+            Log::error("Reindex failed for {$model}", [
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+            return response()->json(['message' => 'Error during reindex: ' . $e->getMessage()], 500);
         }
     }
 

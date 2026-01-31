@@ -97,7 +97,6 @@ class Artist extends User
         $query->with([
             'studio',
             'styles',
-            'tattoos',
             'primary_image',
             'settings',
         ]);
@@ -115,7 +114,6 @@ class Artist extends User
         $with = [
             'studio',
             'styles',
-            'tattoos',
             'primary_image',
             'settings',
         ];
