@@ -115,6 +115,14 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Image::class);
     }
 
+    /**
+     * Get the artist settings for this user (only applicable for artists).
+     */
+    public function settings()
+    {
+        return $this->hasOne(ArtistSettings::class, 'artist_id', 'id');
+    }
+
     public function styles()
     {
         return $this->belongsToMany(Style::class, 'users_styles', 'user_id', 'style_id');
