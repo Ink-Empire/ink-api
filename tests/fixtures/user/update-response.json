@@ -1,0 +1,37 @@
+{
+    "user": {
+        "id": 58,
+        "about": null,
+        "image": {
+            "id": 20,
+            "filename": "/tmp/faker8gdbcH",
+            "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=847",
+            "is_primary": false,
+            "created_at": "2026-01-31T20:21:40.000000Z",
+            "updated_at": "2026-01-31T20:21:40.000000Z"
+        },
+        "location": "New York, NY",
+        "name": "Updated Name",
+        "studio": null,
+        "studio_name": "",
+        "slug": "rosalinda-franecki-85005",
+        "type": "client",
+        "is_featured": 0,
+        "artists": [],
+        "styles": [
+            98,
+            99
+        ],
+        "studios": null,
+        "tattoos": [],
+        "username": "uschmidt",
+        "email": "eldon.abernathy@example.org",
+        "phone": null,
+        "location_lat_long": null,
+        "is_admin": false,
+        "is_studio_admin": false,
+        "owned_studio_id": null,
+        "is_email_verified": false,
+        "email_verified_at": null
+    }
+}

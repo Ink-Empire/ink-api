@@ -1,0 +1,405 @@
+{
+    "response": [
+        {
+            "id": 80,
+            "about": "Eiusmod consequatur",
+            "location": "Kansas City, MO, USA",
+            "name": "Finn Cantu",
+            "slug": "cewikit",
+            "studio": {
+                "id": 49,
+                "name": "TJ TATZ",
+                "slug": "tj-tatz-z4fZ0r",
+                "about": null,
+                "location": "4047 N Bennington Ave, Kansas City, MO 64117, USA",
+                "location_lat_long": "39.1688,-94.50157",
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": null,
+                "phone": "(816) 986-0427",
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": false,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "studio_name": "TJ TATZ",
+            "is_featured": false,
+            "is_demo": false,
+            "styles": [],
+            "primary_image": null,
+            "username": "cewikit",
+            "settings": []
+        },
+        {
+            "id": 81,
+            "about": "Proident sit volup",
+            "location": "Tawas City, MI, USA",
+            "name": "Rose Downs",
+            "slug": "futejeku",
+            "studio": {
+                "id": 50,
+                "name": "Area 13 Tattoo",
+                "slug": "area-13-tattoo-bgzW0Z",
+                "about": null,
+                "location": "928 Washington Ave, Bay City, MI 48708, USA",
+                "location_lat_long": "43.5999169,-83.8872396",
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": null,
+                "phone": "(989) 372-7780",
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": false,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "studio_name": "Area 13 Tattoo",
+            "is_featured": false,
+            "is_demo": false,
+            "styles": [],
+            "primary_image": null,
+            "username": "futejeku",
+            "settings": []
+        },
+        {
+            "id": 82,
+            "about": "Consequatur mollit",
+            "location": "Canc\u00fan, Quintana Roo, Mexico",
+            "name": "Angelica Ward",
+            "slug": "mosebohijo",
+            "studio": {
+                "id": 51,
+                "name": "tattoo blessed in",
+                "slug": "tattoo-blessed-in-UOuK98",
+                "about": null,
+                "location": "77518, Av. 127 19, 77519 Canc\u00fan, Q.R., Mexico",
+                "location_lat_long": "21.1519958,-86.8731567",
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": null,
+                "phone": "998 127 7515",
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": false,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "studio_name": "tattoo blessed in",
+            "is_featured": false,
+            "is_demo": false,
+            "styles": [],
+            "primary_image": {
+                "id": 770,
+                "filename": "local-profile_82_20260129063137_0_prP3Xz0s.jpg",
+                "uri": "https://inked-in-images.s3.amazonaws.com/local-profile_82_20260129063137_0_prP3Xz0s.jpg",
+                "is_primary": false,
+                "created_at": "2026-01-29T06:31:40.000000Z",
+                "updated_at": "2026-01-29T06:31:40.000000Z"
+            },
+            "username": "mosebohijo",
+            "settings": []
+        },
+        {
+            "id": 83,
+            "about": "Laboris necessitatib",
+            "location": "Louisville, KY, USA",
+            "name": "Alea Mills",
+            "slug": "davilajero",
+            "studio": {
+                "id": 52,
+                "name": "Acme Tattoo Co.",
+                "slug": "acme-tattoo-co-DxEj81",
+                "about": null,
+                "location": "2007 Bonnycastle Ave, Louisville, KY 40205, USA",
+                "location_lat_long": "38.23091,-85.704166",
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": null,
+                "phone": "(502) 451-2810",
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": false,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "studio_name": "Acme Tattoo Co.",
+            "is_featured": false,
+            "is_demo": false,
+            "styles": [],
+            "primary_image": {
+                "id": 771,
+                "filename": "local-profile_83_20260129063908_0_ZdIcKo4l.jpg",
+                "uri": "https://inked-in-images.s3.amazonaws.com/local-profile_83_20260129063908_0_ZdIcKo4l.jpg",
+                "is_primary": false,
+                "created_at": "2026-01-29T06:39:11.000000Z",
+                "updated_at": "2026-01-29T06:39:11.000000Z"
+            },
+            "username": "davilajero",
+            "settings": []
+        },
+        {
+            "id": 18,
+            "about": "Soluta nulla sed quasi eos magni et sit adipisci recusandae et.",
+            "location": "Savannahfurt Cuba",
+            "name": "Dr. Jake Schumm",
+            "slug": "dr-jake-schumm-94589",
+            "studio": {
+                "id": 7,
+                "name": "Champlin-Hansen",
+                "slug": "champlin-hansen-66613",
+                "about": "Neque voluptas dolores eaque quis quisquam nemo qui eligendi neque dolor magnam et et doloremque non accusamus quia qui animi.",
+                "location": "Waltonhaven Bahrain",
+                "location_lat_long": null,
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": "marian43@example.net",
+                "phone": null,
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": true,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "studio_name": "Champlin-Hansen",
+            "is_featured": false,
+            "is_demo": false,
+            "styles": [
+                {
+                    "id": 32,
+                    "name": "iusto",
+                    "parent_id": 0
+                },
+                {
+                    "id": 34,
+                    "name": "eos",
+                    "parent_id": 0
+                },
+                {
+                    "id": 35,
+                    "name": "pariatur",
+                    "parent_id": 0
+                }
+            ],
+            "primary_image": {
+                "id": 7,
+                "filename": "/tmp/fakeroeMZku",
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=704",
+                "is_primary": false,
+                "created_at": "2026-01-31T19:38:04.000000Z",
+                "updated_at": "2026-01-31T19:38:04.000000Z"
+            },
+            "username": "ehermiston",
+            "settings": {
+                "id": 7,
+                "artist_id": 18,
+                "books_open": false,
+                "accepts_walk_ins": false,
+                "accepts_deposits": false,
+                "accepts_consultations": false,
+                "accepts_appointments": false,
+                "hourly_rate": 200,
+                "deposit_amount": 50,
+                "consultation_fee": 0,
+                "minimum_session": 0,
+                "seeking_guest_spots": false,
+                "guest_spot_regions": null,
+                "watermark_image_id": null,
+                "watermark_opacity": 50,
+                "watermark_position": "bottom-right",
+                "watermark_enabled": false,
+                "created_at": "2026-01-31T19:38:04.000000Z",
+                "updated_at": "2026-01-31T19:38:04.000000Z"
+            }
+        },
+        {
+            "id": 16,
+            "about": "Ut quisquam corporis quis atque nemo qui ut occaecati animi.",
+            "location": "Priscillashire Estonia",
+            "name": "Eunice Ruecker",
+            "slug": "eunice-ruecker-70417",
+            "studio": {
+                "id": 6,
+                "name": "Kunze, Runte and Ward",
+                "slug": "kunze-runte-and-ward-89236",
+                "about": "Odit fugit harum eum sint nemo et dolor corrupti vel cum rerum beatae quasi.",
+                "location": "Bergebury French Southern Territories",
+                "location_lat_long": null,
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": "verona.jacobi@example.com",
+                "phone": null,
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": true,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "studio_name": "Kunze, Runte and Ward",
+            "is_featured": false,
+            "is_demo": false,
+            "styles": [
+                {
+                    "id": 28,
+                    "name": "et",
+                    "parent_id": 0
+                },
+                {
+                    "id": 29,
+                    "name": "nihil",
+                    "parent_id": 0
+                },
+                {
+                    "id": 30,
+                    "name": "et",
+                    "parent_id": 0
+                }
+            ],
+            "primary_image": {
+                "id": 6,
+                "filename": "/tmp/fakerHomkiZ",
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=644",
+                "is_primary": false,
+                "created_at": "2026-01-31T20:20:12.000000Z",
+                "updated_at": "2026-01-31T20:20:12.000000Z"
+            },
+            "username": "weber.maxie",
+            "settings": {
+                "id": 6,
+                "artist_id": 16,
+                "books_open": false,
+                "accepts_walk_ins": false,
+                "accepts_deposits": false,
+                "accepts_consultations": false,
+                "accepts_appointments": false,
+                "hourly_rate": 200,
+                "deposit_amount": 50,
+                "consultation_fee": 0,
+                "minimum_session": 0,
+                "seeking_guest_spots": false,
+                "guest_spot_regions": null,
+                "watermark_image_id": null,
+                "watermark_opacity": 50,
+                "watermark_position": "bottom-right",
+                "watermark_enabled": false,
+                "created_at": "2026-01-31T20:20:12.000000Z",
+                "updated_at": "2026-01-31T20:20:12.000000Z"
+            }
+        },
+        {
+            "id": 1,
+            "about": "Rem alias sunt at id soluta sed.",
+            "location": "Olsonville Palestinian Territories",
+            "name": "Quentin Abshire",
+            "slug": "quentin-abshire-60421",
+            "studio": {
+                "id": 1,
+                "name": "Abernathy-Cassin",
+                "slug": "abernathy-cassin-95617",
+                "about": "Quia qui cumque dolor recusandae enim sint unde sed maxime facere alias voluptas ut sint necessitatibus perferendis.",
+                "location": "South Pasquale Nicaragua",
+                "location_lat_long": null,
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": "caleb.borer@example.org",
+                "phone": null,
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": true,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "studio_name": "Abernathy-Cassin",
+            "is_featured": false,
+            "is_demo": false,
+            "styles": [
+                {
+                    "id": 2,
+                    "name": "enim",
+                    "parent_id": 0
+                },
+                {
+                    "id": 3,
+                    "name": "et",
+                    "parent_id": 0
+                },
+                {
+                    "id": 4,
+                    "name": "laudantium",
+                    "parent_id": 0
+                }
+            ],
+            "primary_image": {
+                "id": 1,
+                "filename": "/tmp/fakerWIQSRD",
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=773",
+                "is_primary": false,
+                "created_at": "2026-01-31T20:21:37.000000Z",
+                "updated_at": "2026-01-31T20:21:37.000000Z"
+            },
+            "username": "hermann.dean",
+            "settings": []
+        }
+    ],
+    "unclaimed_studios": [],
+    "total": 7,
+    "page": 1,
+    "per_page": 25,
+    "has_more": false
+}
