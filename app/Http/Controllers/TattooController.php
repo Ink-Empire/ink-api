@@ -227,6 +227,18 @@ class TattooController extends Controller
         try {
             $user = $request->user();
 
+            // Log authenticated user for debugging auth issues
+            \Log::info("Tattoo create - authenticated user", [
+                'user_id' => $user?->id,
+                'user_email' => $user?->email,
+                'token_id' => $request->user()?->currentAccessToken()?->id ?? 'session',
+                'auth_header' => $request->hasHeader('Authorization') ? 'present' : 'missing',
+            ]);
+
+            if (!$user) {
+                return $this->returnErrorResponse("Unauthorized", "You must be logged in to create a tattoo", 401);
+            }
+
             $images = [];
 
             // Check for pre-uploaded image IDs (from presigned URL flow)
