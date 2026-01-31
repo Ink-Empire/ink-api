@@ -59,14 +59,7 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
-    'frontend_url' => (function () {
-        $url = env('FRONTEND_URL', 'http://localhost:3000');
-        // Ensure URL has a protocol, default to https:// in production
-        if (!preg_match('/^https?:\/\//', $url)) {
-            $url = (env('APP_ENV') === 'production' ? 'https://' : 'http://') . $url;
-        }
-        return rtrim($url, '/');
-    })(),
+    'frontend_url' => rtrim(env('FRONTEND_URL', 'https://inkedin.com'), '/'),
 
     /*
     |--------------------------------------------------------------------------
