@@ -1,5 +1,9 @@
 # ink-api Development Guide
 
+## Production URLs
+- **Frontend**: https://getinked.in (NOT inkedin.com)
+- **API**: https://api.getinked.in
+
 ## Code Style Guidelines
 - **Framework**: Laravel PHP (PSR standards)
 - **PHP Version**: 8.3+
