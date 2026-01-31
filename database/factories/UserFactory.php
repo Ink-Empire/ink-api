@@ -21,10 +21,12 @@ class UserFactory extends Factory
         $name = fake()->name();
         return [
             'name' => $name,
+            'username' => fake()->unique()->userName(),
             'slug' => \Str::slug($name) . '-' . fake()->unique()->randomNumber(5),
             'email' => fake()->unique()->safeEmail(),
             'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
             'type_id' => UserTypes::CLIENT_TYPE_ID,
+            'location' => fake()->city() . ', ' . fake()->stateAbbr(),
         ];
     }
 

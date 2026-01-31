@@ -1,0 +1,24 @@
+{
+    "wishlist": [
+        {
+            "id": 28,
+            "name": "Federico Dooley",
+            "slug": "federico-dooley-3311",
+            "username": "hhyatt",
+            "image": {
+                "id": 10,
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=575"
+            },
+            "studio": {
+                "id": 10,
+                "name": "O'Connell-Cruickshank",
+                "slug": "oconnell-cruickshank-21844"
+            },
+            "styles": [],
+            "books_open": false,
+            "notify_booking_open": true,
+            "notified_at": null,
+            "added_at": "2026-01-31T20:21:39.000000Z"
+        }
+    ]
+}

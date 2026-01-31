@@ -16,13 +16,14 @@ class StudioFactory extends Factory
      */
     public function definition()
     {
+        $name = fake()->company();
         return [
-            'name' => fake()->company(),
-            'address_id' => 1,
+            'name' => $name,
+            'slug' => \Str::slug($name) . '-' . fake()->unique()->randomNumber(5),
+            'address_id' => null,
             'about' => fake()->sentence(15),
             'location' => fake()->city() . " " . fake()->country(),
             'email' => fake()->unique()->safeEmail(),
-
         ];
     }
 }

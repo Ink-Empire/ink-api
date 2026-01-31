@@ -48,3 +48,4 @@ Map search from user input through Elasticsearch, filters, notBlockedBy scope, a
 
 All code changes must pass CI tests and receive an approval before merging to develop.
 Always check the /docs directory to understand the flow and update it when we make changes to a process
+Keep comments to a minimum and never put emojis into this project

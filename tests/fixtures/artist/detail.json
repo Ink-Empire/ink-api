@@ -1,0 +1,2371 @@
+{
+    "artist": {
+        "id": 1,
+        "about": "Rem ducimus facilis maxime corrupti aut odio eligendi earum maiores.",
+        "location": "Oberbrunnerport Brunei Darussalam",
+        "name": "Dusty Wuckert",
+        "slug": "dusty-wuckert-80466",
+        "studio": {
+            "id": 1,
+            "name": "Steuber-Rau",
+            "slug": "steuber-rau-88272",
+            "about": "At repellendus laudantium molestiae sed ullam sunt aliquid ipsa id ut ea vitae eos voluptas delectus ea voluptate repellendus nesciunt.",
+            "location": "Micheleburgh Turks and Caicos Islands",
+            "location_lat_long": null,
+            "address": null,
+            "address2": null,
+            "city": null,
+            "state": null,
+            "postal_code": null,
+            "email": "vida73@example.com",
+            "phone": null,
+            "image": {
+                "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+            },
+            "is_verified": 0,
+            "is_claimed": true,
+            "business_hours": [],
+            "hours": [],
+            "owner_id": null,
+            "seeking_guest_artists": false,
+            "guest_spot_details": null
+        },
+        "studio_name": "Steuber-Rau",
+        "is_featured": false,
+        "is_demo": false,
+        "styles": [
+            {
+                "id": 1,
+                "name": "eligendi",
+                "parent_id": 0
+            },
+            {
+                "id": 2,
+                "name": "suscipit",
+                "parent_id": 0
+            },
+            {
+                "id": 5,
+                "name": "voluptatem",
+                "parent_id": 0
+            }
+        ],
+        "primary_image": {
+            "id": 1,
+            "filename": "/tmp/fakerbZiWD6",
+            "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=379",
+            "is_primary": false,
+            "created_at": "2026-01-31T20:20:11.000000Z",
+            "updated_at": "2026-01-31T20:20:11.000000Z"
+        },
+        "username": "orn.darrel",
+        "settings": [],
+        "tattoos": [
+            {
+                "id": 1,
+                "artist_id": 1,
+                "artist_name": "Jazmyne Klocko",
+                "artist_slug": "jazmyne-klocko-78264",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=57",
+                "artist_username": "legros.godfrey",
+                "artist_books_open": false,
+                "artist_location_lat_long": null,
+                "studio_id": 1,
+                "studio_name": "Langosh, Rippin and Hamill",
+                "title": "aut",
+                "description": "Ut dolorem praesentium facere consequuntur eos sed.",
+                "placement": "backside",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "Langosh, Rippin and Hamill",
+                    "slug": "langosh-rippin-and-hamill-1444",
+                    "about": "Voluptas officia ad praesentium temporibus quia autem architecto odit consequatur a alias quae.",
+                    "location": "Kirlinfurt Costa Rica",
+                    "location_lat_long": null,
+                    "address": null,
+                    "address2": null,
+                    "city": null,
+                    "state": null,
+                    "postal_code": null,
+                    "email": "uhoeger@example.com",
+                    "phone": null,
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [],
+                    "hours": [],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 1,
+                    "filename": "/tmp/fakerbDJzOF",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=57",
+                    "is_primary": false,
+                    "created_at": "2026-01-31T20:06:59.000000Z",
+                    "updated_at": "2026-01-31T20:06:59.000000Z"
+                },
+                "images": [],
+                "styles": [],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": false,
+                "created_at": "2026-01-31T20:06:59+00:00"
+            },
+            {
+                "id": 59,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "eye ball tattoo",
+                "description": "this is a tattoo of an eye",
+                "placement": "Hand",
+                "duration": "2.00",
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Traditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 746,
+                    "filename": "production-tattoo_1_20260110231454_0_c4LQaAsf.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110231454_0_c4LQaAsf.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-10T23:14:58.000000Z",
+                    "updated_at": "2026-01-10T23:14:58.000000Z"
+                },
+                "images": [
+                    {
+                        "id": 746,
+                        "filename": "production-tattoo_1_20260110231454_0_c4LQaAsf.jpg",
+                        "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110231454_0_c4LQaAsf.jpg",
+                        "is_primary": false,
+                        "created_at": "2026-01-10T23:14:58.000000Z",
+                        "updated_at": "2026-01-10T23:14:58.000000Z",
+                        "pivot": {
+                            "tattoo_id": 59,
+                            "image_id": 746
+                        }
+                    }
+                ],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "eye",
+                    "eyeball",
+                    "tears"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2026-01-10T23:15:25+00:00"
+            },
+            {
+                "id": 58,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": null,
+                "studio_name": "",
+                "title": "this is a lion!",
+                "description": "a lion for my client",
+                "placement": "Arm - Lower (Forearm)",
+                "duration": null,
+                "studio": null,
+                "primary_style": "Black and Gray",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 724,
+                    "filename": "production-tattoo_1_20260110224636_1541_NvWwyLkr.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110224636_1541_NvWwyLkr.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-10T22:46:36.000000Z",
+                    "updated_at": "2026-01-10T22:46:36.000000Z"
+                },
+                "images": [
+                    {
+                        "id": 724,
+                        "filename": "production-tattoo_1_20260110224636_1541_NvWwyLkr.jpg",
+                        "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110224636_1541_NvWwyLkr.jpg",
+                        "is_primary": false,
+                        "created_at": "2026-01-10T22:46:36.000000Z",
+                        "updated_at": "2026-01-10T22:46:36.000000Z",
+                        "pivot": {
+                            "tattoo_id": 58,
+                            "image_id": 724
+                        }
+                    }
+                ],
+                "styles": [],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2026-01-10T22:47:22+00:00"
+            },
+            {
+                "id": 57,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": null,
+                "studio_name": "",
+                "title": "virgin mary",
+                "description": "this is the virgin mary",
+                "placement": "Hand",
+                "duration": null,
+                "studio": null,
+                "primary_style": "Traditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 704,
+                    "filename": "production-tattoo_1_20260110222705_1521_oh7xF1Dv.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110222705_1521_oh7xF1Dv.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-10T22:27:06.000000Z",
+                    "updated_at": "2026-01-10T22:27:06.000000Z"
+                },
+                "images": [
+                    {
+                        "id": 704,
+                        "filename": "production-tattoo_1_20260110222705_1521_oh7xF1Dv.jpg",
+                        "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110222705_1521_oh7xF1Dv.jpg",
+                        "is_primary": false,
+                        "created_at": "2026-01-10T22:27:06.000000Z",
+                        "updated_at": "2026-01-10T22:27:06.000000Z",
+                        "pivot": {
+                            "tattoo_id": 57,
+                            "image_id": 704
+                        }
+                    }
+                ],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2026-01-10T22:35:37+00:00"
+            },
+            {
+                "id": 56,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": null,
+                "studio_name": "",
+                "title": "lion tattoo",
+                "description": "this is a lion",
+                "placement": "Arm - Lower (Forearm)",
+                "duration": null,
+                "studio": null,
+                "primary_style": "Black and Gray",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 703,
+                    "filename": "production-tattoo_1_20260110222705_1520_ZQURQ4Hg.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110222705_1520_ZQURQ4Hg.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-10T22:27:05.000000Z",
+                    "updated_at": "2026-01-10T22:27:05.000000Z"
+                },
+                "images": [
+                    {
+                        "id": 703,
+                        "filename": "production-tattoo_1_20260110222705_1520_ZQURQ4Hg.jpg",
+                        "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110222705_1520_ZQURQ4Hg.jpg",
+                        "is_primary": false,
+                        "created_at": "2026-01-10T22:27:05.000000Z",
+                        "updated_at": "2026-01-10T22:27:05.000000Z",
+                        "pivot": {
+                            "tattoo_id": 56,
+                            "image_id": 703
+                        }
+                    }
+                ],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    },
+                    {
+                        "id": 3,
+                        "name": "Black and Gray",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2026-01-10T22:27:52+00:00"
+            },
+            {
+                "id": 55,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": null,
+                "studio_name": "",
+                "title": "test test",
+                "description": "test test",
+                "placement": "Collarbone",
+                "duration": null,
+                "studio": null,
+                "primary_style": "Traditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 108,
+                    "filename": "production-tattoo_1_20260110212821_367_3gJEYf86.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110212821_367_3gJEYf86.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-10T21:28:21.000000Z",
+                    "updated_at": "2026-01-10T21:28:21.000000Z"
+                },
+                "images": [
+                    {
+                        "id": 108,
+                        "filename": "production-tattoo_1_20260110212821_367_3gJEYf86.jpg",
+                        "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110212821_367_3gJEYf86.jpg",
+                        "is_primary": false,
+                        "created_at": "2026-01-10T21:28:21.000000Z",
+                        "updated_at": "2026-01-10T21:28:21.000000Z",
+                        "pivot": {
+                            "tattoo_id": 55,
+                            "image_id": 108
+                        }
+                    }
+                ],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    },
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2026-01-10T22:07:01+00:00"
+            },
+            {
+                "id": 54,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": null,
+                "studio_name": "",
+                "title": "test test",
+                "description": "test test",
+                "placement": "Chest",
+                "duration": null,
+                "studio": null,
+                "primary_style": "Neotraditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 112,
+                    "filename": "production-tattoo_1_20260110212821_371_oQl1KWC3.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110212821_371_oQl1KWC3.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-10T21:28:21.000000Z",
+                    "updated_at": "2026-01-10T21:28:21.000000Z"
+                },
+                "images": [
+                    {
+                        "id": 112,
+                        "filename": "production-tattoo_1_20260110212821_371_oQl1KWC3.jpg",
+                        "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110212821_371_oQl1KWC3.jpg",
+                        "is_primary": false,
+                        "created_at": "2026-01-10T21:28:21.000000Z",
+                        "updated_at": "2026-01-10T21:28:21.000000Z",
+                        "pivot": {
+                            "tattoo_id": 54,
+                            "image_id": 112
+                        }
+                    }
+                ],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    },
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2026-01-10T22:02:18+00:00"
+            },
+            {
+                "id": 53,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": null,
+                "studio_name": "",
+                "title": "new title",
+                "description": "this is a description",
+                "placement": "Collarbone",
+                "duration": null,
+                "studio": null,
+                "primary_style": "Japanese",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 111,
+                    "filename": "production-tattoo_1_20260110212821_370_oERQLe0O.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110212821_370_oERQLe0O.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-10T21:28:21.000000Z",
+                    "updated_at": "2026-01-10T21:28:21.000000Z"
+                },
+                "images": [
+                    {
+                        "id": 111,
+                        "filename": "production-tattoo_1_20260110212821_370_oERQLe0O.jpg",
+                        "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110212821_370_oERQLe0O.jpg",
+                        "is_primary": false,
+                        "created_at": "2026-01-10T21:28:21.000000Z",
+                        "updated_at": "2026-01-10T21:28:21.000000Z",
+                        "pivot": {
+                            "tattoo_id": 53,
+                            "image_id": 111
+                        }
+                    }
+                ],
+                "styles": [
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    },
+                    {
+                        "id": 6,
+                        "name": "Japanese",
+                        "parent_id": 0
+                    },
+                    {
+                        "id": 7,
+                        "name": "New School",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2026-01-10T21:55:33+00:00"
+            },
+            {
+                "id": 52,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": null,
+                "studio_name": "",
+                "title": "test test",
+                "description": "test test",
+                "placement": "Chest",
+                "duration": null,
+                "studio": null,
+                "primary_style": "Traditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 116,
+                    "filename": "production-tattoo_1_20260110212821_375_cDMWHlb1.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110212821_375_cDMWHlb1.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-10T21:28:21.000000Z",
+                    "updated_at": "2026-01-10T21:28:21.000000Z"
+                },
+                "images": [
+                    {
+                        "id": 116,
+                        "filename": "production-tattoo_1_20260110212821_375_cDMWHlb1.jpg",
+                        "uri": "https://inked-in-images.s3.amazonaws.com/production-tattoo_1_20260110212821_375_cDMWHlb1.jpg",
+                        "is_primary": false,
+                        "created_at": "2026-01-10T21:28:21.000000Z",
+                        "updated_at": "2026-01-10T21:28:21.000000Z",
+                        "pivot": {
+                            "tattoo_id": 52,
+                            "image_id": 116
+                        }
+                    }
+                ],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    },
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2026-01-10T21:34:02+00:00"
+            },
+            {
+                "id": 2,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "trad2",
+                "description": "The image depicts a stylized playing card featuring intricate designs, including a skull and decorative elements in vibrant colors. The card is slightly worn, with visible edges and symbols like hearts and spades, adding to its artistic flair.",
+                "placement": "Chest",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Traditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 2,
+                    "filename": "trad2",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/trad2.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "skull",
+                    "heart",
+                    "playing card",
+                    "spade"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            },
+            {
+                "id": 3,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "trad3",
+                "description": "family is the anchor, and we all know it",
+                "placement": "Upper Arm",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Traditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 3,
+                    "filename": "trad3",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/trad3.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "anchor",
+                    "waves",
+                    "family",
+                    "flower",
+                    "rope"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            },
+            {
+                "id": 4,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "trad4",
+                "description": "The design features two intricately detailed roses, showcasing a blend of shading and line work that emphasizes their natural beauty. Each rose is accompanied by delicate leaves and swirling vines, creating an elegant and harmonious composition.",
+                "placement": "Shoulder",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Traditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 4,
+                    "filename": "trad4",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/trad4.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "rose",
+                    "leaves",
+                    "floral",
+                    "blackwork",
+                    "nature"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            },
+            {
+                "id": 5,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "trad5",
+                "description": "saving this for later",
+                "placement": "Thigh",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Traditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 5,
+                    "filename": "trad5",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/trad5.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 1,
+                        "name": "Traditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "gun",
+                    "skin rip",
+                    "weapon",
+                    "pistol"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            },
+            {
+                "id": 6,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "neotrad1",
+                "description": "A giant owl over the chest, with a death's head moth in the center",
+                "placement": "Upper arm",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Neotraditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 6,
+                    "filename": "neotrad1",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/neotrad1.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            },
+            {
+                "id": 7,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "neotrad2",
+                "description": "The image features a composition of intricate elements, including a central eye surrounded by stylized roses, a candle with a flame, and an array of feathers and decorative beads. The design showcases a blend of realism and geometric shapes, creating a harmonious balance of nature and symbolism.",
+                "placement": "Calf",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Neotraditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 7,
+                    "filename": "neotrad2",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/neotrad2.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "owl"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            },
+            {
+                "id": 8,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "neotrad3",
+                "description": "neotrad woman's face",
+                "placement": "Forearm",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Neotraditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 8,
+                    "filename": "neotrad3",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/neotrad3.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "rose",
+                    "ladyhead",
+                    "portrait",
+                    "woman"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            },
+            {
+                "id": 9,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "neotrad4",
+                "description": "The artwork features a stylized male figure with a prominent beard and a pipe, incorporating surreal elements such as a single eye and geometric shapes. The use of shading and intricate details creates a striking contrast, enhancing the overall mystical vibe of the piece.",
+                "placement": "Thigh",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Neotraditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 9,
+                    "filename": "neotrad4",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/neotrad4.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "eye",
+                    "eyeball",
+                    "pipe",
+                    "gentleman",
+                    "smoking",
+                    "bearded man"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            },
+            {
+                "id": 10,
+                "artist_id": 1,
+                "artist_name": "John Doe",
+                "artist_slug": "tattoo-johnny",
+                "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad1.jpg",
+                "artist_username": "TattooJohnny",
+                "artist_books_open": false,
+                "artist_location_lat_long": "34.0522,-118.2437",
+                "studio_id": 1,
+                "studio_name": "InkMaster Studios",
+                "title": "neotrad5",
+                "description": "The artwork features a woman with flowing hair, her eyes covered by a celestial-themed mask adorned with a moon and stars. She holds a shell delicately, surrounded by soft, swirling clouds that enhance the mystical atmosphere of the piece.",
+                "placement": "Ribs",
+                "duration": null,
+                "studio": {
+                    "id": 1,
+                    "name": "InkMaster Studios",
+                    "slug": "inkmaster-studios-1",
+                    "about": "At InkMaster Studios, we specialize in creating unique and personalized tattoo designs. Our team of experienced artists is dedicated to bringing your vision to life with precision and creativity.",
+                    "location": "Los Angeles, CA, USA",
+                    "location_lat_long": "34.0522, -118.2437",
+                    "address": "123 Maple Street",
+                    "address2": "Apt 101",
+                    "city": "Springfield",
+                    "state": "IL",
+                    "postal_code": "62701",
+                    "email": "inkmaster@example.com",
+                    "phone": "555-123-4567",
+                    "image": {
+                        "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                    },
+                    "is_verified": 0,
+                    "is_claimed": true,
+                    "business_hours": [
+                        {
+                            "id": 1,
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Monday",
+                            "business_days": {
+                                "id": 1,
+                                "day": "Monday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 2,
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Tuesday",
+                            "business_days": {
+                                "id": 2,
+                                "day": "Tuesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 3,
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Wednesday",
+                            "business_days": {
+                                "id": 3,
+                                "day": "Wednesday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 4,
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Thursday",
+                            "business_days": {
+                                "id": 4,
+                                "day": "Thursday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        },
+                        {
+                            "id": 5,
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "studio_id": 1,
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null,
+                            "day": "Friday",
+                            "business_days": {
+                                "id": 5,
+                                "day": "Friday",
+                                "created_at": "2025-12-30T01:25:05.000000Z",
+                                "updated_at": null
+                            }
+                        }
+                    ],
+                    "hours": [
+                        {
+                            "day": "Monday",
+                            "day_id": 1,
+                            "open_time": "07:00",
+                            "close_time": "18:00",
+                            "hours": "7:00 AM - 6:00 PM"
+                        },
+                        {
+                            "day": "Tuesday",
+                            "day_id": 2,
+                            "open_time": "08:00",
+                            "close_time": "19:00",
+                            "hours": "8:00 AM - 7:00 PM"
+                        },
+                        {
+                            "day": "Wednesday",
+                            "day_id": 3,
+                            "open_time": "09:00",
+                            "close_time": "20:00",
+                            "hours": "9:00 AM - 8:00 PM"
+                        },
+                        {
+                            "day": "Thursday",
+                            "day_id": 4,
+                            "open_time": "10:00",
+                            "close_time": "21:00",
+                            "hours": "10:00 AM - 9:00 PM"
+                        },
+                        {
+                            "day": "Friday",
+                            "day_id": 5,
+                            "open_time": "11:00",
+                            "close_time": "22:00",
+                            "hours": "11:00 AM - 10:00 PM"
+                        }
+                    ],
+                    "owner_id": null,
+                    "seeking_guest_artists": false,
+                    "guest_spot_details": null
+                },
+                "primary_style": "Neotraditional",
+                "primary_subject": "",
+                "primary_image": {
+                    "id": 10,
+                    "filename": "neotrad5",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/neotrad5.jpg",
+                    "is_primary": false,
+                    "created_at": "2025-12-30T01:25:03.000000Z",
+                    "updated_at": "2025-12-30T01:25:03.000000Z"
+                },
+                "images": [],
+                "styles": [
+                    {
+                        "id": 2,
+                        "name": "Neotraditional",
+                        "parent_id": 0
+                    }
+                ],
+                "tags": [
+                    "moon",
+                    "stars",
+                    "clouds",
+                    "seashell",
+                    "woman",
+                    "shell"
+                ],
+                "is_featured": false,
+                "is_demo": true,
+                "created_at": "2025-12-30T01:25:04+00:00"
+            }
+        ]
+    }
+}

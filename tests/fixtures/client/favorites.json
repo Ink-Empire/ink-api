@@ -1,0 +1,55 @@
+{
+    "favorites": [
+        {
+            "id": 24,
+            "name": "Jayme D'Amore IV",
+            "slug": "jayme-damore-iv-14528",
+            "username": "pbogisich",
+            "image": {
+                "id": 9,
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=397"
+            },
+            "studio": {
+                "id": 9,
+                "name": "Cole, Lynch and Bosco",
+                "slug": "cole-lynch-and-bosco-76621"
+            },
+            "styles": [],
+            "books_open": false
+        },
+        {
+            "id": 25,
+            "name": "Emilie Larkin",
+            "slug": "emilie-larkin-32223",
+            "username": "kovacek.herman",
+            "image": {
+                "id": 9,
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=397"
+            },
+            "studio": {
+                "id": 9,
+                "name": "Cole, Lynch and Bosco",
+                "slug": "cole-lynch-and-bosco-76621"
+            },
+            "styles": [],
+            "books_open": false
+        },
+        {
+            "id": 26,
+            "name": "Zoe Rutherford IV",
+            "slug": "zoe-rutherford-iv-95226",
+            "username": "ronaldo.mante",
+            "image": {
+                "id": 9,
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=397"
+            },
+            "studio": {
+                "id": 9,
+                "name": "Cole, Lynch and Bosco",
+                "slug": "cole-lynch-and-bosco-76621"
+            },
+            "styles": [],
+            "books_open": false
+        }
+    ]
+}

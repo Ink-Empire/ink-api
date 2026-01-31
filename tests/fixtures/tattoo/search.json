@@ -1,0 +1,374 @@
+{
+    "response": [
+        {
+            "id": 60,
+            "artist_id": null,
+            "artist_name": "",
+            "artist_slug": "",
+            "artist_image_uri": "",
+            "artist_username": "",
+            "artist_books_open": false,
+            "artist_location_lat_long": null,
+            "studio_id": null,
+            "studio_name": "",
+            "title": "sadasdas",
+            "description": "adsdasda",
+            "placement": "Hand",
+            "duration": "1.00",
+            "studio": null,
+            "primary_style": "Traditional",
+            "primary_subject": "",
+            "primary_image": {
+                "id": 774,
+                "filename": "local-tattoo_55_20260130222222_0_y9yzETvq.jpg",
+                "uri": "https://inked-in-images.s3.amazonaws.com/local-tattoo_55_20260130222222_0_y9yzETvq.jpg",
+                "is_primary": false,
+                "created_at": "2026-01-30T22:22:25.000000Z",
+                "updated_at": "2026-01-30T22:22:25.000000Z"
+            },
+            "images": [
+                {
+                    "id": 774,
+                    "filename": "local-tattoo_55_20260130222222_0_y9yzETvq.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/local-tattoo_55_20260130222222_0_y9yzETvq.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-30T22:22:25.000000Z",
+                    "updated_at": "2026-01-30T22:22:25.000000Z",
+                    "pivot": {
+                        "tattoo_id": 60,
+                        "image_id": 774
+                    }
+                }
+            ],
+            "styles": [
+                {
+                    "id": 1,
+                    "name": "Traditional",
+                    "parent_id": 0
+                }
+            ],
+            "tags": [
+                "skull"
+            ],
+            "is_featured": false,
+            "is_demo": false,
+            "created_at": "2026-01-30T22:32:37+00:00"
+        },
+        {
+            "id": 61,
+            "artist_id": 3,
+            "artist_name": "Alice Johnson",
+            "artist_slug": "story-teller-alice",
+            "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/trad3.jpg",
+            "artist_username": "StoryTeller_Alice",
+            "artist_books_open": true,
+            "artist_location_lat_long": "41.8781,-87.6298",
+            "studio_id": 3,
+            "studio_name": "Artistic Skin Studio",
+            "title": "Irure eos quia magna",
+            "description": "Veritatis eos harum",
+            "placement": "Finger",
+            "duration": "12.00",
+            "studio": {
+                "id": 3,
+                "name": "Artistic Skin Studio",
+                "slug": "artistic-skin-studio-3",
+                "about": "At Artistic Skin Studio, we believe that tattoos are not just ink on skin; they're pieces of art that tell a story. Our skilled artists strive to create meaningful and beautiful tattoos that reflect your individuality.",
+                "location": "Miami, FL, USA",
+                "location_lat_long": "25.7617, -80.1918",
+                "address": "789 Pine Lane",
+                "address2": "Unit B",
+                "city": "Cedar Rapids",
+                "state": "IA",
+                "postal_code": "52401",
+                "email": "artisticskin@example.com",
+                "phone": "555-345-6789",
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": true,
+                "business_hours": [
+                    {
+                        "id": 11,
+                        "day_id": 3,
+                        "open_time": "07:00",
+                        "close_time": "18:00",
+                        "studio_id": 3,
+                        "created_at": "2025-12-30T01:25:05.000000Z",
+                        "updated_at": null,
+                        "day": "Wednesday",
+                        "business_days": {
+                            "id": 3,
+                            "day": "Wednesday",
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null
+                        }
+                    },
+                    {
+                        "id": 12,
+                        "day_id": 4,
+                        "open_time": "08:00",
+                        "close_time": "19:00",
+                        "studio_id": 3,
+                        "created_at": "2025-12-30T01:25:05.000000Z",
+                        "updated_at": null,
+                        "day": "Thursday",
+                        "business_days": {
+                            "id": 4,
+                            "day": "Thursday",
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null
+                        }
+                    },
+                    {
+                        "id": 13,
+                        "day_id": 5,
+                        "open_time": "09:00",
+                        "close_time": "20:00",
+                        "studio_id": 3,
+                        "created_at": "2025-12-30T01:25:05.000000Z",
+                        "updated_at": null,
+                        "day": "Friday",
+                        "business_days": {
+                            "id": 5,
+                            "day": "Friday",
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null
+                        }
+                    },
+                    {
+                        "id": 14,
+                        "day_id": 6,
+                        "open_time": "10:00",
+                        "close_time": "21:00",
+                        "studio_id": 3,
+                        "created_at": "2025-12-30T01:25:05.000000Z",
+                        "updated_at": null,
+                        "day": "Saturday",
+                        "business_days": {
+                            "id": 6,
+                            "day": "Saturday",
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null
+                        }
+                    },
+                    {
+                        "id": 15,
+                        "day_id": 7,
+                        "open_time": "11:00",
+                        "close_time": "22:00",
+                        "studio_id": 3,
+                        "created_at": "2025-12-30T01:25:05.000000Z",
+                        "updated_at": null,
+                        "day": "Sunday",
+                        "business_days": {
+                            "id": 7,
+                            "day": "Sunday",
+                            "created_at": "2025-12-30T01:25:05.000000Z",
+                            "updated_at": null
+                        }
+                    }
+                ],
+                "hours": [
+                    {
+                        "day": "Wednesday",
+                        "day_id": 3,
+                        "open_time": "07:00",
+                        "close_time": "18:00",
+                        "hours": "7:00 AM - 6:00 PM"
+                    },
+                    {
+                        "day": "Thursday",
+                        "day_id": 4,
+                        "open_time": "08:00",
+                        "close_time": "19:00",
+                        "hours": "8:00 AM - 7:00 PM"
+                    },
+                    {
+                        "day": "Friday",
+                        "day_id": 5,
+                        "open_time": "09:00",
+                        "close_time": "20:00",
+                        "hours": "9:00 AM - 8:00 PM"
+                    },
+                    {
+                        "day": "Saturday",
+                        "day_id": 6,
+                        "open_time": "10:00",
+                        "close_time": "21:00",
+                        "hours": "10:00 AM - 9:00 PM"
+                    },
+                    {
+                        "day": "Sunday",
+                        "day_id": 7,
+                        "open_time": "11:00",
+                        "close_time": "22:00",
+                        "hours": "11:00 AM - 10:00 PM"
+                    }
+                ],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "primary_style": "Neotraditional",
+            "primary_subject": "",
+            "primary_image": {
+                "id": 775,
+                "filename": "local-tattoo_3_20260131005829_0_na0p1Maw.jpg",
+                "uri": "https://inked-in-images.s3.amazonaws.com/local-tattoo_3_20260131005829_0_na0p1Maw.jpg",
+                "is_primary": false,
+                "created_at": "2026-01-31T00:58:33.000000Z",
+                "updated_at": "2026-01-31T00:58:33.000000Z"
+            },
+            "images": [
+                {
+                    "id": 775,
+                    "filename": "local-tattoo_3_20260131005829_0_na0p1Maw.jpg",
+                    "uri": "https://inked-in-images.s3.amazonaws.com/local-tattoo_3_20260131005829_0_na0p1Maw.jpg",
+                    "is_primary": false,
+                    "created_at": "2026-01-31T00:58:33.000000Z",
+                    "updated_at": "2026-01-31T00:58:33.000000Z",
+                    "pivot": {
+                        "tattoo_id": 61,
+                        "image_id": 775
+                    }
+                }
+            ],
+            "styles": [
+                {
+                    "id": 2,
+                    "name": "Neotraditional",
+                    "parent_id": 0
+                }
+            ],
+            "tags": [
+                "hands",
+                "nature"
+            ],
+            "is_featured": false,
+            "is_demo": false,
+            "created_at": "2026-01-31T00:58:46+00:00"
+        },
+        {
+            "id": 1,
+            "artist_id": 1,
+            "artist_name": "Jazmyne Klocko",
+            "artist_slug": "jazmyne-klocko-78264",
+            "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=57",
+            "artist_username": "legros.godfrey",
+            "artist_books_open": false,
+            "artist_location_lat_long": null,
+            "studio_id": 1,
+            "studio_name": "Langosh, Rippin and Hamill",
+            "title": "aut",
+            "description": "Ut dolorem praesentium facere consequuntur eos sed.",
+            "placement": "backside",
+            "duration": null,
+            "studio": {
+                "id": 1,
+                "name": "Langosh, Rippin and Hamill",
+                "slug": "langosh-rippin-and-hamill-1444",
+                "about": "Voluptas officia ad praesentium temporibus quia autem architecto odit consequatur a alias quae.",
+                "location": "Kirlinfurt Costa Rica",
+                "location_lat_long": null,
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": "uhoeger@example.com",
+                "phone": null,
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": true,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "primary_style": "",
+            "primary_subject": "",
+            "primary_image": {
+                "id": 1,
+                "filename": "/tmp/fakerbDJzOF",
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=57",
+                "is_primary": false,
+                "created_at": "2026-01-31T20:06:59.000000Z",
+                "updated_at": "2026-01-31T20:06:59.000000Z"
+            },
+            "images": [],
+            "styles": [],
+            "tags": [],
+            "is_featured": false,
+            "is_demo": false,
+            "created_at": "2026-01-31T20:06:59+00:00"
+        },
+        {
+            "id": 16,
+            "artist_id": 54,
+            "artist_name": "Mr. Will Hoppe",
+            "artist_slug": "mr-will-hoppe-55939",
+            "artist_image_uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=457",
+            "artist_username": "keven.turner",
+            "artist_books_open": true,
+            "artist_location_lat_long": null,
+            "studio_id": 18,
+            "studio_name": "Powlowski, Hill and Lynch",
+            "title": "Updated Tattoo Title",
+            "description": "Updated description",
+            "placement": "foot",
+            "duration": null,
+            "studio": {
+                "id": 18,
+                "name": "Powlowski, Hill and Lynch",
+                "slug": "powlowski-hill-and-lynch-3222",
+                "about": "Excepturi cupiditate at eveniet dignissimos laborum distinctio magnam sit eos est consequatur velit deserunt iure quibusdam distinctio.",
+                "location": "Theresiaburgh Nicaragua",
+                "location_lat_long": null,
+                "address": null,
+                "address2": null,
+                "city": null,
+                "state": null,
+                "postal_code": null,
+                "email": "nils68@example.org",
+                "phone": null,
+                "image": {
+                    "uri": "https://www.gravatar.com/avatar?d=mm&s=140"
+                },
+                "is_verified": 0,
+                "is_claimed": true,
+                "business_hours": [],
+                "hours": [],
+                "owner_id": null,
+                "seeking_guest_artists": false,
+                "guest_spot_details": null
+            },
+            "primary_style": "",
+            "primary_subject": "",
+            "primary_image": {
+                "id": 18,
+                "filename": "/tmp/fakerFqgHuC",
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=457",
+                "is_primary": false,
+                "created_at": "2026-01-31T20:20:14.000000Z",
+                "updated_at": "2026-01-31T20:20:14.000000Z"
+            },
+            "images": [],
+            "styles": [],
+            "tags": [],
+            "is_featured": false,
+            "is_demo": false,
+            "created_at": "2026-01-31T20:20:14+00:00"
+        }
+    ],
+    "unclaimed_studios": [],
+    "total": 4,
+    "page": 1,
+    "per_page": 25,
+    "has_more": false,
+    "none_found": null
+}

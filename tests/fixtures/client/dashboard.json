@@ -1,0 +1,65 @@
+{
+    "appointments": [],
+    "conversations": [],
+    "wishlist_count": 0,
+    "suggested_artists": [
+        {
+            "id": 22,
+            "name": "Demetris Wilderman",
+            "slug": "demetris-wilderman-4358",
+            "username": "ospinka",
+            "image": {
+                "id": 8,
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=948"
+            },
+            "studio": {
+                "id": 8,
+                "name": "Mueller and Sons",
+                "slug": "mueller-and-sons-21437"
+            },
+            "styles": [
+                {
+                    "id": 37,
+                    "name": "in",
+                    "parent_id": 0
+                },
+                {
+                    "id": 40,
+                    "name": "hic",
+                    "parent_id": 0
+                }
+            ],
+            "books_open": true,
+            "is_demo": false
+        },
+        {
+            "id": 21,
+            "name": "Monica Heaney",
+            "slug": "monica-heaney-93385",
+            "username": "fswift",
+            "image": {
+                "id": 8,
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=948"
+            },
+            "studio": {
+                "id": 8,
+                "name": "Mueller and Sons",
+                "slug": "mueller-and-sons-21437"
+            },
+            "styles": [
+                {
+                    "id": 37,
+                    "name": "in",
+                    "parent_id": 0
+                },
+                {
+                    "id": 39,
+                    "name": "repudiandae",
+                    "parent_id": 0
+                }
+            ],
+            "books_open": false,
+            "is_demo": false
+        }
+    ]
+}

@@ -18,15 +18,18 @@ class ArtistFactory extends Factory
      */
     public function definition()
     {
+        $name = fake()->name();
         return [
             'about' => fake()->sentence(10),
             'email' => fake()->unique()->safeEmail(),
             'location' => fake()->city() . " " . fake()->country(),
-            'name' => fake()->name(),
-            'studio_id' => rand(1,50),
+            'name' => $name,
+            'username' => fake()->unique()->userName(),
+            'slug' => Str::slug($name) . '-' . fake()->unique()->randomNumber(5),
+            'studio_id' => null,
             'password' => '$2y$10$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // password
             'remember_token' => Str::random(10),
-            'type_id' => 2
+            'type_id' => UserTypes::ARTIST_TYPE_ID,
         ];
     }
 
