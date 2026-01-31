@@ -54,6 +54,9 @@ Route::get('/placements', [PlacementController::class, 'index']);
 // Artist appointments (public for calendar display)
 Route::post('/artists/appointments', [AppointmentController::class, 'getArtistAppointments']);
 
+// Artist settings (public for booking info display)
+Route::get('/artists/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'getSettings']);
+
 // Google Places config (returns API key for frontend SDK use)
 Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'config']);
 
@@ -91,9 +94,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/unblock', [UserController::class, 'unblockUser']);
     });
 
-    // Artist settings routes
+    // Artist settings routes (GET is public, PUT requires auth)
     Route::prefix('artists')->group(function () {
-        Route::get('/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'getSettings']);
         Route::put('/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'updateSettings']);
 
         // Studio invitation management for artists
