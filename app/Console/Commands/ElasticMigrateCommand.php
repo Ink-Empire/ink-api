@@ -37,7 +37,7 @@ class ElasticMigrateCommand extends Command
             }
 
             $this->info('Importing Artist data...');
-            $artists = Artist::with(['studio', 'styles', 'tattoos'])->get();
+            $artists = Artist::with(['studio', 'styles', 'primary_image', 'settings'])->get();
             if ($artists->count() > 0) {
                 $artists->searchable();
                 $this->info("Imported {$artists->count()} artists");

@@ -159,9 +159,9 @@ class ArtistController extends Controller
         $artist = $this->artistService->getById($id);
         $tattoos = $this->tattooService->getByArtistId($id, $params);
 
-        // Replace embedded tattoos with fresh data from tattoos index
-        if (is_array($artist) && isset($artist['tattoos'])) {
-            $tattooData = $tattoos['response'];
+        // Add tattoos from the tattoos index (not embedded in artist index)
+        if (is_array($artist)) {
+            $tattooData = $tattoos['response'] ?? [];
 
             // Convert Collection to array if needed
             if ($tattooData instanceof \Illuminate\Support\Collection) {

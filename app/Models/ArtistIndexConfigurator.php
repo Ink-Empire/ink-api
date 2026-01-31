@@ -131,21 +131,6 @@ class ArtistIndexConfigurator extends IndexConfigurator
         ],
     ];
 
-    const TATTOOS = [
-        'type' => 'nested',
-        'properties' => [
-            'id' => Datatypes::INTEGER,
-            'title' => Datatypes::KEYWORD,
-            'description' => Datatypes::TEXT,
-            'placement' => Datatypes::KEYWORD,
-            'studio' => Datatypes::KEYWORD,
-            'primary_style' => Datatypes::KEYWORD,
-            'primary_subject' => Datatypes::KEYWORD,
-            'primary_image' => self::IMAGE,
-            'images' => self::IMAGE,
-        ]
-    ];
-
     const SETTINGS = [
         'type' => 'nested',
         'properties' => [
@@ -175,7 +160,6 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'is_demo' => Datatypes::BOOLEAN,
             'styles' => self::STYLE,
             'primary_image' => self::IMAGE,
-            'tattoos' => self::TATTOOS,
             'username' => Datatypes::TEXT,
             'settings' => self::SETTINGS,
         ]
