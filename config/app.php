@@ -59,7 +59,7 @@ return [
 
     'asset_url' => env('ASSET_URL'),
 
-    'frontend_url' => rtrim(env('FRONTEND_URL', 'https://inkedin.com'), '/'),
+    'frontend_url' => rtrim(env('FRONTEND_URL', 'https://getinked.in'), '/'),
 
     /*
     |--------------------------------------------------------------------------
