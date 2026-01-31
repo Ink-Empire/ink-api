@@ -17,7 +17,7 @@ class AdminSeeder extends Seeder
      */
     public function run(): void
     {
-        $email = env('ADMIN_EMAIL', 'admin@inkedin.com');
+        $email = env('ADMIN_EMAIL', 'admin@getinked.in');
         $password = env('ADMIN_PASSWORD');
 
         if (!$password) {
