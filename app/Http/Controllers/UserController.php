@@ -6,6 +6,7 @@ use App\Enums\UserRelationships;
 use App\Enums\UserTypes;
 use App\Http\Resources\SelfUserResource;
 use App\Http\Resources\UserResource;
+use App\Models\Artist;
 use App\Models\ArtistSettings;
 use App\Models\User;
 use App\Services\AddressService;
@@ -524,12 +525,18 @@ class UserController extends Controller
         }
 
         if ($user->type == UserTypes::ARTIST) {
-            //clear all tattoos from elastic index
-            $this->elasticService->deleteByQuery('artist_id', $user->id, 'tattoos');
+            // Remove artist from ES index BEFORE deleting
+            $artist = Artist::find($user->id);
+            if ($artist) {
+                $artist->unsearchable();
+            }
+
+            // Clear all tattoos from elastic index (artist_id is KEYWORD, cast to string)
+            $tattooIndex = config('elastic.client.tattoos_index', 'tattoos');
+            $this->elasticService->deleteByQuery('artist_id', (string) $user->id, $tattooIndex);
         }
 
         $user->delete();
-        $user->searchable();
 
         return response()->json([
             'data' => ['id' => $id],
