@@ -813,22 +813,31 @@ class ArtistController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        // Check if user is affiliated with this studio
-        $affiliation = $user->affiliatedStudios()
-            ->where('studios.id', $studioId)
-            ->first();
+        try {
+            // Check if user is affiliated with this studio
+            $affiliation = $user->affiliatedStudios()
+                ->where('studios.id', $studioId)
+                ->first();
 
-        if (!$affiliation) {
+            if (!$affiliation) {
+                return response()->json(['error' => 'You are not affiliated with this studio'], 404);
+            }
+
+            // Remove the studio affiliation
+            $user->affiliatedStudios()->detach($studioId);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Studio affiliation removed',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to leave studio', [
+                'user_id' => $user->id,
+                'studio_id' => $studioId,
+                'error' => $e->getMessage(),
+            ]);
             return response()->json(['error' => 'You are not affiliated with this studio'], 404);
         }
-
-        // Remove the studio affiliation
-        $user->affiliatedStudios()->detach($studioId);
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Studio affiliation removed',
-        ]);
     }
 
     /**
@@ -842,30 +851,39 @@ class ArtistController extends Controller
             return response()->json(['error' => 'Unauthorized'], 401);
         }
 
-        $success = $user->setPrimaryStudio($studioId);
+        try {
+            $success = $user->setPrimaryStudio($studioId);
 
-        if (!$success) {
+            if (!$success) {
+                return response()->json(['error' => 'You are not verified at this studio'], 404);
+            }
+
+            // Re-index the artist in Elasticsearch to update the primary studio
+            if ($user instanceof \App\Models\Artist || $user->type_id === \App\Enums\UserTypes::ARTIST_TYPE_ID) {
+                try {
+                    $artist = \App\Models\Artist::find($user->id);
+                    if ($artist) {
+                        $artist->searchable();
+                    }
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to re-index artist after setting primary studio', [
+                        'artist_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Primary studio updated',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to set primary studio', [
+                'user_id' => $user->id,
+                'studio_id' => $studioId,
+                'error' => $e->getMessage(),
+            ]);
             return response()->json(['error' => 'You are not verified at this studio'], 404);
         }
-
-        // Re-index the artist in Elasticsearch to update the primary studio
-        if ($user instanceof \App\Models\Artist || $user->type_id === \App\Enums\UserTypes::ARTIST_TYPE_ID) {
-            try {
-                $artist = \App\Models\Artist::find($user->id);
-                if ($artist) {
-                    $artist->searchable();
-                }
-            } catch (\Exception $e) {
-                \Log::warning('Failed to re-index artist after setting primary studio', [
-                    'artist_id' => $user->id,
-                    'error' => $e->getMessage(),
-                ]);
-            }
-        }
-
-        return response()->json([
-            'success' => true,
-            'message' => 'Primary studio updated',
-        ]);
     }
 }

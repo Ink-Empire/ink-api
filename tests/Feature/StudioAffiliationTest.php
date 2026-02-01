@@ -347,7 +347,7 @@ describe('Studio Artists Endpoint', function () {
 
         // Act
         $response = $this->actingAs($studioOwner)
-            ->getJson("/studios/{$this->studio1->id}/artists");
+            ->getJson("/api/studios/{$this->studio1->id}/artists");
 
         // Assert
         $response->assertOk()

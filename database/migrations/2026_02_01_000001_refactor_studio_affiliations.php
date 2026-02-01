@@ -18,6 +18,18 @@ return new class extends Migration
      */
     public function up()
     {
+        // Check if migration already ran (is_primary column exists)
+        if (Schema::hasColumn('users_studios', 'is_primary')) {
+            Log::info("Migration: is_primary column already exists, skipping migration");
+            return;
+        }
+
+        // Check if studio_id column exists on users table
+        if (!Schema::hasColumn('users', 'studio_id')) {
+            Log::info("Migration: studio_id column doesn't exist, skipping migration");
+            return;
+        }
+
         // Count users with studio_id that need migration
         $usersWithStudioId = DB::table('users')
             ->whereNotNull('studio_id')
@@ -97,21 +109,25 @@ return new class extends Migration
      */
     public function down()
     {
-        // Re-add studio_id to users table
-        Schema::table('users', function (Blueprint $table) {
-            $table->foreignId('studio_id')->nullable()->after('address_id')->constrained();
-        });
+        // Re-add studio_id to users table if it doesn't exist
+        if (!Schema::hasColumn('users', 'studio_id')) {
+            Schema::table('users', function (Blueprint $table) {
+                $table->foreignId('studio_id')->nullable()->after('address_id')->constrained();
+            });
 
-        // Restore studio_id from primary studio in pivot
-        DB::statement("
-            UPDATE users u
-            INNER JOIN users_studios us ON u.id = us.user_id AND us.is_primary = 1 AND us.is_verified = 1
-            SET u.studio_id = us.studio_id
-        ");
+            // Restore studio_id from primary studio in pivot
+            DB::statement("
+                UPDATE users u
+                INNER JOIN users_studios us ON u.id = us.user_id AND us.is_primary = 1 AND us.is_verified = 1
+                SET u.studio_id = us.studio_id
+            ");
+        }
 
-        // Remove is_primary column
-        Schema::table('users_studios', function (Blueprint $table) {
-            $table->dropColumn('is_primary');
-        });
+        // Remove is_primary column if it exists
+        if (Schema::hasColumn('users_studios', 'is_primary')) {
+            Schema::table('users_studios', function (Blueprint $table) {
+                $table->dropColumn('is_primary');
+            });
+        }
     }
 };

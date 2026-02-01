@@ -11,13 +11,6 @@ class UserBlockingTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function migrateFreshUsing()
-    {
-        return [
-            '--path' => 'database/migrations/testing',
-        ];
-    }
-
     public function test_user_can_block_another_user(): void
     {
         $blocker = User::factory()->create();
