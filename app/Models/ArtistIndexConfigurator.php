@@ -142,6 +142,15 @@ class ArtistIndexConfigurator extends IndexConfigurator
         ]
     ];
 
+    const SOCIAL_MEDIA_LINK = [
+        'type' => 'nested',
+        'properties' => [
+            'platform' => Datatypes::KEYWORD,
+            'username' => Datatypes::KEYWORD,
+            'url' => Datatypes::KEYWORD,
+        ]
+    ];
+
     /** @var array */
     protected $mappings = [
         'properties' => [
@@ -162,6 +171,7 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'primary_image' => self::IMAGE,
             'username' => Datatypes::TEXT,
             'settings' => self::SETTINGS,
+            'social_media_links' => self::SOCIAL_MEDIA_LINK,
         ]
     ];
 

@@ -78,6 +78,14 @@ class SelfUserResource extends JsonResource
                     'image' => $user->image ? $user->image->uri : null,
                 ];
             })->values()->toArray(),
+            // Social media links
+            'social_media_links' => $this->socialMediaLinks->map(function ($link) {
+                return [
+                    'platform' => $link->platform,
+                    'username' => $link->username,
+                    'url' => $link->url,
+                ];
+            })->values()->toArray(),
         ];
     }
 }
