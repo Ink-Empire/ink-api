@@ -46,9 +46,13 @@ class Artist extends User
         return $this->hasOne(ArtistSettings::class, 'artist_id', 'id');
     }
 
+    /**
+     * Get the artist's primary studio (from verified affiliations).
+     * Overrides User::studio() for Elasticsearch compatibility.
+     */
     public function studio()
     {
-        return $this->belongsTo(Studio::class);
+        return $this->primaryStudio();
     }
 
     public function styles()
@@ -95,7 +99,7 @@ class Artist extends User
     {
         $query = $this->newQuery();
         $query->with([
-            'studio',
+            'primaryStudio.image',
             'styles',
             'primary_image',
             'settings',
@@ -112,7 +116,6 @@ class Artist extends User
     public function toSearchableArray()
     {
         $with = [
-            'studio',
             'styles',
             'primary_image',
             'settings',
@@ -120,7 +123,10 @@ class Artist extends User
 
         $this->loadMissing($with);
 
-        $result = (new ArtistIndexResource($this))->jsonSerialize();
+        // Get primary studio separately since it's from a pivot relationship
+        $primaryStudio = $this->primary_studio;
+
+        $result = (new ArtistIndexResource($this, $primaryStudio))->jsonSerialize();
 
         // Debug: log if is_demo is missing
         if (!isset($result['is_demo'])) {

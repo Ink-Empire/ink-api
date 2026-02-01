@@ -162,9 +162,34 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsTo(Address::class);
     }
 
+    /**
+     * Get the user's primary verified studio.
+     * This replaces the old belongsTo relationship with studio_id column.
+     */
+    public function primaryStudio()
+    {
+        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
+            ->wherePivot('is_verified', true)
+            ->wherePivot('is_primary', true)
+            ->withTimestamps();
+    }
+
+    /**
+     * Get the primary studio (single model, not relationship for Elasticsearch compatibility).
+     */
+    public function getPrimaryStudioAttribute()
+    {
+        return $this->primaryStudio()->with('image')->first();
+    }
+
+    /**
+     * Legacy studio() method - returns primary studio for backwards compatibility.
+     * @deprecated Use primaryStudio() or verifiedStudios() instead
+     */
     public function studio()
     {
-        return $this->belongsTo(Studio::class);
+        return $this->primaryStudio();
     }
 
     public function ownedStudio()
@@ -178,7 +203,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function affiliatedStudios()
     {
         return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
-            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->withTimestamps();
     }
 
@@ -188,7 +213,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function verifiedStudios()
     {
         return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
-            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->wherePivot('is_verified', true)
             ->withTimestamps();
     }
@@ -199,7 +224,7 @@ class User extends Authenticatable implements MustVerifyEmail
     public function pendingStudioInvitations()
     {
         return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
-            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->wherePivot('is_verified', false)
             ->wherePivot('initiated_by', 'studio')
             ->withTimestamps();
@@ -211,10 +236,33 @@ class User extends Authenticatable implements MustVerifyEmail
     public function pendingStudioRequests()
     {
         return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
-            ->withPivot('is_verified', 'verified_at', 'initiated_by')
+            ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->wherePivot('is_verified', false)
             ->wherePivot('initiated_by', 'artist')
             ->withTimestamps();
+    }
+
+    /**
+     * Set a studio as the user's primary studio.
+     */
+    public function setPrimaryStudio(int $studioId): bool
+    {
+        // First, verify the user is affiliated with this studio
+        $affiliation = $this->verifiedStudios()->where('studios.id', $studioId)->first();
+        if (!$affiliation) {
+            return false;
+        }
+
+        // Remove primary flag from all other studios
+        $this->affiliatedStudios()->updateExistingPivot(
+            $this->affiliatedStudios()->pluck('studios.id')->toArray(),
+            ['is_primary' => false]
+        );
+
+        // Set the new primary studio
+        $this->affiliatedStudios()->updateExistingPivot($studioId, ['is_primary' => true]);
+
+        return true;
     }
 
     public function artistSettings()
