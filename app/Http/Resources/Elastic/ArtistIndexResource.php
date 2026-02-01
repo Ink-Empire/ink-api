@@ -19,8 +19,19 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class ArtistIndexResource extends JsonResource
 {
+    protected $primaryStudio;
+
+    public function __construct($resource, $primaryStudio = null)
+    {
+        parent::__construct($resource);
+        $this->primaryStudio = $primaryStudio;
+    }
+
     public function toArray($request)
     {
+        // Use the explicitly passed primary studio, or fall back to the attribute
+        $studio = $this->primaryStudio ?? $this->resource->primary_studio;
+
         return [
             'id' => $this->id,
             'about' => $this->about,
@@ -30,8 +41,8 @@ class ArtistIndexResource extends JsonResource
             'name' => $this->name,
             'phone' => $this->phone,
             'slug' => $this->slug,
-            'studio' => $this->studio ? new StudioResource($this->studio) : null,
-            'studio_name' => $this->studio?->name,
+            'studio' => $studio ? new StudioResource($studio) : null,
+            'studio_name' => $studio?->name,
             'is_featured' => (bool) $this->is_featured,
             'is_demo' => (bool) $this->is_demo,
             'styles' => StyleResource::collection($this->styles ?? []),

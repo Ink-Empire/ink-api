@@ -23,8 +23,14 @@ class Controller extends BaseController
         return response()->json($data);
     }
 
-    protected function returnErrorResponse($error, $errorMessage = 'error')
+    protected function returnErrorResponse($error, $statusCode = 400)
     {
-        return response()->json([$errorMessage => $error]);
+        // If statusCode is numeric, use it as HTTP status code
+        // Otherwise, treat as legacy key name and use 400 as status
+        if (is_numeric($statusCode)) {
+            return response()->json(['error' => $error, 'message' => $error], (int) $statusCode);
+        }
+        // Legacy support: string passed as second param means it was a custom key
+        return response()->json(['error' => $error, 'message' => $error], 400);
     }
 }

@@ -10,14 +10,43 @@ class UserResource extends JsonResource
         $user = $request->user();
         $canViewPrivate = $this->canViewPrivateDetails($user);
 
+        // Get all verified studios with pivot data
+        $verifiedStudios = $this->verifiedStudios()->with('image')->get();
+        $studiosData = $verifiedStudios->map(function ($studio) {
+            return [
+                'id' => $studio->id,
+                'name' => $studio->name,
+                'slug' => $studio->slug,
+                'image' => $studio->image ? [
+                    'id' => $studio->image->id,
+                    'uri' => $studio->image->uri,
+                ] : null,
+                'is_primary' => (bool) $studio->pivot->is_primary,
+            ];
+        })->values()->toArray();
+
+        // Get primary studio for backwards compatibility
+        $primaryStudio = $verifiedStudios->firstWhere('pivot.is_primary', true)
+            ?? $verifiedStudios->first();
+        $primaryStudioData = $primaryStudio ? [
+            'id' => $primaryStudio->id,
+            'name' => $primaryStudio->name,
+            'slug' => $primaryStudio->slug,
+            'image' => $primaryStudio->image ? [
+                'id' => $primaryStudio->image->id,
+                'uri' => $primaryStudio->image->uri,
+            ] : null,
+        ] : null;
+
         $data = [
             'id' => $this->id,
             'about' => $this->about,
             'image' => $this->image,
             'location' => $this->location,
             'name' => $this->name,
-            'studio' => $this->studio,
-            'studio_name' => $this->studio_name ?? "",
+            'studio' => $primaryStudioData, // Primary studio for backwards compatibility
+            'studios_affiliated' => $studiosData, // All verified studios
+            'studio_name' => $primaryStudio?->name ?? $this->studio_name ?? "",
             'slug' => $this->slug,
             'type' => $this->type->name,
             'is_featured' => $this->is_featured,
