@@ -23,6 +23,7 @@ use App\Http\Controllers\TattooLeadController;
 use App\Http\Controllers\EmailTestController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\FeedbackController;
+use App\Http\Controllers\SocialMediaLinkController;
 
 /*
 |--------------------------------------------------------------------------
@@ -92,6 +93,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/favorites/{type}', [UserController::class, 'toggleFavorite']);
         Route::post('/block', [UserController::class, 'blockUser']);
         Route::post('/unblock', [UserController::class, 'unblockUser']);
+        Route::post('/me/social-links', [SocialMediaLinkController::class, 'store']);
+        Route::delete('/me/social-links/{platform}', [SocialMediaLinkController::class, 'destroy']);
     });
 
     // Artist settings routes (GET is public, PUT requires auth)

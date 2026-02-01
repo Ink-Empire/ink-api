@@ -46,6 +46,11 @@ class Artist extends User
         return $this->hasOne(ArtistSettings::class, 'artist_id', 'id');
     }
 
+    public function socialMediaLinks()
+    {
+        return $this->hasMany(SocialMediaLink::class, 'user_id', 'id');
+    }
+
     /**
      * Get the artist's primary studio (from verified affiliations).
      * Overrides User::studio() for Elasticsearch compatibility.
@@ -103,6 +108,7 @@ class Artist extends User
             'styles',
             'primary_image',
             'settings',
+            'socialMediaLinks',
         ]);
 
         return $query;
@@ -119,6 +125,7 @@ class Artist extends User
             'styles',
             'primary_image',
             'settings',
+            'socialMediaLinks',
         ];
 
         $this->loadMissing($with);
