@@ -49,6 +49,9 @@ class SocialMediaLinkController extends Controller
             return response()->json(['message' => 'Social media link not found'], 404);
         }
 
+        // Trigger save to reindex in Elasticsearch via UserObserver
+        $user->save();
+
         return response()->json(['message' => 'Social media link deleted successfully']);
     }
 }

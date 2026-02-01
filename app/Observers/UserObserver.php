@@ -25,10 +25,11 @@ class UserObserver
     public function saved(User $user)
     {
         if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
-            // Cast the User instance to Artist for elastic
-            $artist = new Artist($user->getAttributes());
-
-            $artist->searchable();
+            // Fetch the Artist from database to include all relationships for Elasticsearch
+            $artist = Artist::find($user->id);
+            if ($artist) {
+                $artist->searchable();
+            }
         }
     }
 }
