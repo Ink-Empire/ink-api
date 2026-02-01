@@ -19,9 +19,22 @@ class TagController extends Controller
 
     /**
      * Get all approved tags that have at least one tattoo (for listing)
+     * Optionally filter by specific IDs with ?ids=1,2,3
      */
-    public function index(): JsonResponse
+    public function index(Request $request): JsonResponse
     {
+        $idsParam = $request->input('ids');
+
+        if ($idsParam) {
+            $ids = array_filter(array_map('intval', explode(',', $idsParam)));
+            $tags = Tag::whereIn('id', $ids)->get();
+
+            return response()->json([
+                'success' => true,
+                'data' => $tags
+            ]);
+        }
+
         $tags = Tag::approved()
             ->whereHas('tattoos')
             ->withCount('tattoos')
