@@ -55,6 +55,13 @@ class UserResource extends JsonResource
             'studios' => $this->studios,
             'tattoos' => $this->tattoos->pluck('id')->toArray(),
             'username' => $this->username,
+            'social_media_links' => $this->socialMediaLinks->map(function ($link) {
+                return [
+                    'platform' => $link->platform,
+                    'username' => $link->username,
+                    'url' => $link->url,
+                ];
+            })->values()->toArray(),
         ];
 
         // Only include sensitive fields for authorized users

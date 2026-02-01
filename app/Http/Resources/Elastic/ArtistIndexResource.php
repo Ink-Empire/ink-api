@@ -49,6 +49,11 @@ class ArtistIndexResource extends JsonResource
             'primary_image' => $this->primary_image ?? null,
             'username' => $this->username,
             'settings' => $this->settings ? $this->settings->toArray() : [],
+            'social_media_links' => $this->socialMediaLinks?->map(fn($link) => [
+                'platform' => $link->platform,
+                'username' => $link->username,
+                'url' => $link->url,
+            ])->values()->toArray() ?? [],
         ];
     }
 }
