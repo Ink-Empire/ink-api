@@ -19,6 +19,7 @@ return new class extends Migration
         DB::table('types')->insert([
             ['id' => 1, 'name' => 'client'],
             ['id' => 2, 'name' => 'artist'],
+            ['id' => 3, 'name' => 'studio'],
         ]);
     }
 
