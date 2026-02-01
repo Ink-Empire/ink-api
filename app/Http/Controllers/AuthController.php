@@ -70,7 +70,6 @@ class AuthController extends Controller
             'type_id' => UserTypes::getTypeId($request->type ?? UserTypes::USER),
             'address_id' => $address->id ?? null,
             'experience_level' => $request->experience_level ?? null,
-            'studio_id' => $request->studio_id ?? null, // Studio affiliation for artists
         ]);
 
         // Store password in history

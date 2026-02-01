@@ -297,7 +297,7 @@ class TattooController extends Controller
                 $tattoo = Tattoo::create([
                     'artist_id' => $user->id,
                     'primary_image_id' => $primaryImage->id,
-                    'studio_id' => $user->studio_id ?? null,
+                    'studio_id' => $user->primary_studio?->id,
                     'title' => $request->input('title'),
                     'description' => $request->input('description'),
                     'placement' => $request->input('placement'),
