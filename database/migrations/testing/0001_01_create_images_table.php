@@ -10,7 +10,10 @@ return new class extends Migration
     {
         Schema::create('images', function (Blueprint $table) {
             $table->id();
-            $table->string('url')->nullable();
+            $table->string('name')->nullable();
+            $table->string('filename')->nullable();
+            $table->string('uri')->nullable();
+            $table->boolean('is_primary')->default(false);
             $table->timestamps();
         });
     }

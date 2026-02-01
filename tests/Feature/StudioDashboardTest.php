@@ -35,7 +35,7 @@ beforeEach(function () {
 describe('Studio Dashboard Stats', function () {
     test('dashboard stats endpoint returns successfully', function () {
         $response = $this->actingAs($this->studioOwner)
-            ->getJson("/api/studios/{$this->studio->id}/dashboard-stats");
+            ->getJson("/studios/{$this->studio->id}/dashboard-stats");
 
         $response->assertOk()
             ->assertJsonStructure([
@@ -68,7 +68,7 @@ describe('Studio Dashboard Stats', function () {
         ]);
 
         $response = $this->actingAs($this->studioOwner)
-            ->getJson("/api/studios/{$this->studio->id}/dashboard-stats");
+            ->getJson("/studios/{$this->studio->id}/dashboard-stats");
 
         $response->assertOk();
         // The inquiries count should include conversations where studio artists are participants
@@ -87,7 +87,7 @@ describe('Studio Dashboard Stats', function () {
         ]);
 
         $response = $this->actingAs($this->studioOwner)
-            ->getJson("/api/studios/{$this->studio->id}/dashboard-stats");
+            ->getJson("/studios/{$this->studio->id}/dashboard-stats");
 
         $response->assertOk();
         expect($response->json('artists_count'))->toBe(2);
