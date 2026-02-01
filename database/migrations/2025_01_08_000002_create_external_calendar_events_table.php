@@ -8,10 +8,6 @@ return new class extends Migration
 {
     public function up(): void
     {
-        if (Schema::hasTable('external_calendar_events')) {
-            return;
-        }
-
         Schema::create('external_calendar_events', function (Blueprint $table) {
             $table->id();
             $table->foreignId('calendar_connection_id')->constrained()->onDelete('cascade');
