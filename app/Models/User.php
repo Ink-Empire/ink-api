@@ -284,6 +284,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->hasMany(Password::class);
     }
 
+    public function socialMediaLinks()
+    {
+        return $this->hasMany(SocialMediaLink::class);
+    }
+
     public function sendEmailVerificationNotification()
     {
         $this->notify(new VerifyEmailNotification);
