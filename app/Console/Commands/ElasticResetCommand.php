@@ -57,10 +57,10 @@ class ElasticResetCommand extends Command
 
             // Step 3: Import all data
             $this->info('Step 3/3: Importing data from database...');
-            $importResult = Artisan::call('scout:import', [
-                'model' => $modelClass,
-            ]);
-            $this->line(Artisan::output());
+            $count = $modelClass::count();
+            $this->line("Found {$count} records to index...");
+            $modelClass::makeAllSearchable();
+            $this->line("Import completed.");
 
             $duration = round(microtime(true) - $startTime, 2);
 
