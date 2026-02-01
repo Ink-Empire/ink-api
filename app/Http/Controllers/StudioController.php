@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserTypes;
+use App\Http\Resources\DashboardArtistResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\StudioWorkingHoursResource;
 use App\Http\Resources\UserResource;
@@ -464,7 +465,10 @@ class StudioController extends Controller
             ]);
         }
 
-        return $this->returnResponse('artist', new UserResource($artist));
+        // Load image relation for consistent response
+        $artist->load('image');
+
+        return $this->returnResponse('artist', new DashboardArtistResource($artist));
     }
 
     public function removeArtist($id, $userId): JsonResponse
@@ -915,12 +919,16 @@ class StudioController extends Controller
         $bookingsTrend = $bookingsThisWeek - $bookingsLastWeek;
 
         // Studio inquiries (conversations started with studio artists this week)
-        // Using conversations where artist_id is in our studio artists
-        $inquiriesThisWeek = \App\Models\Conversation::whereIn('artist_id', $artistIds)
+        // Query conversations where any studio artist is a participant
+        $inquiriesThisWeek = \App\Models\Conversation::whereHas('participants', function ($q) use ($artistIds) {
+                $q->whereIn('user_id', $artistIds);
+            })
             ->where('created_at', '>=', $sevenDaysAgo)
             ->count();
 
-        $inquiriesLastWeek = \App\Models\Conversation::whereIn('artist_id', $artistIds)
+        $inquiriesLastWeek = \App\Models\Conversation::whereHas('participants', function ($q) use ($artistIds) {
+                $q->whereIn('user_id', $artistIds);
+            })
             ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
             ->count();
 

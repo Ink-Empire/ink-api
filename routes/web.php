@@ -64,6 +64,7 @@ Route::prefix('api')->group(function () {
 
         // Protected artist routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
+            Route::post('/lookup', [ArtistController::class, 'lookupByIdentifier']);
             Route::put('/{id}', [ArtistController::class, 'update']);
             Route::post('/{id}/working-hours', [ArtistController::class, 'setAvailability']);
             Route::get('/{id}/settings', [ArtistController::class, 'getSettings']);

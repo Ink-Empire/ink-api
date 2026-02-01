@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\DashboardArtistResource;
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\WorkingHoursResource;
 use App\Jobs\NotifyWishlistUsersOfBooksOpen;
@@ -177,6 +178,51 @@ class ArtistController extends Controller
         }
 
         return $this->returnResponse('artist', $artist);
+    }
+
+    /**
+     * Lookup an artist by username or email.
+     * Used to validate an artist exists before adding them to a studio.
+     */
+    public function lookupByIdentifier(Request $request): JsonResponse
+    {
+        $identifier = $request->input('username') ?? $request->input('email') ?? $request->input('identifier');
+        if (!$identifier) {
+            return $this->returnErrorResponse('Username or email is required', 422);
+        }
+
+        $identifierLower = strtolower($identifier);
+
+        // Try username first via Elasticsearch
+        $results = Artist::search()
+            ->where('username', $identifierLower)
+            ->take(1)
+            ->get();
+
+        $result = collect($results['response'] ?? $results)->first();
+
+        // If not found by username, try email
+        if (!$result) {
+            $results = Artist::search()
+                ->where('email', $identifierLower)
+                ->take(1)
+                ->get();
+
+            $result = collect($results['response'] ?? $results)->first();
+        }
+
+        if (!$result) {
+            return $this->returnErrorResponse('No artist found with that username or email', 404);
+        }
+
+        // Load the model with image relation for proper resource response
+        $artist = Artist::with('image')->find($result['id']);
+
+        if (!$artist) {
+            return $this->returnErrorResponse('No artist found with that username or email', 404);
+        }
+
+        return $this->returnResponse('artist', new DashboardArtistResource($artist));
     }
 
     /**
@@ -753,6 +799,73 @@ class ArtistController extends Controller
         return response()->json([
             'success' => true,
             'message' => 'Studio invitation declined',
+        ]);
+    }
+
+    /**
+     * Leave a studio affiliation.
+     */
+    public function leaveStudio(Request $request, int $studioId): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        // Check if user is affiliated with this studio
+        $affiliation = $user->affiliatedStudios()
+            ->where('studios.id', $studioId)
+            ->first();
+
+        if (!$affiliation) {
+            return response()->json(['error' => 'You are not affiliated with this studio'], 404);
+        }
+
+        // Remove the studio affiliation
+        $user->affiliatedStudios()->detach($studioId);
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Studio affiliation removed',
+        ]);
+    }
+
+    /**
+     * Set a studio as the primary studio for the artist.
+     */
+    public function setPrimaryStudio(Request $request, int $studioId): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json(['error' => 'Unauthorized'], 401);
+        }
+
+        $success = $user->setPrimaryStudio($studioId);
+
+        if (!$success) {
+            return response()->json(['error' => 'You are not verified at this studio'], 404);
+        }
+
+        // Re-index the artist in Elasticsearch to update the primary studio
+        if ($user instanceof \App\Models\Artist || $user->type_id === \App\Enums\UserTypes::ARTIST_TYPE_ID) {
+            try {
+                $artist = \App\Models\Artist::find($user->id);
+                if ($artist) {
+                    $artist->searchable();
+                }
+            } catch (\Exception $e) {
+                \Log::warning('Failed to re-index artist after setting primary studio', [
+                    'artist_id' => $user->id,
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        return response()->json([
+            'success' => true,
+            'message' => 'Primary studio updated',
         ]);
     }
 }
