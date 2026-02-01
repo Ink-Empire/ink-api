@@ -102,6 +102,12 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/me/studio-invitations', [\App\Http\Controllers\ArtistController::class, 'getStudioInvitations']);
         Route::post('/me/studio-invitations/{studioId}/accept', [\App\Http\Controllers\ArtistController::class, 'acceptStudioInvitation']);
         Route::post('/me/studio-invitations/{studioId}/decline', [\App\Http\Controllers\ArtistController::class, 'declineStudioInvitation']);
+
+        // Leave studio affiliation
+        Route::delete('/me/studio/{studioId}', [\App\Http\Controllers\ArtistController::class, 'leaveStudio']);
+
+        // Set primary studio
+        Route::post('/me/studio/{studioId}/primary', [\App\Http\Controllers\ArtistController::class, 'setPrimaryStudio']);
     });
 
     // Direct S3 upload routes (presigned URLs)
