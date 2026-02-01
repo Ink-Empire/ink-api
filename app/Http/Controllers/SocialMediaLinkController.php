@@ -25,6 +25,8 @@ class SocialMediaLinkController extends Controller
             );
         }
 
+        $user->save();
+
         return response()->json([
             'message' => 'Social media links updated successfully',
             'social_media_links' => $user->socialMediaLinks->map(fn($link) => [
