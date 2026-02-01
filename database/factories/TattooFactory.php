@@ -26,8 +26,7 @@ class TattooFactory extends Factory
             'placement' => $this->getBodyPart(),
             'artist_id' => User::factory()->asArtist(),
             'studio_id' => Studio::factory(),
-            'primary_style_id' => rand(1,10),
-            'primary_subject_id' => rand(1,10),
+            'primary_style_id' => null,
             'primary_image_id' => Image::factory(),
         ];
     }

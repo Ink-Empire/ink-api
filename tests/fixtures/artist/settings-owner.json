@@ -1,0 +1,18 @@
+{
+    "data": {
+        "books_open": true,
+        "accepts_walk_ins": false,
+        "accepts_deposits": false,
+        "accepts_consultations": false,
+        "accepts_appointments": false,
+        "hourly_rate": 150,
+        "deposit_amount": 50,
+        "consultation_fee": 0,
+        "minimum_session": 0,
+        "watermark_enabled": false,
+        "watermark_opacity": 50,
+        "watermark_position": "bottom-right",
+        "watermark_image_id": null,
+        "watermark_image": null
+    }
+}

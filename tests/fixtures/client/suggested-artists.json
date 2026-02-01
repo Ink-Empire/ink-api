@@ -1,0 +1,33 @@
+{
+    "artists": [
+        {
+            "id": 34,
+            "name": "Moises Mraz",
+            "slug": "moises-mraz-15909",
+            "username": "hermina76",
+            "image": {
+                "id": 11,
+                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=7"
+            },
+            "studio": {
+                "id": 11,
+                "name": "O'Conner-Ledner",
+                "slug": "oconner-ledner-28673"
+            },
+            "styles": [
+                {
+                    "id": 51,
+                    "name": "voluptas",
+                    "parent_id": 0
+                },
+                {
+                    "id": 53,
+                    "name": "voluptate",
+                    "parent_id": 0
+                }
+            ],
+            "books_open": false,
+            "is_demo": false
+        }
+    ]
+}
