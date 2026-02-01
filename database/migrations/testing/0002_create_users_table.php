@@ -16,6 +16,7 @@ return new class extends Migration
             $table->string('email')->unique();
             $table->string('password');
             $table->foreignId('type_id')->constrained('types');
+            $table->string('location')->nullable();
             $table->timestamps();
         });
     }
