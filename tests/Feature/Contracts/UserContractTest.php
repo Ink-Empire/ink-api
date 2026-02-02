@@ -5,9 +5,9 @@ use App\Models\Image;
 use App\Models\Studio;
 use App\Models\Style;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
+
+
 
 beforeEach(function () {
     // Create test styles
@@ -27,9 +27,11 @@ beforeEach(function () {
     // Create a test studio and artist for favorites testing
     $this->studio = Studio::factory()->create();
     $this->artist = Artist::factory()->create([
-        'studio_id' => $this->studio->id,
         'image_id' => $this->image->id,
     ]);
+
+    // Associate artist with studio via pivot table
+    $this->studio->artists()->attach($this->artist->id, ['is_verified' => true]);
 });
 
 describe('User Profile API Contracts', function () {

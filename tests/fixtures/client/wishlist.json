@@ -1,24 +1,30 @@
 {
     "wishlist": [
         {
-            "id": 28,
-            "name": "Federico Dooley",
-            "slug": "federico-dooley-3311",
-            "username": "hhyatt",
+            "id": 555,
+            "name": "Blaze Monahan",
+            "slug": "blaze-monahan-81336",
+            "username": "xkrajcik",
             "image": {
-                "id": 10,
-                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=575"
+                "id": 145,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=646"
             },
-            "studio": {
-                "id": 10,
-                "name": "O'Connell-Cruickshank",
-                "slug": "oconnell-cruickshank-21844"
-            },
-            "styles": [],
-            "books_open": false,
+            "styles": [
+                {
+                    "id": 1023,
+                    "name": "voluptatem",
+                    "parent_id": 0
+                },
+                {
+                    "id": 1025,
+                    "name": "delectus",
+                    "parent_id": 0
+                }
+            ],
+            "books_open": true,
             "notify_booking_open": true,
             "notified_at": null,
-            "added_at": "2026-01-31T20:21:39.000000Z"
+            "added_at": "2026-02-02T19:04:35.000000Z"
         }
     ]
 }

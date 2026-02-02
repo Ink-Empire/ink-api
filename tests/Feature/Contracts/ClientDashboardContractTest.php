@@ -7,10 +7,10 @@ use App\Models\Image;
 use App\Models\Studio;
 use App\Models\Style;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+
 use Laravel\Sanctum\Sanctum;
 
-uses(RefreshDatabase::class);
+
 
 beforeEach(function () {
     // Create test styles
@@ -26,10 +26,11 @@ beforeEach(function () {
     $this->artists = Artist::factory()
         ->count(3)
         ->create([
-            'studio_id' => $this->studio->id,
             'image_id' => $this->image->id,
         ])
         ->each(function ($artist) {
+            // Associate artist with studio via pivot table
+            $this->studio->artists()->attach($artist->id, ['is_verified' => true]);
             // Add settings
             ArtistSettings::create([
                 'artist_id' => $artist->id,

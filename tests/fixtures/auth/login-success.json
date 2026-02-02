@@ -1,0 +1,33 @@
+{
+    "user": {
+        "id": 535,
+        "about": null,
+        "email": "existing@test.com",
+        "image": "",
+        "location": "Rogershire, AR",
+        "location_lat_long": null,
+        "name": "Zachariah Mohr",
+        "phone": null,
+        "slug": "zachariah-mohr-17648",
+        "studio": null,
+        "studios_affiliated": [],
+        "studio_name": "",
+        "type": "client",
+        "type_id": 1,
+        "styles": [],
+        "favorites": {
+            "artists": [],
+            "tattoos": [],
+            "studios": []
+        },
+        "username": "kailee17",
+        "is_admin": false,
+        "is_studio_admin": false,
+        "owned_studio": null,
+        "blocked_user_ids": [],
+        "blocked_users": [],
+        "social_media_links": []
+    },
+    "token": "28|z91q9MzSC05IrCzGWr7rkSHyeUeRG9NqFNOnyiWq1a1911b7",
+    "message": "Logged in successfully"
+}
