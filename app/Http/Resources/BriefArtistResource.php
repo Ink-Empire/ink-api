@@ -16,7 +16,7 @@ class BriefArtistResource extends JsonResource
             'name' => $this->name,
             'phone' => $this->phone,
             'slug' => $this->slug,
-            'studio' => $this->studio->name ?? "",
+            'studio' => $this->studio->first()?->name ?? "",
             'username' => $this->username,
         ];
     }
