@@ -20,6 +20,8 @@ class TattooLead extends Model
         'custom_themes',
         'description',
         'is_active',
+        'lat',
+        'lng',
     ];
 
     protected $casts = [
@@ -29,6 +31,8 @@ class TattooLead extends Model
         'allow_artist_contact' => 'boolean',
         'is_active' => 'boolean',
         'interested_by' => 'date',
+        'lat' => 'decimal:7',
+        'lng' => 'decimal:7',
     ];
 
     public function user(): BelongsTo
@@ -67,5 +71,31 @@ class TattooLead extends Model
     public function scopeContactable($query)
     {
         return $query->where('allow_artist_contact', true);
+    }
+
+    /**
+     * Scope for leads within a certain radius of a point.
+     * Uses bounding box for initial filter, then Haversine for accuracy.
+     */
+    public function scopeWithinRadius($query, float $lat, float $lng, int $radiusMiles = 50)
+    {
+        // Rough bounding box filter (1 degree lat ≈ 69 miles)
+        $latDelta = $radiusMiles / 69;
+        $lngDelta = $radiusMiles / (69 * cos(deg2rad($lat)));
+
+        return $query
+            ->whereNotNull('lat')
+            ->whereNotNull('lng')
+            ->whereBetween('lat', [$lat - $latDelta, $lat + $latDelta])
+            ->whereBetween('lng', [$lng - $lngDelta, $lng + $lngDelta])
+            ->whereRaw("
+                (3959 * acos(
+                    cos(radians(?)) *
+                    cos(radians(lat)) *
+                    cos(radians(lng) - radians(?)) +
+                    sin(radians(?)) *
+                    sin(radians(lat))
+                )) <= ?
+            ", [$lat, $lng, $lat, $radiusMiles]);
     }
 }

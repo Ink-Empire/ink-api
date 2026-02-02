@@ -8,6 +8,7 @@ use App\Http\Resources\SelfUserResource;
 use App\Http\Resources\UserResource;
 use App\Models\Artist;
 use App\Models\ArtistSettings;
+use App\Models\TattooLead;
 use App\Models\User;
 use App\Services\AddressService;
 use App\Services\ElasticService;
@@ -137,8 +138,13 @@ class UserController extends Controller
         try {
             $data = $request->all();
             $user = $this->userService->getById($id);
+            $locationChanged = false;
+
             foreach ($data as $fieldName => $fieldVal) {
                 if (in_array($fieldName, $user->getFillable())) {
+                    if ($fieldName === 'location_lat_long' && $fieldVal !== $user->location_lat_long) {
+                        $locationChanged = true;
+                    }
                     $user->{$fieldName} = $fieldVal;
                 }
 
@@ -155,6 +161,14 @@ class UserController extends Controller
                 }
             }
             $user->save();
+
+            // Update active lead's lat/lng when user location changes
+            if ($locationChanged && $user->location_lat_long) {
+                [$lat, $lng] = array_map('floatval', explode(',', $user->location_lat_long));
+                TattooLead::where('user_id', $user->id)
+                    ->where('is_active', true)
+                    ->update(['lat' => $lat, 'lng' => $lng]);
+            }
         } catch (\Exception $e) {
             return $this->returnErrorResponse($e->getMessage());
         }
