@@ -17,12 +17,11 @@ class ArtistsStylesSeeder extends Seeder
         $json = File::get("database/seed-data/artists_styles.json");
         $artists_styles = json_decode($json);
 
-        if (Schema::hasTable('artists_styles')) {
-            foreach ($artists_styles as $key => $value) {
-                DB::table('artists_styles')->insert(
-                    ['artist_id' => $value->artist_id, 'style_id' => $value->style_id]
-                );
-            }
+        // Insert into users_styles (artists_styles table has been consolidated)
+        foreach ($artists_styles as $key => $value) {
+            DB::table('users_styles')->insertOrIgnore(
+                ['user_id' => $value->artist_id, 'style_id' => $value->style_id]
+            );
         }
     }
 }

@@ -62,7 +62,8 @@ class Artist extends User
 
     public function styles()
     {
-        return $this->belongsToMany(Style::class, 'artists_styles', 'artist_id', 'style_id');
+        // Use users_styles (inherited from User) - artists_styles table has been consolidated
+        return $this->belongsToMany(Style::class, 'users_styles', 'user_id', 'style_id');
     }
 
     public function tattoos()

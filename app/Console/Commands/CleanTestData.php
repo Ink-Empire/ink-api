@@ -251,7 +251,6 @@ class CleanTestData extends Command
             'users_studios',
             'users_artists',
             'users_styles',
-            'artists_styles',
             'studios_styles',
             'tattoos_styles',
             'tattoos_tags',
