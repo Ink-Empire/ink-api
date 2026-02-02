@@ -27,8 +27,8 @@ class DashboardArtistResource extends JsonResource
                 fn () => new BriefImageResource($this->image)
             ),
             'studio' => $this->when(
-                $this->relationLoaded('studio') && $this->studio,
-                fn () => new BriefStudioResource($this->studio)
+                $this->relationLoaded('studio') && $this->studio->isNotEmpty(),
+                fn () => new BriefStudioResource($this->studio->first())
             ),
             'styles' => $this->when(
                 $this->relationLoaded('styles'),

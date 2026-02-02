@@ -25,7 +25,8 @@ class SocialMediaLinkController extends Controller
             );
         }
 
-        $user->save();
+        // touch() forces updated_at change and triggers UserObserver for Elasticsearch reindex
+        $user->touch();
 
         return response()->json([
             'message' => 'Social media links updated successfully',
@@ -49,8 +50,8 @@ class SocialMediaLinkController extends Controller
             return response()->json(['message' => 'Social media link not found'], 404);
         }
 
-        // Trigger save to reindex in Elasticsearch via UserObserver
-        $user->save();
+        // touch() forces updated_at change and triggers UserObserver for Elasticsearch reindex
+        $user->touch();
 
         return response()->json(['message' => 'Social media link deleted successfully']);
     }
