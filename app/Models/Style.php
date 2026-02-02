@@ -35,7 +35,8 @@ class Style extends Model
      */
     public function artists()
     {
-        return $this->belongsToMany(User::class, 'artists_styles', 'style_id', 'artist_id');
+        // Use users_styles - artists_styles table has been consolidated
+        return $this->belongsToMany(User::class, 'users_styles', 'style_id', 'user_id');
     }
 
     /**

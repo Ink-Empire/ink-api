@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\Auth;
 
 use App\Http\Controllers\Controller;
+use App\Http\Resources\SelfUserResource;
 use App\Jobs\SendWelcomeNotification;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
@@ -27,11 +28,14 @@ class VerifyEmailController extends Controller
             $user->tokens()->delete();
             $token = $user->createToken('authToken')->plainTextToken;
 
+            // Load relationships for SelfUserResource
+            $user->load(['blockedUsers.image', 'styles', 'socialMediaLinks', 'artists', 'tattoos']);
+
             return response()->json([
                 'message' => 'Email already verified.',
                 'already_verified' => true,
                 'token' => $token,
-                'user' => $user,
+                'user' => new SelfUserResource($user),
                 'redirect_url' => in_array($user->type_id, [2, 3]) ? '/dashboard' : '/tattoos',
             ]);
         }
@@ -49,10 +53,13 @@ class VerifyEmailController extends Controller
         $user->tokens()->delete();
         $token = $user->createToken('authToken')->plainTextToken;
 
+        // Load relationships for SelfUserResource
+        $user->load(['blockedUsers.image', 'styles', 'socialMediaLinks', 'artists', 'tattoos']);
+
         return response()->json([
             'message' => 'Email verified successfully.',
             'token' => $token,
-            'user' => $user,
+            'user' => new SelfUserResource($user),
             'redirect_url' => in_array($user->type_id, [2, 3]) ? '/dashboard' : '/tattoos',
         ]);
     }
