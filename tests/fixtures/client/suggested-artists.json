@@ -1,32 +1,51 @@
 {
     "artists": [
         {
-            "id": 34,
-            "name": "Moises Mraz",
-            "slug": "moises-mraz-15909",
-            "username": "hermina76",
+            "id": 559,
+            "name": "Leatha Harvey",
+            "slug": "leatha-harvey-58211",
+            "username": "aurelio.aufderhar",
             "image": {
-                "id": 11,
-                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=7"
-            },
-            "studio": {
-                "id": 11,
-                "name": "O'Conner-Ledner",
-                "slug": "oconner-ledner-28673"
+                "id": 146,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=822"
             },
             "styles": [
                 {
-                    "id": 51,
-                    "name": "voluptas",
+                    "id": 1027,
+                    "name": "nesciunt",
                     "parent_id": 0
                 },
                 {
-                    "id": 53,
-                    "name": "voluptate",
+                    "id": 1030,
+                    "name": "et",
                     "parent_id": 0
                 }
             ],
-            "books_open": false,
+            "books_open": true,
+            "is_demo": false
+        },
+        {
+            "id": 560,
+            "name": "Ms. Agustina Murphy I",
+            "slug": "ms-agustina-murphy-i-2782",
+            "username": "uwest",
+            "image": {
+                "id": 146,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=822"
+            },
+            "styles": [
+                {
+                    "id": 1026,
+                    "name": "ea",
+                    "parent_id": 0
+                },
+                {
+                    "id": 1027,
+                    "name": "nesciunt",
+                    "parent_id": 0
+                }
+            ],
+            "books_open": true,
             "is_demo": false
         }
     ]
