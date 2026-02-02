@@ -80,6 +80,13 @@ class TattooLeadController extends Controller
             ->where('is_active', true)
             ->update(['is_active' => false]);
 
+        // Parse user's location for indexed geo queries
+        $lat = null;
+        $lng = null;
+        if ($user->location_lat_long) {
+            [$lat, $lng] = array_map('floatval', explode(',', $user->location_lat_long));
+        }
+
         // Create new lead
         $lead = TattooLead::create([
             'user_id' => $user->id,
@@ -91,6 +98,8 @@ class TattooLeadController extends Controller
             'custom_themes' => $request->input('custom_themes'),
             'description' => $request->input('description'),
             'is_active' => true,
+            'lat' => $lat,
+            'lng' => $lng,
         ]);
 
         // Notify nearby artists if the user allows artist contact
@@ -125,11 +134,20 @@ class TattooLeadController extends Controller
             ->first();
 
         if (!$activeLead) {
+            // Parse user's location for indexed geo queries
+            $lat = null;
+            $lng = null;
+            if ($user->location_lat_long) {
+                [$lat, $lng] = array_map('floatval', explode(',', $user->location_lat_long));
+            }
+
             // No active lead - create a new one with minimal info
             $lead = TattooLead::create([
                 'user_id' => $user->id,
                 'is_active' => true,
                 'allow_artist_contact' => true,
+                'lat' => $lat,
+                'lng' => $lng,
             ]);
 
             return response()->json([
@@ -247,24 +265,11 @@ class TattooLeadController extends Controller
 
         [$artistLat, $artistLng] = array_map('floatval', explode(',', $artistCoords));
 
-        // Query leads with distance calculation using Haversine formula
+        // Query leads within radius using indexed lat/lng columns
         $leads = TattooLead::with(['user'])
             ->active()
             ->contactable()
-            ->whereHas('user', function ($query) use ($artistLat, $artistLng, $radiusMiles) {
-                $query->whereNotNull('location_lat_long')
-                    ->whereRaw("
-                        (
-                            3959 * acos(
-                                cos(radians(?)) *
-                                cos(radians(SUBSTRING_INDEX(location_lat_long, ',', 1))) *
-                                cos(radians(SUBSTRING_INDEX(location_lat_long, ',', -1)) - radians(?)) +
-                                sin(radians(?)) *
-                                sin(radians(SUBSTRING_INDEX(location_lat_long, ',', 1)))
-                            )
-                        ) <= ?
-                    ", [$artistLat, $artistLng, $artistLat, $radiusMiles]);
-            })
+            ->withinRadius($artistLat, $artistLng, $radiusMiles)
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
