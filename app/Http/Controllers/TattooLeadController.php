@@ -231,15 +231,40 @@ class TattooLeadController extends Controller
 
     /**
      * Get leads for artists to reach out to.
-     * Returns active leads that allow artist contact.
+     * Returns active leads that allow artist contact within 50 miles of the artist.
      */
     public function forArtists(Request $request): JsonResponse
     {
+        $artist = $request->user();
         $limit = min($request->input('limit', 10), 50);
+        $radiusMiles = 50;
 
+        // Get artist's coordinates
+        $artistCoords = $artist->location_lat_long;
+        if (!$artistCoords) {
+            return response()->json(['leads' => []]);
+        }
+
+        [$artistLat, $artistLng] = array_map('floatval', explode(',', $artistCoords));
+
+        // Query leads with distance calculation using Haversine formula
         $leads = TattooLead::with(['user'])
             ->active()
             ->contactable()
+            ->whereHas('user', function ($query) use ($artistLat, $artistLng, $radiusMiles) {
+                $query->whereNotNull('location_lat_long')
+                    ->whereRaw("
+                        (
+                            3959 * acos(
+                                cos(radians(?)) *
+                                cos(radians(SUBSTRING_INDEX(location_lat_long, ',', 1))) *
+                                cos(radians(SUBSTRING_INDEX(location_lat_long, ',', -1)) - radians(?)) +
+                                sin(radians(?)) *
+                                sin(radians(SUBSTRING_INDEX(location_lat_long, ',', 1)))
+                            )
+                        ) <= ?
+                    ", [$artistLat, $artistLng, $artistLat, $radiusMiles]);
+            })
             ->orderBy('created_at', 'desc')
             ->limit($limit)
             ->get();
