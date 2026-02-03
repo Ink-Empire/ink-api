@@ -29,7 +29,6 @@
         "phone": null,
         "location_lat_long": null,
         "is_admin": false,
-        "is_studio_admin": false,
         "owned_studio_id": null,
         "is_email_verified": false,
         "email_verified_at": null
