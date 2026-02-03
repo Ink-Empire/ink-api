@@ -40,11 +40,15 @@ class UserController extends Controller
     public function me(Request $request): SelfUserResource
     {
         $user = $request->user()->load([
+            'ownedStudio',
+            'verifiedStudios.image',
             'blockedUsers.image',
             'styles',
             'socialMediaLinks',
             'artists',
             'tattoos',
+            'type',
+            'image',
         ]);
         return new SelfUserResource($user);
     }
