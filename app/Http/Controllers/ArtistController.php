@@ -6,11 +6,9 @@ use App\Http\Resources\DashboardArtistResource;
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\WorkingHoursResource;
 use App\Jobs\NotifyWishlistUsersOfBooksOpen;
-use App\Models\Appointment;
 use App\Models\Artist;
 use App\Models\ArtistAvailability;
 use App\Models\ArtistSettings;
-use App\Models\Message;
 use App\Models\ProfileView;
 use App\Models\User;
 use App\Services\ArtistService;
@@ -23,8 +21,6 @@ use App\Util\ModelLookup;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -552,155 +548,6 @@ class ArtistController extends Controller
     public function delete()
     {
 
-    }
-
-    /**
-     * Get dashboard statistics for an artist
-     */
-    public function getDashboardStats(Request $request, $id): JsonResponse
-    {
-        $artist = ModelLookup::findArtist($id);
-
-        if (!$artist) {
-            return response()->json(['error' => 'Artist not found'], 404);
-        }
-
-        // Validate that the authenticated user is the artist
-        $user = $request->user();
-        if (!$user || $user->id !== $artist->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        // Cache stats for 3 minutes
-        $cacheKey = "artist:{$artist->id}:dashboard-stats";
-        $cacheDuration = 180; // 3 minutes
-
-        $stats = Cache::remember($cacheKey, $cacheDuration, function () use ($artist) {
-            $now = Carbon::now();
-            $sevenDaysAgo = $now->copy()->subDays(7);
-            $fourteenDaysAgo = $now->copy()->subDays(14);
-
-            // Profile views - this week vs last week
-            $viewsThisWeek = ProfileView::where('viewable_type', User::class)
-                ->where('viewable_id', $artist->id)
-                ->where('created_at', '>=', $sevenDaysAgo)
-                ->count();
-
-            $viewsLastWeek = ProfileView::where('viewable_type', User::class)
-                ->where('viewable_id', $artist->id)
-                ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-                ->count();
-
-            $viewsTrend = $viewsLastWeek > 0
-                ? round((($viewsThisWeek - $viewsLastWeek) / $viewsLastWeek) * 100)
-                : ($viewsThisWeek > 0 ? 100 : 0);
-
-            // Saves count - users who saved this artist
-            $savesCount = DB::table('users_artists')
-                ->where('artist_id', $artist->id)
-                ->count();
-
-            // Saves this week vs last week
-            $savesThisWeek = DB::table('users_artists')
-                ->where('artist_id', $artist->id)
-                ->where('created_at', '>=', $sevenDaysAgo)
-                ->count();
-
-            $savesLastWeek = DB::table('users_artists')
-                ->where('artist_id', $artist->id)
-                ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-                ->count();
-
-            $savesTrend = $savesThisWeek - $savesLastWeek;
-
-            // Upcoming appointments
-            $upcomingAppointments = Appointment::where('artist_id', $artist->id)
-                ->where('status', 'booked')
-                ->where('date', '>=', $now->toDateString())
-                ->count();
-
-            // Appointments trend (this week scheduled vs last week)
-            $appointmentsThisWeek = Appointment::where('artist_id', $artist->id)
-                ->where('status', 'booked')
-                ->whereBetween('date', [$now->toDateString(), $now->copy()->addDays(7)->toDateString()])
-                ->count();
-
-            $appointmentsLastWeek = Appointment::where('artist_id', $artist->id)
-                ->where('status', 'booked')
-                ->whereBetween('date', [$sevenDaysAgo->toDateString(), $now->toDateString()])
-                ->count();
-
-            $appointmentsTrend = $appointmentsThisWeek - $appointmentsLastWeek;
-
-            // Unread messages count - NOT cached (always fresh)
-            $unreadMessages = Message::where('recipient_id', $artist->id)
-                ->whereNull('read_at')
-                ->count();
-
-            $profileViewsTotal = ProfileView::where('viewable_type', User::class)
-                ->where('viewable_id', $artist->id)
-                ->count();
-
-            return [
-                'profile_views' => $viewsThisWeek,
-                'profile_views_total' => $profileViewsTotal,
-                'views_trend' => ($viewsTrend >= 0 ? '+' : '') . $viewsTrend . '%',
-                'saves_count' => $savesCount,
-                'saves_this_week' => $savesThisWeek,
-                'saves_trend' => ($savesTrend >= 0 ? '+' : '') . $savesTrend,
-                'upcoming_appointments' => $upcomingAppointments,
-                'appointments_trend' => ($appointmentsTrend >= 0 ? '+' : '') . $appointmentsTrend,
-                'unread_messages' => $unreadMessages,
-            ];
-        });
-
-        return response()->json(['data' => $stats]);
-    }
-
-    /**
-     * Get upcoming schedule for an artist
-     */
-    public function getUpcomingSchedule(Request $request, $id): JsonResponse
-    {
-        $artist = ModelLookup::findArtist($id);
-
-        if (!$artist) {
-            return response()->json(['error' => 'Artist not found'], 404);
-        }
-
-        $appointments = Appointment::where('artist_id', $artist->id)
-            ->where('status', 'booked')
-            ->where('date', '>=', Carbon::now()->toDateString())
-            ->orderBy('date')
-            ->orderBy('start_time')
-            ->limit(10)
-            ->with('client')
-            ->get();
-
-        $schedule = $appointments->map(function ($apt) {
-            $date = Carbon::parse($apt->date);
-            $startTime = Carbon::parse($apt->start_time)->format('g:i A');
-            $endTime = Carbon::parse($apt->end_time)->format('g:i A');
-
-            $clientName = $apt->client?->name ?? 'Unknown Client';
-            $nameParts = explode(' ', $clientName);
-            $initials = count($nameParts) >= 2
-                ? strtoupper(substr($nameParts[0], 0, 1) . substr($nameParts[1], 0, 1))
-                : strtoupper(substr($clientName, 0, 2));
-
-            return [
-                'id' => $apt->id,
-                'day' => $date->day,
-                'month' => $date->format('M'),
-                'time' => "{$startTime} – {$endTime}",
-                'title' => $apt->title ?? 'Appointment',
-                'clientName' => $clientName,
-                'clientInitials' => $initials,
-                'type' => $apt->type ?? 'appointment',
-            ];
-        });
-
-        return response()->json(['data' => $schedule]);
     }
 
     /**
