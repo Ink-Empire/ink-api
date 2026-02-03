@@ -2,6 +2,43 @@
 
 /*
 |--------------------------------------------------------------------------
+| Load Testing Environment
+|--------------------------------------------------------------------------
+|
+| When running tests, load .env.testing to ensure the test database is used.
+| This must happen before the Application is created.
+|
+*/
+
+$basePath = $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__);
+
+// Detect if we're running in PHPUnit or artisan test
+$isRunningTests = defined('PHPUNIT_COMPOSER_INSTALL')
+    || defined('__PHPUNIT_PHAR__')
+    || (isset($_SERVER['argv'][1]) && $_SERVER['argv'][1] === 'test');
+
+if ($isRunningTests) {
+    $testingEnvFile = $basePath . '/.env.testing';
+    if (file_exists($testingEnvFile)) {
+        // Parse .env.testing and override environment variables
+        $lines = file($testingEnvFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
+        foreach ($lines as $line) {
+            if (strpos(trim($line), '#') === 0) continue; // Skip comments
+            if (strpos($line, '=') === false) continue;
+
+            list($name, $value) = explode('=', $line, 2);
+            $name = trim($name);
+            $value = trim($value, " \t\n\r\0\x0B\"'");
+
+            putenv("$name=$value");
+            $_ENV[$name] = $value;
+            $_SERVER[$name] = $value;
+        }
+    }
+}
+
+/*
+|--------------------------------------------------------------------------
 | Create The Application
 |--------------------------------------------------------------------------
 |
@@ -11,9 +48,7 @@
 |
 */
 
-$app = new Illuminate\Foundation\Application(
-    $_ENV['APP_BASE_PATH'] ?? dirname(__DIR__)
-);
+$app = new Illuminate\Foundation\Application($basePath);
 
 /*
 |--------------------------------------------------------------------------
