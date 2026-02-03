@@ -1,0 +1,9 @@
+{
+    "message": "Registration successful. Please check your email to verify your account.",
+    "requires_verification": true,
+    "email": "newclient@test.com",
+    "user": {
+        "id": 527
+    },
+    "token": "26|e9JMP2hpyMzXAFqu4orTqsf4pWr5XQ9jmbsO4yqi881d924e"
+}

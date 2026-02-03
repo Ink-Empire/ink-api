@@ -21,6 +21,7 @@ return new class extends Migration
             $table->foreignId('tattoo_id')->nullable()->constrained('tattoos')->onDelete('cascade');
             $table->date('date');
             $table->enum('status', ['booked', 'completed', 'cancelled'])->default('booked');
+            $table->string('google_event_id')->nullable();
             $table->enum('type', ['tattoo', 'consultation'])->default('tattoo');
             $table->boolean('all_day')->default(false);
             $table->time('start_time')->nullable();

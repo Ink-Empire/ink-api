@@ -4,28 +4,23 @@
     "wishlist_count": 0,
     "suggested_artists": [
         {
-            "id": 22,
-            "name": "Demetris Wilderman",
-            "slug": "demetris-wilderman-4358",
-            "username": "ospinka",
+            "id": 547,
+            "name": "Margaretta Jacobson",
+            "slug": "margaretta-jacobson-76991",
+            "username": "catherine.rowe",
             "image": {
-                "id": 8,
-                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=948"
-            },
-            "studio": {
-                "id": 8,
-                "name": "Mueller and Sons",
-                "slug": "mueller-and-sons-21437"
+                "id": 143,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=857"
             },
             "styles": [
                 {
-                    "id": 37,
-                    "name": "in",
+                    "id": 1011,
+                    "name": "minus",
                     "parent_id": 0
                 },
                 {
-                    "id": 40,
-                    "name": "hic",
+                    "id": 1014,
+                    "name": "reiciendis",
                     "parent_id": 0
                 }
             ],
@@ -33,28 +28,47 @@
             "is_demo": false
         },
         {
-            "id": 21,
-            "name": "Monica Heaney",
-            "slug": "monica-heaney-93385",
-            "username": "fswift",
+            "id": 548,
+            "name": "Macy Shields",
+            "slug": "macy-shields-77826",
+            "username": "jerald58",
             "image": {
-                "id": 8,
-                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=948"
-            },
-            "studio": {
-                "id": 8,
-                "name": "Mueller and Sons",
-                "slug": "mueller-and-sons-21437"
+                "id": 143,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=857"
             },
             "styles": [
                 {
-                    "id": 37,
-                    "name": "in",
+                    "id": 1012,
+                    "name": "ad",
                     "parent_id": 0
                 },
                 {
-                    "id": 39,
-                    "name": "repudiandae",
+                    "id": 1015,
+                    "name": "quod",
+                    "parent_id": 0
+                }
+            ],
+            "books_open": true,
+            "is_demo": false
+        },
+        {
+            "id": 549,
+            "name": "Prof. Alessia Bode MD",
+            "slug": "prof-alessia-bode-md-25366",
+            "username": "aracely.vandervort",
+            "image": {
+                "id": 143,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=857"
+            },
+            "styles": [
+                {
+                    "id": 1011,
+                    "name": "minus",
+                    "parent_id": 0
+                },
+                {
+                    "id": 1013,
+                    "name": "minima",
                     "parent_id": 0
                 }
             ],
