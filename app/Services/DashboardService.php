@@ -266,10 +266,12 @@ class DashboardService
 
     /**
      * Get aggregated dashboard data for a client.
+     * Includes favorites to avoid separate API call.
+     * Caches suggested artists for 2 minutes (appointments/conversations always fresh).
      */
     public function getClientDashboardData(User $user): array
     {
-        // Upcoming appointments (next 5, sorted by date)
+        // Upcoming appointments (next 5, sorted by date) - always fresh
         $appointments = $user->appointmentsWithStatus('booked')
             ->where('date', '>=', now()->toDateString())
             ->with(['artist.image', 'studio'])
@@ -278,7 +280,7 @@ class DashboardService
             ->take(5)
             ->get();
 
-        // Recent conversations (last 3) - excluding conversations with deleted users
+        // Recent conversations (last 3) - always fresh
         $conversations = Conversation::forUser($user->id)
             ->with(['users', 'latestMessage.sender'])
             ->whereHas('users', function ($q) use ($user) {
@@ -296,18 +298,39 @@ class DashboardService
             ->take(3)
             ->get();
 
-        // Wishlist count
-        $wishlistCount = $user->wishlistArtists()->notBlockedBy($user)->count();
+        // Favorites/wishlist - include in main response to avoid separate call
+        $favorites = $user->artists()
+            ->notBlockedBy($user)
+            ->with(['image', 'studio', 'styles', 'settings'])
+            ->get();
 
-        // Suggested artists (6)
-        $suggestedArtists = $this->getSuggestedArtists($user, 6);
+        // Wishlist count
+        $wishlistCount = $favorites->count();
+
+        // Suggested artists - cached for 2 minutes (expensive query)
+        $suggestedArtists = $this->getCachedSuggestedArtists($user, 6);
 
         return [
             'appointments' => $appointments,
             'conversations' => $conversations,
+            'favorites' => $favorites,
             'wishlist_count' => $wishlistCount,
             'suggested_artists' => $suggestedArtists,
         ];
+    }
+
+    /**
+     * Get cached suggested artists for a user.
+     * Cache duration: 2 minutes.
+     */
+    private function getCachedSuggestedArtists(User $user, int $limit = 6): array
+    {
+        $cacheKey = "client:{$user->id}:suggested-artists";
+        $cacheDuration = 120; // 2 minutes
+
+        return Cache::remember($cacheKey, $cacheDuration, function () use ($user, $limit) {
+            return $this->getSuggestedArtists($user, $limit);
+        });
     }
 
     /**
