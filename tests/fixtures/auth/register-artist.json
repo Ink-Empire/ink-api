@@ -1,0 +1,9 @@
+{
+    "message": "Registration successful. Please check your email to verify your account.",
+    "requires_verification": true,
+    "email": "newartist@test.com",
+    "user": {
+        "id": 530
+    },
+    "token": "27|UQiHgakoSBRSORE2yrc4Vp0J2iGvxFq8ipzdrM5Tf1dddf95"
+}

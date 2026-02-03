@@ -37,48 +37,63 @@ API Response -----> S3 Bucket
 tests/
 ├── Feature/
 │   └── Contracts/
-│       ├── ArtistContractTest.php     # Artist endpoint contracts
-│       ├── ClientDashboardContractTest.php  # Dashboard contracts
-│       ├── TattooContractTest.php     # Tattoo endpoint contracts
-│       └── UserContractTest.php       # User profile contracts
-├── fixtures/                           # Exported JSON fixtures
+│       ├── ArtistContractTest.php          # Artist endpoint contracts
+│       ├── AuthContractTest.php            # Registration/login contracts
+│       ├── ClientDashboardContractTest.php # Dashboard contracts
+│       ├── TattooContractTest.php          # Tattoo endpoint contracts
+│       └── UserContractTest.php            # User profile contracts
+├── fixtures/                                # Exported JSON fixtures
 │   ├── artist/
+│   ├── auth/                                # Registration/login fixtures
 │   ├── client/
 │   ├── tattoo/
 │   └── user/
-├── Pest.php                           # Pest configuration
-└── TestCase.php                       # Base test case
+├── CreatesApplication.php                   # App bootstrap with DB safeguard
+├── Pest.php                                 # Pest configuration
+├── RefreshTestDatabase.php                  # Custom trait for testing migrations
+└── TestCase.php                             # Base test case
 ```
 
 ## Running Tests
 
+### IMPORTANT: Use Test Database
+
+Contract tests **must** run against the `inkedin_test` database to avoid wiping your local development data. A safeguard in `tests/CreatesApplication.php` will abort if connected to the production database.
+
+```bash
+# First time setup: create test database
+mysql -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS inkedin_test; GRANT ALL PRIVILEGES ON inkedin_test.* TO 'sail'@'%'; FLUSH PRIVILEGES;"
+
+# Run migrations on test database
+DB_DATABASE=inkedin_test php artisan migrate
+```
+
 ### Run Contract Tests
 
 ```bash
-# Run all contract tests
-php artisan test --filter=Contracts
+# Run all contract tests using the testing environment
+php artisan test --env=testing --filter=Contracts
 
 # Run specific test file
-php artisan test --filter=ArtistContractTest
+php artisan test --env=testing --filter=ArtistContractTest
 
-# Run in Docker
-./vendor/bin/sail test --filter=Contracts
+# Run specific test
+php artisan test --env=testing --filter="client registration"
 ```
+
+The `--env=testing` flag loads `.env.testing` which has the correct database (`inkedin_test`) and dummy AWS/S3 settings configured.
 
 ### Export Fixtures
 
 ```bash
 # Export fixtures locally
-php artisan fixtures:export
+EXPORT_FIXTURES=true php artisan test --env=testing --filter=Contracts
 
-# Export and upload to S3 (for frontend to pull)
-php artisan fixtures:export --upload
+# Upload to S3 after exporting
+php artisan fixtures:export --upload --branch=develop
 
-# Upload to specific branch folder
+# Or do both in one command
 php artisan fixtures:export --upload --branch=main
-
-# Manual export (alternative)
-EXPORT_FIXTURES=true php artisan test --filter=Contracts
 ```
 
 ### View Exported Fixtures
@@ -95,17 +110,19 @@ cat tests/fixtures/artist/detail.json | jq
 
 ### Basic Structure
 
+Contract tests use `DatabaseTransactions` (configured globally in `Pest.php`) which rolls back changes after each test instead of wiping/recreating the database. This is faster and requires the test database to have the schema already set up.
+
 ```php
 <?php
 
 use App\Models\Artist;
 use App\Models\User;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 
-uses(RefreshDatabase::class);
+// DatabaseTransactions is applied via Pest.php for all Contracts tests
+// Do NOT add uses(RefreshDatabase::class) here
 
 beforeEach(function () {
-    // Set up test data
+    // Set up test data - will be rolled back after each test
     $this->artist = Artist::factory()->create();
     $this->user = User::factory()->create();
 });
@@ -293,17 +310,32 @@ Add these to the GitHub repository:
 
 ## Current Contract Tests
 
-### ArtistContractTest (7 tests)
+### AuthContractTest (10 tests)
 
 | Test | Endpoint | Auth | Fixture |
 |------|----------|------|---------|
-| Artist detail | GET /api/artists/{id} | No | artist/detail.json |
-| Artist by slug | GET /api/artists/{slug} | No | - |
-| Artist search | POST /api/artists | No | artist/search.json |
-| Working hours | GET /api/artists/{id}/working-hours | No | artist/working-hours.json |
-| Settings (owner) | GET /api/artists/{id}/settings | Yes | artist/settings-owner.json |
-| Update settings | PUT /api/artists/{id}/settings | Yes | - |
-| Dashboard stats | GET /api/artists/{id}/dashboard-stats | Yes | artist/dashboard-stats.json |
+| Client registration | POST /api/register | No | auth/register-client.json |
+| Artist registration | POST /api/register | No | auth/register-artist.json |
+| Registration validation | POST /api/register | No | auth/register-validation-error.json |
+| Duplicate email | POST /api/register | No | auth/register-duplicate-email.json |
+| Login success | POST /api/login | No | auth/login-success.json |
+| Login requires verification | POST /api/login | No | auth/login-requires-verification.json |
+| Login invalid credentials | POST /api/login | No | auth/login-invalid-credentials.json |
+| Check email available | POST /api/check-availability | No | auth/check-email-available.json |
+| Check email taken | POST /api/check-availability | No | auth/check-email-taken.json |
+| Check username available | POST /api/check-availability | No | auth/check-username-available.json |
+
+### ArtistContractTest (7 tests, 2 skipped)
+
+| Test | Endpoint | Auth | Fixture | Status |
+|------|----------|------|---------|--------|
+| Artist detail | GET /api/artists/{id}?db=true | No | artist/detail.json | Pass |
+| Artist by slug | GET /api/artists/{slug} | No | - | *Skipped* (requires ES) |
+| Artist search | POST /api/artists | No | artist/search.json | *Skipped* (requires ES) |
+| Working hours | GET /api/artists/{id}/working-hours | No | artist/working-hours.json | Pass |
+| Settings (owner) | GET /api/artists/{id}/settings | Yes | artist/settings-owner.json | Pass |
+| Update settings | PUT /api/artists/{id}/settings | Yes | - | Pass |
+| Dashboard stats | GET /api/artists/{id}/dashboard-stats | Yes | artist/dashboard-stats.json | Pass |
 
 ### ClientDashboardContractTest (7 tests)
 
@@ -317,14 +349,14 @@ Add these to the GitHub repository:
 | Add to wishlist | POST /api/client/wishlist | Yes | - |
 | Remove from wishlist | DELETE /api/client/wishlist/{id} | Yes | - |
 
-### TattooContractTest (4 tests)
+### TattooContractTest (4 tests, 2 skipped)
 
-| Test | Endpoint | Auth | Fixture |
-|------|----------|------|---------|
-| Tattoo detail | GET /api/tattoos/{id} | No | tattoo/detail.json |
-| Tattoo search | POST /api/tattoos | No | tattoo/search.json |
-| Create tattoo | POST /api/tattoos/create | Yes | tattoo/create-response.json |
-| Update tattoo | PUT /api/tattoos/{id} | Yes | tattoo/update-response.json |
+| Test | Endpoint | Auth | Fixture | Status |
+|------|----------|------|---------|--------|
+| Tattoo detail | GET /api/tattoos/{id} | No | tattoo/detail.json | Pass |
+| Tattoo search | POST /api/tattoos | No | tattoo/search.json | *Skipped* (requires ES) |
+| Create tattoo | POST /api/tattoos/create | Yes | - | *Skipped* (requires multipart) |
+| Update tattoo | PUT /api/tattoos/{id} | Yes | tattoo/update-response.json | Pass |
 
 ### UserContractTest (2 tests)
 
@@ -394,6 +426,36 @@ These fields were previously inconsistent, causing frontend regressions.
 
 ## Troubleshooting
 
+### "REFUSING TO RUN TESTS" Error
+
+The test suite has a safeguard that prevents running against the production database:
+
+```
+╔══════════════════════════════════════════════════════════════════╗
+║  CRITICAL: REFUSING TO RUN TESTS                                 ║
+║  Connected to database: inkedin                                  ║
+║  Tests MUST use 'inkedin_test' database.                         ║
+╚══════════════════════════════════════════════════════════════════╝
+```
+
+**Fix:** Always use `DB_DATABASE=inkedin_test` when running tests:
+
+```bash
+DB_DATABASE=inkedin_test php artisan test --filter=Contracts
+```
+
+### Test Database Not Set Up
+
+If you see migration or table errors, set up the test database:
+
+```bash
+# Create database and grant permissions
+mysql -u root -ppassword -e "CREATE DATABASE IF NOT EXISTS inkedin_test; GRANT ALL PRIVILEGES ON inkedin_test.* TO 'sail'@'%'; FLUSH PRIVILEGES;"
+
+# Run migrations
+DB_DATABASE=inkedin_test php artisan migrate
+```
+
 ### Tests Fail with 401 Unauthorized
 
 The `VerifyAppToken` middleware is disabled in tests via `TestCase.php`:
@@ -408,11 +470,28 @@ protected function setUp(): void
 
 ### Elasticsearch-Dependent Tests
 
-Some endpoints (search, detail by slug) use Elasticsearch. In test environment:
+Some endpoints use Elasticsearch which is not available in the test environment. These tests are skipped:
 
-1. Tests may return empty/null data
-2. Use database queries where possible
-3. Focus on response structure, not data content
+- Artist search (`POST /api/artists`)
+- Artist slug lookup (`GET /api/artists/{slug}`)
+- Tattoo search (`POST /api/tattoos`)
+
+For artist detail by ID, use `?db=true` query parameter to bypass Elasticsearch and query the database directly.
+
+**Note:** Search fixtures (`artist/search.json`, `tattoo/search.json`) must be generated manually in an environment with Elasticsearch available, or copied from CI.
+
+### Artist Factory Errors with studio_id
+
+The `Artist` model uses a pivot table (`users_studios`) for studio relationships, not a direct `studio_id` column. When creating test artists with studio associations:
+
+```php
+// WRONG - studio_id doesn't exist on users table
+$artist = Artist::factory()->create(['studio_id' => $studio->id]);
+
+// CORRECT - use pivot table
+$artist = Artist::factory()->create();
+$studio->artists()->attach($artist->id, ['is_verified' => true]);
+```
 
 ### Database Migration Errors
 

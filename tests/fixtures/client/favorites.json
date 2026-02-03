@@ -1,54 +1,72 @@
 {
     "favorites": [
         {
-            "id": 24,
-            "name": "Jayme D'Amore IV",
-            "slug": "jayme-damore-iv-14528",
-            "username": "pbogisich",
+            "id": 551,
+            "name": "Hal Aufderhar",
+            "slug": "hal-aufderhar-55712",
+            "username": "hessel.roel",
             "image": {
-                "id": 9,
-                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=397"
+                "id": 144,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=523"
             },
-            "studio": {
-                "id": 9,
-                "name": "Cole, Lynch and Bosco",
-                "slug": "cole-lynch-and-bosco-76621"
-            },
-            "styles": [],
+            "styles": [
+                {
+                    "id": 1017,
+                    "name": "eum",
+                    "parent_id": 0
+                },
+                {
+                    "id": 1020,
+                    "name": "similique",
+                    "parent_id": 0
+                }
+            ],
             "books_open": false
         },
         {
-            "id": 25,
-            "name": "Emilie Larkin",
-            "slug": "emilie-larkin-32223",
-            "username": "kovacek.herman",
+            "id": 552,
+            "name": "Prof. Nicolette Jaskolski",
+            "slug": "prof-nicolette-jaskolski-39454",
+            "username": "bsporer",
             "image": {
-                "id": 9,
-                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=397"
+                "id": 144,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=523"
             },
-            "studio": {
-                "id": 9,
-                "name": "Cole, Lynch and Bosco",
-                "slug": "cole-lynch-and-bosco-76621"
-            },
-            "styles": [],
-            "books_open": false
+            "styles": [
+                {
+                    "id": 1016,
+                    "name": "nemo",
+                    "parent_id": 0
+                },
+                {
+                    "id": 1017,
+                    "name": "eum",
+                    "parent_id": 0
+                }
+            ],
+            "books_open": true
         },
         {
-            "id": 26,
-            "name": "Zoe Rutherford IV",
-            "slug": "zoe-rutherford-iv-95226",
-            "username": "ronaldo.mante",
+            "id": 553,
+            "name": "Rosalia Feest Jr.",
+            "slug": "rosalia-feest-jr-88524",
+            "username": "graham.modesta",
             "image": {
-                "id": 9,
-                "uri": "https://inked-in-images.s3.amazonaws.com/https://loremflickr.com/320/240/tattoo?random=397"
+                "id": 144,
+                "uri": "/https://loremflickr.com/320/240/tattoo?random=523"
             },
-            "studio": {
-                "id": 9,
-                "name": "Cole, Lynch and Bosco",
-                "slug": "cole-lynch-and-bosco-76621"
-            },
-            "styles": [],
+            "styles": [
+                {
+                    "id": 1017,
+                    "name": "eum",
+                    "parent_id": 0
+                },
+                {
+                    "id": 1018,
+                    "name": "eaque",
+                    "parent_id": 0
+                }
+            ],
             "books_open": false
         }
     ]

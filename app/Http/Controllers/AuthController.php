@@ -191,7 +191,17 @@ class AuthController extends Controller
         // Check rate limiting
         $request->ensureIsNotRateLimited();
 
-        $user = User::where('email', $request->email)->first();
+        $user = User::with([
+            'ownedStudio',
+            'verifiedStudios.image',
+            'blockedUsers.image',
+            'styles',
+            'socialMediaLinks',
+            'artists',
+            'tattoos',
+            'type',
+            'image',
+        ])->where('email', $request->email)->first();
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($request->throttleKey());

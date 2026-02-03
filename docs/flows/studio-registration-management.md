@@ -157,6 +157,27 @@ pendingStudioData = {
 
 ## Studio Dashboard
 
+### Dashboard Access by User Type
+
+The dashboard displays differently based on user type and studio ownership:
+
+| User Type | Has Studio | Dashboard View |
+|-----------|------------|----------------|
+| Studio Account (`type_id=3`) | Always | Direct studio dashboard (no tabs) |
+| Artist (`type_id=2`) | Yes (owned) | Two tabs: "My Artist Profile" + "My Studio" |
+| Artist (`type_id=2`) | No | Artist dashboard only (no tabs) |
+| Client (`type_id=1`) | Yes (owned) | Two tabs: "My Dashboard" + "My Studio" |
+| Client (`type_id=1`) | No | Client dashboard only |
+
+### Studio Ownership
+
+Any user type can own a studio via the `owner_id` field on the `studios` table:
+- Studio accounts (`type_id=3`) typically own a studio
+- Artists can own a studio (e.g., solo artist with their own studio)
+- Clients can own a studio (e.g., business owner who isn't an artist)
+
+The `owned_studio` relationship is returned in the user API response when authenticated.
+
 ### Dashboard Stats
 
 Endpoint: `GET /api/studios/{id}/dashboard-stats`
