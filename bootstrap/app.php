@@ -20,7 +20,7 @@ $isRunningTests = defined('PHPUNIT_COMPOSER_INSTALL')
 if ($isRunningTests) {
     $testingEnvFile = $basePath . '/.env.testing';
     if (file_exists($testingEnvFile)) {
-        // Parse .env.testing and override environment variables
+        // Parse .env.testing and set environment variables (only if not already set)
         $lines = file($testingEnvFile, FILE_IGNORE_NEW_LINES | FILE_SKIP_EMPTY_LINES);
         foreach ($lines as $line) {
             if (strpos(trim($line), '#') === 0) continue; // Skip comments
@@ -30,9 +30,12 @@ if ($isRunningTests) {
             $name = trim($name);
             $value = trim($value, " \t\n\r\0\x0B\"'");
 
-            putenv("$name=$value");
-            $_ENV[$name] = $value;
-            $_SERVER[$name] = $value;
+            // Don't override if already set (e.g., by GitHub Actions)
+            if (getenv($name) === false && !isset($_ENV[$name])) {
+                putenv("$name=$value");
+                $_ENV[$name] = $value;
+                $_SERVER[$name] = $value;
+            }
         }
     }
 }
