@@ -1,0 +1,5 @@
+{
+    "message": "Please verify your email address before logging in.",
+    "requires_verification": true,
+    "email": "unverified@test.com"
+}

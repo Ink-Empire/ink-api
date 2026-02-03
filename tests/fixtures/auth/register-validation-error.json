@@ -1,0 +1,24 @@
+{
+    "message": "The name field is required. (and 8 more errors)",
+    "errors": {
+        "name": [
+            "The name field is required."
+        ],
+        "email": [
+            "The email field must be a valid email address."
+        ],
+        "password": [
+            "The password field must be at least 8 characters.",
+            "The password field must contain at least one uppercase and one lowercase letter.",
+            "The password field must contain at least one symbol.",
+            "The password field must contain at least one number.",
+            "The password field confirmation does not match."
+        ],
+        "username": [
+            "The username field format is invalid."
+        ],
+        "slug": [
+            "The slug field is required."
+        ]
+    }
+}

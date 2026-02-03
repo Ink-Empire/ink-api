@@ -20,7 +20,7 @@ class ArtistResource extends JsonResource
             'location' => $this->location,
             'name' => $this->name,
             'slug' => $this->slug,
-            'studio' => $this->studio->name ?? "",
+            'studio' => $this->getStudioName(),
             'type' => $this->type->name ?? null,
             'is_featured' => (int) $this->is_featured,
             'styles' => $this->whenLoaded('styles'),
@@ -92,5 +92,25 @@ class ArtistResource extends JsonResource
             }
         }
         return false;
+    }
+
+    /**
+     * Get studio name, handling both Elasticsearch array data and Eloquent relationships.
+     */
+    private function getStudioName(): string
+    {
+        $studio = $this->studio;
+
+        // Elasticsearch array data - studio is an object/array
+        if (is_array($studio) || is_object($studio) && !($studio instanceof \Illuminate\Support\Collection)) {
+            return $studio->name ?? $studio['name'] ?? '';
+        }
+
+        // Eloquent belongsToMany collection - get first studio's name
+        if ($studio instanceof \Illuminate\Support\Collection) {
+            return $studio->first()?->name ?? '';
+        }
+
+        return '';
     }
 }

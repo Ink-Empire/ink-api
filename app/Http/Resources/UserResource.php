@@ -70,7 +70,6 @@ class UserResource extends JsonResource
             $data['phone'] = $this->phone;
             $data['location_lat_long'] = $this->location_lat_long;
             $data['is_admin'] = (bool) $this->is_admin;
-            $data['is_studio_admin'] = $this->ownedStudio !== null;
             $data['owned_studio_id'] = $this->ownedStudio?->id;
             $data['is_email_verified'] = (bool) $this->is_email_verified;
             $data['email_verified_at'] = $this->email_verified_at;

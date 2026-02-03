@@ -1,8 +1,8 @@
 {
     "data": [
         {
-            "id": 1,
-            "artist_id": 12,
+            "id": 26,
+            "artist_id": 517,
             "day_of_week": 1,
             "day_name": "Monday",
             "start_time": "09:00:00",
@@ -10,8 +10,8 @@
             "is_day_off": 0
         },
         {
-            "id": 2,
-            "artist_id": 12,
+            "id": 27,
+            "artist_id": 517,
             "day_of_week": 2,
             "day_name": "Tuesday",
             "start_time": "09:00:00",
@@ -19,8 +19,8 @@
             "is_day_off": 0
         },
         {
-            "id": 3,
-            "artist_id": 12,
+            "id": 28,
+            "artist_id": 517,
             "day_of_week": 3,
             "day_name": "Wednesday",
             "start_time": "09:00:00",
@@ -28,8 +28,8 @@
             "is_day_off": 0
         },
         {
-            "id": 4,
-            "artist_id": 12,
+            "id": 29,
+            "artist_id": 517,
             "day_of_week": 4,
             "day_name": "Thursday",
             "start_time": "09:00:00",
@@ -37,8 +37,8 @@
             "is_day_off": 0
         },
         {
-            "id": 5,
-            "artist_id": 12,
+            "id": 30,
+            "artist_id": 517,
             "day_of_week": 5,
             "day_name": "Friday",
             "start_time": "09:00:00",

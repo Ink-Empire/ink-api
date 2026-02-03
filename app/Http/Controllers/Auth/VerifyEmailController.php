@@ -29,7 +29,17 @@ class VerifyEmailController extends Controller
             $token = $user->createToken('authToken')->plainTextToken;
 
             // Load relationships for SelfUserResource
-            $user->load(['blockedUsers.image', 'styles', 'socialMediaLinks', 'artists', 'tattoos']);
+            $user->load([
+                'ownedStudio',
+                'verifiedStudios.image',
+                'blockedUsers.image',
+                'styles',
+                'socialMediaLinks',
+                'artists',
+                'tattoos',
+                'type',
+                'image',
+            ]);
 
             return response()->json([
                 'message' => 'Email already verified.',
@@ -54,7 +64,17 @@ class VerifyEmailController extends Controller
         $token = $user->createToken('authToken')->plainTextToken;
 
         // Load relationships for SelfUserResource
-        $user->load(['blockedUsers.image', 'styles', 'socialMediaLinks', 'artists', 'tattoos']);
+        $user->load([
+            'ownedStudio',
+            'verifiedStudios.image',
+            'blockedUsers.image',
+            'styles',
+            'socialMediaLinks',
+            'artists',
+            'tattoos',
+            'type',
+            'image',
+        ]);
 
         return response()->json([
             'message' => 'Email verified successfully.',
