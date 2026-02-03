@@ -18,7 +18,8 @@ use Illuminate\Support\Facades\DB;
 class DashboardService
 {
     public function __construct(
-        protected StudioService $studioService
+        protected StudioService $studioService,
+        protected TattooService $tattooService
     ) {
     }
 
@@ -127,12 +128,35 @@ class DashboardService
     {
         $stats = $this->getArtistStatsData($artist);
         $schedule = $this->getArtistUpcomingSchedule($artist);
+        $tattoos = $this->getCachedArtistTattoos($artist);
 
         return [
             'artist' => $artist,
             'stats' => $stats,
             'schedule' => $schedule,
+            'tattoos' => $tattoos,
         ];
+    }
+
+    /**
+     * Get cached tattoos for an artist.
+     * Cache duration: 5 minutes (tattoos don't change often).
+     */
+    public function getCachedArtistTattoos(User $artist, int $limit = 12): array
+    {
+        $cacheKey = "artist:{$artist->id}:dashboard-tattoos";
+        $cacheDuration = 300; // 5 minutes
+
+        return Cache::remember($cacheKey, $cacheDuration, function () use ($artist, $limit) {
+            $result = $this->tattooService->getByArtistId($artist->id);
+            $tattoos = $result['response'] ?? [];
+
+            if ($tattoos instanceof \Illuminate\Support\Collection) {
+                $tattoos = $tattoos->values()->toArray();
+            }
+
+            return array_slice($tattoos, 0, $limit);
+        });
     }
 
     /**
