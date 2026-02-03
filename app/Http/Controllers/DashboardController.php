@@ -147,6 +147,7 @@ class DashboardController extends Controller
 
     /**
      * Get aggregated dashboard data for a client.
+     * Includes favorites to avoid separate API call.
      */
     public function getClientDashboard(Request $request): JsonResponse
     {
@@ -157,6 +158,7 @@ class DashboardController extends Controller
         return response()->json([
             'appointments' => ClientDashboardAppointmentResource::collection($data['appointments']),
             'conversations' => ConversationResource::collection($data['conversations']),
+            'favorites' => DashboardArtistResource::collection($data['favorites']),
             'wishlist_count' => $data['wishlist_count'],
             'suggested_artists' => SuggestedArtistResource::collection($data['suggested_artists']),
         ]);
