@@ -5,9 +5,7 @@ namespace App\Http\Controllers;
 use App\Enums\UserTypes;
 use App\Http\Resources\DashboardArtistResource;
 use App\Http\Resources\StudioArtistResource;
-use App\Http\Resources\StudioDashboardResource;
 use App\Http\Resources\StudioResource;
-use App\Http\Resources\StudioStatsResource;
 use App\Http\Resources\StudioWorkingHoursResource;
 use App\Http\Resources\UserResource;
 use App\Models\StudioAvailability;
@@ -857,61 +855,5 @@ class StudioController extends Controller
         return response()->json([
             'data' => ['id' => $id],
         ]);
-    }
-
-    /**
-     * Get dashboard statistics for a studio.
-     */
-    public function getDashboardStats(Request $request, int $id): JsonResponse
-    {
-        $studio = Studio::find($id);
-
-        if (!$studio) {
-            return response()->json(['error' => 'Studio not found'], 404);
-        }
-
-        // Validate that the authenticated user is the studio owner
-        $user = $request->user();
-        if (!$user || $studio->owner_id !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        return response()->json(new StudioStatsResource($this->studioService->getStudioStatsData($studio)));
-    }
-
-    /**
-     * Get all dashboard data for a studio in a single request.
-     * Combines: studio details, artists, announcements, stats, and working hours.
-     */
-    public function dashboard(Request $request, int $id): JsonResponse
-    {
-        $studio = Studio::with(['image', 'address', 'announcements'])->find($id);
-
-        if (!$studio) {
-            return response()->json(['error' => 'Studio not found'], 404);
-        }
-
-        // Validate that the authenticated user is the studio owner
-        $user = $request->user();
-        if (!$user || $studio->owner_id !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
-
-        // Get artists with verification data
-        $artists = $this->studioService->getStudioArtists($studio);
-
-        // Get working hours
-        $workingHours = StudioAvailability::where('studio_id', $studio->id)->get();
-
-        // Get cached stats
-        $stats = $this->studioService->getStudioStatsData($studio);
-
-        return new StudioDashboardResource(
-            $studio,
-            StudioArtistResource::collection($artists)->toArray($request),
-            $studio->announcements,
-            $stats,
-            $workingHours
-        );
     }
 }

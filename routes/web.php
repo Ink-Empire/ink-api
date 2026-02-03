@@ -2,8 +2,8 @@
 
 use App\Http\Controllers\AppointmentController;
 use App\Http\Controllers\ArtistController;
-use App\Http\Controllers\ClientDashboardController;
 use App\Http\Controllers\ConversationController;
+use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ElasticController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\TattooController;
@@ -69,8 +69,9 @@ Route::prefix('api')->group(function () {
             Route::post('/{id}/working-hours', [ArtistController::class, 'setAvailability']);
             Route::get('/{id}/settings', [ArtistController::class, 'getSettings']);
             Route::put('/{id}/settings', [ArtistController::class, 'updateSettings']);
-            Route::get('/{id}/dashboard-stats', [ArtistController::class, 'getDashboardStats']);
-            Route::get('/{id}/upcoming-schedule', [ArtistController::class, 'getUpcomingSchedule']);
+            Route::get('/{id}/dashboard-stats', [DashboardController::class, 'getArtistStats']);
+            Route::get('/{id}/dashboard', [DashboardController::class, 'getArtistDashboard']);
+            Route::get('/{id}/upcoming-schedule', [DashboardController::class, 'getArtistSchedule']);
         });
     });
 
@@ -101,13 +102,13 @@ Route::prefix('api')->group(function () {
 
         // Client Dashboard
         Route::group(['prefix' => 'client'], function () {
-            Route::get('/dashboard', [ClientDashboardController::class, 'index']);
-            Route::get('/favorites', [ClientDashboardController::class, 'getFavorites']);
-            Route::get('/wishlist', [ClientDashboardController::class, 'getWishlist']);
-            Route::post('/wishlist', [ClientDashboardController::class, 'addToWishlist']);
-            Route::put('/wishlist/{artistId}', [ClientDashboardController::class, 'updateWishlistItem']);
-            Route::delete('/wishlist/{artistId}', [ClientDashboardController::class, 'removeFromWishlist']);
-            Route::get('/suggested-artists', [ClientDashboardController::class, 'getSuggestedArtistsEndpoint']);
+            Route::get('/dashboard', [DashboardController::class, 'getClientDashboard']);
+            Route::get('/favorites', [DashboardController::class, 'getClientFavorites']);
+            Route::get('/wishlist', [DashboardController::class, 'getClientWishlist']);
+            Route::post('/wishlist', [DashboardController::class, 'addToWishlist']);
+            Route::put('/wishlist/{artistId}', [DashboardController::class, 'updateWishlistItem']);
+            Route::delete('/wishlist/{artistId}', [DashboardController::class, 'removeFromWishlist']);
+            Route::get('/suggested-artists', [DashboardController::class, 'getClientSuggestedArtists']);
         });
     });
 
@@ -127,8 +128,8 @@ Route::prefix('api')->group(function () {
             Route::put('/studio/{id}', [StudioController::class, 'update']);
             Route::put('/studios/studio-hours/{id}', [StudioController::class, 'updateBusinessHours']);
             Route::post('/{id}/working-hours', [StudioController::class, 'setAvailability']);
-            Route::get('/{id}/dashboard-stats', [StudioController::class, 'getDashboardStats']);
-            Route::get('/{id}/dashboard', [StudioController::class, 'dashboard']);
+            Route::get('/{id}/dashboard-stats', [DashboardController::class, 'getStudioStats']);
+            Route::get('/{id}/dashboard', [DashboardController::class, 'getStudioDashboard']);
 
             // Artist management
             Route::post('/{id}/artists', [StudioController::class, 'addArtist']);

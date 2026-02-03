@@ -3,16 +3,11 @@
 namespace App\Services;
 
 use App\Exceptions\StudioNotFoundException;
-use App\Models\Appointment;
-use App\Models\Conversation;
 use App\Models\Image;
-use App\Models\ProfileView;
 use App\Models\Studio;
 use App\Models\StudioAnnouncement;
 use App\Models\StudioSpotlight;
 use App\Models\User;
-use Carbon\Carbon;
-use Illuminate\Support\Facades\Cache;
 
 /**
  *
@@ -185,85 +180,6 @@ class StudioService
                 'item_id' => $spotlight->spotlightable_id,
                 'display_order' => $spotlight->display_order,
                 'item' => $item,
-            ];
-        });
-    }
-
-    /**
-     * Get cached dashboard statistics for a studio.
-     * Cache duration: 5 minutes.
-     */
-    public function getStudioStatsData(Studio $studio): array
-    {
-        $cacheKey = "studio:{$studio->id}:dashboard-stats";
-        $cacheDuration = 300; // 5 minutes
-
-        return Cache::remember($cacheKey, $cacheDuration, function () use ($studio) {
-            $now = Carbon::now();
-            $sevenDaysAgo = $now->copy()->subDays(7);
-            $fourteenDaysAgo = $now->copy()->subDays(14);
-
-            // Page views - this week vs last week
-            $viewsThisWeek = ProfileView::where('viewable_type', Studio::class)
-                ->where('viewable_id', $studio->id)
-                ->where('created_at', '>=', $sevenDaysAgo)
-                ->count();
-
-            $viewsLastWeek = ProfileView::where('viewable_type', Studio::class)
-                ->where('viewable_id', $studio->id)
-                ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-                ->count();
-
-            $viewsTrend = $viewsLastWeek > 0
-                ? round((($viewsThisWeek - $viewsLastWeek) / $viewsLastWeek) * 100)
-                : ($viewsThisWeek > 0 ? 100 : 0);
-
-            // Studio artists
-            $artistIds = $studio->artists()->pluck('users.id')->toArray();
-
-            // Get bookings for studio artists this week
-            $bookingsThisWeek = Appointment::whereIn('artist_id', $artistIds)
-                ->where('created_at', '>=', $sevenDaysAgo)
-                ->count();
-
-            $bookingsLastWeek = Appointment::whereIn('artist_id', $artistIds)
-                ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-                ->count();
-
-            $bookingsTrend = $bookingsThisWeek - $bookingsLastWeek;
-
-            // Studio inquiries
-            $inquiriesThisWeek = Conversation::whereHas('participants', function ($q) use ($artistIds) {
-                    $q->whereIn('user_id', $artistIds);
-                })
-                ->where('created_at', '>=', $sevenDaysAgo)
-                ->count();
-
-            $inquiriesLastWeek = Conversation::whereHas('participants', function ($q) use ($artistIds) {
-                    $q->whereIn('user_id', $artistIds);
-                })
-                ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-                ->count();
-
-            $inquiriesTrend = $inquiriesThisWeek - $inquiriesLastWeek;
-
-            return [
-                'page_views' => [
-                    'count' => $viewsThisWeek,
-                    'trend' => $viewsTrend,
-                    'trend_label' => $viewsTrend >= 0 ? "+{$viewsTrend}%" : "{$viewsTrend}%",
-                ],
-                'bookings' => [
-                    'count' => $bookingsThisWeek,
-                    'trend' => $bookingsTrend,
-                    'trend_label' => $bookingsTrend >= 0 ? "+{$bookingsTrend}" : "{$bookingsTrend}",
-                ],
-                'inquiries' => [
-                    'count' => $inquiriesThisWeek,
-                    'trend' => $inquiriesTrend,
-                    'trend_label' => $inquiriesTrend > 0 ? 'New' : '',
-                ],
-                'artists_count' => count($artistIds),
             ];
         });
     }
