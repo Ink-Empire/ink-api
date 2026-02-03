@@ -9,6 +9,7 @@ use Illuminate\Foundation\Auth\Access\AuthorizesRequests;
 use Illuminate\Foundation\Bus\DispatchesJobs;
 use Illuminate\Foundation\Validation\ValidatesRequests;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class StyleController extends Controller
@@ -22,7 +23,10 @@ class StyleController extends Controller
 
     public function index()
     {
-        $styles = $this->styleService->get();
+        // Cache styles for 1 hour - they rarely change
+        $styles = Cache::remember('styles:all', 3600, function () {
+            return $this->styleService->get();
+        });
 
         return $this->returnResponse('styles', StyleResource::collection($styles));
     }
@@ -40,6 +44,9 @@ class StyleController extends Controller
                 'name' => $data['name'],
                 'parent_id' => $data['parent_id'],
             ])->create();
+
+            // Invalidate styles cache
+            Cache::forget('styles:all');
         } catch (\Exception $e) {
             Log::error("Unable to create style",
                 [
@@ -62,6 +69,9 @@ class StyleController extends Controller
                 $style->name = $data['name'];
                 $style->parent_id = $data['parent_id'];
                 $style->save();
+
+                // Invalidate styles cache
+                Cache::forget('styles:all');
             }
 
             return $this->returnResponse('style', new StyleResource($style));
@@ -85,12 +95,15 @@ class StyleController extends Controller
 
             if ($style) {
                 $style->delete();
+
+                // Invalidate styles cache
+                Cache::forget('styles:all');
             }
 
             return response()->json(['message' => 'Style deleted successfully'], 200);
 
         } catch (\Exception $e) {
-            Log::error("Unable to create style",
+            Log::error("Unable to delete style",
                 [
                     'error' => $e->getMessage(),
                     'line' => $e->getLine(),

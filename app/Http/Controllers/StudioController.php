@@ -4,18 +4,18 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserTypes;
 use App\Http\Resources\DashboardArtistResource;
+use App\Http\Resources\StudioArtistResource;
+use App\Http\Resources\StudioDashboardResource;
 use App\Http\Resources\StudioResource;
+use App\Http\Resources\StudioStatsResource;
 use App\Http\Resources\StudioWorkingHoursResource;
 use App\Http\Resources\UserResource;
-use App\Models\Appointment;
 use App\Models\StudioAvailability;
-use App\Models\ProfileView;
 use App\Models\Studio;
 use App\Models\StudioAnnouncement;
 use App\Models\StudioSpotlight;
 use App\Models\User;
 use App\Services\AddressService;
-use Carbon\Carbon;
 use App\Services\ImageService;
 use App\Services\StudioService;
 use App\Services\UserService;
@@ -423,16 +423,7 @@ class StudioController extends Controller
 
         $artists = $this->studioService->getStudioArtists($studio);
 
-        // Include pivot data (is_verified, verified_at, initiated_by) in the response
-        $artistsWithVerification = $artists->map(function ($artist) {
-            $artistArray = (new UserResource($artist))->toArray(request());
-            $artistArray['is_verified'] = (bool) ($artist->pivot->is_verified ?? false);
-            $artistArray['verified_at'] = $artist->pivot->verified_at ?? null;
-            $artistArray['initiated_by'] = $artist->pivot->initiated_by ?? 'artist';
-            return $artistArray;
-        });
-
-        return $this->returnResponse('artists', $artistsWithVerification);
+        return $this->returnResponse('artists', StudioArtistResource::collection($artists));
     }
 
     public function addArtist(Request $request, $id): JsonResponse
@@ -885,72 +876,42 @@ class StudioController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $now = Carbon::now();
-        $sevenDaysAgo = $now->copy()->subDays(7);
-        $fourteenDaysAgo = $now->copy()->subDays(14);
+        return response()->json(new StudioStatsResource($this->studioService->getStudioStatsData($studio)));
+    }
 
-        // Page views - this week vs last week
-        $viewsThisWeek = ProfileView::where('viewable_type', Studio::class)
-            ->where('viewable_id', $studio->id)
-            ->where('created_at', '>=', $sevenDaysAgo)
-            ->count();
+    /**
+     * Get all dashboard data for a studio in a single request.
+     * Combines: studio details, artists, announcements, stats, and working hours.
+     */
+    public function dashboard(Request $request, int $id): JsonResponse
+    {
+        $studio = Studio::with(['image', 'address', 'announcements'])->find($id);
 
-        $viewsLastWeek = ProfileView::where('viewable_type', Studio::class)
-            ->where('viewable_id', $studio->id)
-            ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-            ->count();
+        if (!$studio) {
+            return response()->json(['error' => 'Studio not found'], 404);
+        }
 
-        $viewsTrend = $viewsLastWeek > 0
-            ? round((($viewsThisWeek - $viewsLastWeek) / $viewsLastWeek) * 100)
-            : ($viewsThisWeek > 0 ? 100 : 0);
+        // Validate that the authenticated user is the studio owner
+        $user = $request->user();
+        if (!$user || $studio->owner_id !== $user->id) {
+            return response()->json(['error' => 'Unauthorized'], 403);
+        }
 
-        // Studio artists (excluding owner if they're type 3)
-        $artistIds = $studio->artists()->pluck('users.id')->toArray();
+        // Get artists with verification data
+        $artists = $this->studioService->getStudioArtists($studio);
 
-        // Get bookings for studio artists this week
-        $bookingsThisWeek = Appointment::whereIn('artist_id', $artistIds)
-            ->where('created_at', '>=', $sevenDaysAgo)
-            ->count();
+        // Get working hours
+        $workingHours = StudioAvailability::where('studio_id', $studio->id)->get();
 
-        $bookingsLastWeek = Appointment::whereIn('artist_id', $artistIds)
-            ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-            ->count();
+        // Get cached stats
+        $stats = $this->studioService->getStudioStatsData($studio);
 
-        $bookingsTrend = $bookingsThisWeek - $bookingsLastWeek;
-
-        // Studio inquiries (conversations started with studio artists this week)
-        // Query conversations where any studio artist is a participant
-        $inquiriesThisWeek = \App\Models\Conversation::whereHas('participants', function ($q) use ($artistIds) {
-                $q->whereIn('user_id', $artistIds);
-            })
-            ->where('created_at', '>=', $sevenDaysAgo)
-            ->count();
-
-        $inquiriesLastWeek = \App\Models\Conversation::whereHas('participants', function ($q) use ($artistIds) {
-                $q->whereIn('user_id', $artistIds);
-            })
-            ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-            ->count();
-
-        $inquiriesTrend = $inquiriesThisWeek - $inquiriesLastWeek;
-
-        return response()->json([
-            'page_views' => [
-                'count' => $viewsThisWeek,
-                'trend' => $viewsTrend,
-                'trend_label' => $viewsTrend >= 0 ? "+{$viewsTrend}%" : "{$viewsTrend}%",
-            ],
-            'bookings' => [
-                'count' => $bookingsThisWeek,
-                'trend' => $bookingsTrend,
-                'trend_label' => $bookingsTrend >= 0 ? "+{$bookingsTrend}" : "{$bookingsTrend}",
-            ],
-            'inquiries' => [
-                'count' => $inquiriesThisWeek,
-                'trend' => $inquiriesTrend,
-                'trend_label' => $inquiriesTrend > 0 ? 'New' : '',
-            ],
-            'artists_count' => count($artistIds),
-        ]);
+        return new StudioDashboardResource(
+            $studio,
+            StudioArtistResource::collection($artists)->toArray($request),
+            $studio->announcements,
+            $stats,
+            $workingHours
+        );
     }
 }

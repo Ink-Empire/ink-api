@@ -8,6 +8,7 @@ use App\Services\TagService;
 use App\Services\PaginationService;
 use Illuminate\Http\Request;
 use Illuminate\Http\JsonResponse;
+use Illuminate\Support\Facades\Cache;
 
 class TagController extends Controller
 {
@@ -35,11 +36,14 @@ class TagController extends Controller
             ]);
         }
 
-        $tags = Tag::approved()
-            ->whereHas('tattoos')
-            ->withCount('tattoos')
-            ->orderBy('name')
-            ->get();
+        // Cache all tags for 30 minutes
+        $tags = Cache::remember('tags:approved:all', 1800, function () {
+            return Tag::approved()
+                ->whereHas('tattoos')
+                ->withCount('tattoos')
+                ->orderBy('name')
+                ->get();
+        });
 
         return response()->json([
             'success' => true,
@@ -79,12 +83,15 @@ class TagController extends Controller
     {
         $limit = min($request->input('limit', 15), 30);
 
-        $tags = Tag::approved()
-                   ->whereHas('tattoos')
-                   ->withCount('tattoos')
-                   ->orderBy('tattoos_count', 'desc')
-                   ->limit($limit)
-                   ->get();
+        // Cache featured tags for 15 minutes (keyed by limit)
+        $tags = Cache::remember("tags:featured:{$limit}", 900, function () use ($limit) {
+            return Tag::approved()
+                       ->whereHas('tattoos')
+                       ->withCount('tattoos')
+                       ->orderBy('tattoos_count', 'desc')
+                       ->limit($limit)
+                       ->get();
+        });
 
         return response()->json([
             'success' => true,

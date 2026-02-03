@@ -23,6 +23,7 @@ use App\Util\ModelLookup;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
 
@@ -570,73 +571,79 @@ class ArtistController extends Controller
             return response()->json(['error' => 'Unauthorized'], 403);
         }
 
-        $now = Carbon::now();
-        $sevenDaysAgo = $now->copy()->subDays(7);
-        $fourteenDaysAgo = $now->copy()->subDays(14);
+        // Cache stats for 3 minutes
+        $cacheKey = "artist:{$artist->id}:dashboard-stats";
+        $cacheDuration = 180; // 3 minutes
 
-        // Profile views - this week vs last week
-        $viewsThisWeek = ProfileView::where('viewable_type', User::class)
-            ->where('viewable_id', $artist->id)
-            ->where('created_at', '>=', $sevenDaysAgo)
-            ->count();
+        $stats = Cache::remember($cacheKey, $cacheDuration, function () use ($artist) {
+            $now = Carbon::now();
+            $sevenDaysAgo = $now->copy()->subDays(7);
+            $fourteenDaysAgo = $now->copy()->subDays(14);
 
-        $viewsLastWeek = ProfileView::where('viewable_type', User::class)
-            ->where('viewable_id', $artist->id)
-            ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-            ->count();
+            // Profile views - this week vs last week
+            $viewsThisWeek = ProfileView::where('viewable_type', User::class)
+                ->where('viewable_id', $artist->id)
+                ->where('created_at', '>=', $sevenDaysAgo)
+                ->count();
 
-        $viewsTrend = $viewsLastWeek > 0
-            ? round((($viewsThisWeek - $viewsLastWeek) / $viewsLastWeek) * 100)
-            : ($viewsThisWeek > 0 ? 100 : 0);
+            $viewsLastWeek = ProfileView::where('viewable_type', User::class)
+                ->where('viewable_id', $artist->id)
+                ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
+                ->count();
 
-        // Saves count - users who saved this artist
-        $savesCount = DB::table('users_artists')
-            ->where('artist_id', $artist->id)
-            ->count();
+            $viewsTrend = $viewsLastWeek > 0
+                ? round((($viewsThisWeek - $viewsLastWeek) / $viewsLastWeek) * 100)
+                : ($viewsThisWeek > 0 ? 100 : 0);
 
-        // Saves this week vs last week (if users_artists has timestamps)
-        $savesThisWeek = DB::table('users_artists')
-            ->where('artist_id', $artist->id)
-            ->where('created_at', '>=', $sevenDaysAgo)
-            ->count();
+            // Saves count - users who saved this artist
+            $savesCount = DB::table('users_artists')
+                ->where('artist_id', $artist->id)
+                ->count();
 
-        $savesLastWeek = DB::table('users_artists')
-            ->where('artist_id', $artist->id)
-            ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
-            ->count();
+            // Saves this week vs last week
+            $savesThisWeek = DB::table('users_artists')
+                ->where('artist_id', $artist->id)
+                ->where('created_at', '>=', $sevenDaysAgo)
+                ->count();
 
-        $savesTrend = $savesThisWeek - $savesLastWeek;
+            $savesLastWeek = DB::table('users_artists')
+                ->where('artist_id', $artist->id)
+                ->whereBetween('created_at', [$fourteenDaysAgo, $sevenDaysAgo])
+                ->count();
 
-        // Upcoming appointments
-        $upcomingAppointments = Appointment::where('artist_id', $artist->id)
-            ->where('status', 'booked')
-            ->where('date', '>=', $now->toDateString())
-            ->count();
+            $savesTrend = $savesThisWeek - $savesLastWeek;
 
-        // Appointments trend (this week scheduled vs last week)
-        $appointmentsThisWeek = Appointment::where('artist_id', $artist->id)
-            ->where('status', 'booked')
-            ->whereBetween('date', [$now->toDateString(), $now->copy()->addDays(7)->toDateString()])
-            ->count();
+            // Upcoming appointments
+            $upcomingAppointments = Appointment::where('artist_id', $artist->id)
+                ->where('status', 'booked')
+                ->where('date', '>=', $now->toDateString())
+                ->count();
 
-        $appointmentsLastWeek = Appointment::where('artist_id', $artist->id)
-            ->where('status', 'booked')
-            ->whereBetween('date', [$sevenDaysAgo->toDateString(), $now->toDateString()])
-            ->count();
+            // Appointments trend (this week scheduled vs last week)
+            $appointmentsThisWeek = Appointment::where('artist_id', $artist->id)
+                ->where('status', 'booked')
+                ->whereBetween('date', [$now->toDateString(), $now->copy()->addDays(7)->toDateString()])
+                ->count();
 
-        $appointmentsTrend = $appointmentsThisWeek - $appointmentsLastWeek;
+            $appointmentsLastWeek = Appointment::where('artist_id', $artist->id)
+                ->where('status', 'booked')
+                ->whereBetween('date', [$sevenDaysAgo->toDateString(), $now->toDateString()])
+                ->count();
 
-        // Unread messages count
-        $unreadMessages = Message::where('recipient_id', $artist->id)
-            ->whereNull('read_at')
-            ->count();
+            $appointmentsTrend = $appointmentsThisWeek - $appointmentsLastWeek;
 
-        return response()->json([
-            'data' => [
+            // Unread messages count - NOT cached (always fresh)
+            $unreadMessages = Message::where('recipient_id', $artist->id)
+                ->whereNull('read_at')
+                ->count();
+
+            $profileViewsTotal = ProfileView::where('viewable_type', User::class)
+                ->where('viewable_id', $artist->id)
+                ->count();
+
+            return [
                 'profile_views' => $viewsThisWeek,
-                'profile_views_total' => ProfileView::where('viewable_type', User::class)
-                    ->where('viewable_id', $artist->id)
-                    ->count(),
+                'profile_views_total' => $profileViewsTotal,
                 'views_trend' => ($viewsTrend >= 0 ? '+' : '') . $viewsTrend . '%',
                 'saves_count' => $savesCount,
                 'saves_this_week' => $savesThisWeek,
@@ -644,8 +651,10 @@ class ArtistController extends Controller
                 'upcoming_appointments' => $upcomingAppointments,
                 'appointments_trend' => ($appointmentsTrend >= 0 ? '+' : '') . $appointmentsTrend,
                 'unread_messages' => $unreadMessages,
-            ]
-        ]);
+            ];
+        });
+
+        return response()->json(['data' => $stats]);
     }
 
     /**
