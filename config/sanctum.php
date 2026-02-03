@@ -44,9 +44,12 @@ return [
     | considered expired. This will override any values set in the token's
     | "expires_at" attribute, but first-party sessions are not affected.
     |
+    | Set to null for no expiration (recommended for mobile apps).
+    | Common values: 60 (1 hour), 1440 (24 hours), 10080 (7 days), 43200 (30 days)
+    |
     */
 
-    'expiration' => null, // 24 hours
+    'expiration' => env('SANCTUM_TOKEN_EXPIRATION', null),
 
     /*
     |--------------------------------------------------------------------------

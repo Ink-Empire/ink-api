@@ -228,8 +228,8 @@ class AuthController extends Controller
         // Update last login timestamp
         $user->update(['last_login_at' => now()]);
 
-        // Delete old tokens and create a new one for API authentication
-        $user->tokens()->delete();
+        // Create a new token for API authentication
+        // Note: We no longer delete all tokens on login to allow multiple devices/sessions
         $token = $user->createToken('auth-token')->plainTextToken;
 
         return response()->json([

@@ -25,7 +25,8 @@ class VerifyEmailController extends Controller
 
         if ($user->hasVerifiedEmail()) {
             // Generate token for already verified users too
-            $user->tokens()->delete();
+            // Only delete the temporary registration token, keep other valid session tokens
+            $user->tokens()->where('name', 'registration-upload')->delete();
             $token = $user->createToken('authToken')->plainTextToken;
 
             // Load relationships for SelfUserResource
@@ -60,7 +61,8 @@ class VerifyEmailController extends Controller
         }
 
         // Generate a new token for the user
-        $user->tokens()->delete();
+        // Only delete the temporary registration token, keep other valid session tokens
+        $user->tokens()->where('name', 'registration-upload')->delete();
         $token = $user->createToken('authToken')->plainTextToken;
 
         // Load relationships for SelfUserResource
