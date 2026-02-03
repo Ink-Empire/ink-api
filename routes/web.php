@@ -128,6 +128,7 @@ Route::prefix('api')->group(function () {
             Route::put('/studios/studio-hours/{id}', [StudioController::class, 'updateBusinessHours']);
             Route::post('/{id}/working-hours', [StudioController::class, 'setAvailability']);
             Route::get('/{id}/dashboard-stats', [StudioController::class, 'getDashboardStats']);
+            Route::get('/{id}/dashboard', [StudioController::class, 'dashboard']);
 
             // Artist management
             Route::post('/{id}/artists', [StudioController::class, 'addArtist']);
