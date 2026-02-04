@@ -381,6 +381,29 @@ class DashboardService
     }
 
     /**
+     * Get saved tattoos for a client.
+     */
+    public function getClientSavedTattoos(User $user): array
+    {
+        $tattooIds = $user->tattoos()->pluck('tattoos.id')->toArray();
+
+        if (empty($tattooIds)) {
+            return [];
+        }
+
+        // Get full tattoo data from Elasticsearch
+        $result = $this->tattooService->getByIds($tattooIds);
+        $tattoos = $result['response'] ?? [];
+
+        // Handle Collection vs array
+        if ($tattoos instanceof \Illuminate\Support\Collection) {
+            $tattoos = $tattoos->values()->toArray();
+        }
+
+        return $tattoos;
+    }
+
+    /**
      * Get suggested artists based on user preferences.
      */
     public function getSuggestedArtists(User $user, int $limit = 6): array

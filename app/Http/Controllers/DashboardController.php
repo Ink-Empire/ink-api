@@ -193,6 +193,20 @@ class DashboardController extends Controller
     }
 
     /**
+     * Get saved tattoos for the authenticated client.
+     */
+    public function getClientSavedTattoos(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $savedTattoos = $this->dashboardService->getClientSavedTattoos($user);
+
+        return response()->json([
+            'tattoos' => $savedTattoos,
+        ]);
+    }
+
+    /**
      * Add an artist to the wishlist.
      */
     public function addToWishlist(Request $request): JsonResponse
