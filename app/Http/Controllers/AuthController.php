@@ -77,29 +77,43 @@ class AuthController extends Controller
             'password' => $hashedPassword,
         ]);
 
-        // If artist affiliated with a studio, add them to the studio's artists (pending verification)
+        // If artist affiliated with a studio, handle ownership or join request
         if ($request->studio_id) {
             $studio = Studio::find($request->studio_id);
             if ($studio) {
-                // Add artist to users_studios pivot with is_verified = false (pending)
-                // initiated_by = 'artist' means the artist requested to join
-                $studio->artists()->syncWithoutDetaching([
-                    $user->id => [
-                        'is_verified' => false,
-                        'initiated_by' => 'artist',
-                    ]
-                ]);
+                // If studio is unclaimed, make this user the owner
+                if (!$studio->is_claimed) {
+                    $studio->owner_id = $user->id;
+                    $studio->is_claimed = true;
+                    $studio->save();
 
-                // Notify the studio owner about the join request
-                if ($studio->owner) {
-                    try {
-                        $studio->owner->notify(new \App\Notifications\ArtistJoinRequestNotification($user, $studio));
-                    } catch (\Exception $e) {
-                        Log::warning('Failed to send artist join request notification', [
-                            'artist_id' => $user->id,
-                            'studio_id' => $studio->id,
-                            'error' => $e->getMessage(),
-                        ]);
+                    // Add artist to studio as verified owner
+                    $studio->artists()->syncWithoutDetaching([
+                        $user->id => [
+                            'is_verified' => true,
+                            'initiated_by' => 'artist',
+                        ]
+                    ]);
+                } else {
+                    // Studio is claimed - add artist as pending (requires owner approval)
+                    $studio->artists()->syncWithoutDetaching([
+                        $user->id => [
+                            'is_verified' => false,
+                            'initiated_by' => 'artist',
+                        ]
+                    ]);
+
+                    // Notify the studio owner about the join request
+                    if ($studio->owner) {
+                        try {
+                            $studio->owner->notify(new \App\Notifications\ArtistJoinRequestNotification($user, $studio));
+                        } catch (\Exception $e) {
+                            Log::warning('Failed to send artist join request notification', [
+                                'artist_id' => $user->id,
+                                'studio_id' => $studio->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
                     }
                 }
             }
