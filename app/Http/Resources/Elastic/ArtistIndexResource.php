@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Elastic;
 
+use App\Enums\UserTypes;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\StyleResource;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -46,6 +47,7 @@ class ArtistIndexResource extends JsonResource
             'is_featured' => (bool) $this->is_featured,
             'is_demo' => (bool) $this->is_demo,
             'styles' => StyleResource::collection($this->styles ?? []),
+            'type' => UserTypes::ARTIST,
             'primary_image' => $this->primary_image ?? null,
             'username' => $this->username,
             'settings' => $this->settings ? $this->settings->toArray() : [],
