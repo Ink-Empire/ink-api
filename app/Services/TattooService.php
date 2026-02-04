@@ -155,4 +155,19 @@ class TattooService extends SearchService
 
         return $this->search->get();
     }
+
+    /**
+     * Get multiple tattoos by their IDs from Elasticsearch
+     */
+    public function getByIds(array $ids): array
+    {
+        if (empty($ids)) {
+            return ['response' => []];
+        }
+
+        $this->initializeSearch();
+        $this->search->where('id', 'in', $ids);
+
+        return $this->search->get();
+    }
 }
