@@ -2,10 +2,15 @@
 
 namespace App\Models;
 
+use App\Enums\UserTypes;
+use App\Http\Resources\Elastic\ArtistIndexResource;
+use App\Http\Resources\Elastic\StudioIndexResource;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
+use Larelastic\Elastic\Traits\Migratable;
+use Larelastic\Elastic\Traits\Searchable;
 
 class Studio extends Model
 {
@@ -184,5 +189,51 @@ class Studio extends Model
     public function scopeUnclaimed($query)
     {
         return $query->where('is_claimed', false);
+    }
+
+    /*
+* Elasticsearch
+*/
+
+    use Migratable;
+    use Searchable;
+
+    /** @var string */
+    protected $indexConfigurator = StudioIndexConfigurator::class;
+
+    public function searchableQuery()
+    {
+        return $this->newQuery()->with([
+            'styles',
+            'image',
+        ]);
+    }
+
+    public function shouldBeSearchable()
+    {
+        return true;
+    }
+
+    public function toSearchableArray()
+    {
+        $with = [
+            'styles',
+            'image',
+        ];
+
+        $this->loadMissing($with);
+
+        $result = (new StudioIndexResource($this))->jsonSerialize();
+
+        // Debug: log if is_demo is missing
+        if (!isset($result['is_demo'])) {
+            \Log::warning('Studio toSearchableArray missing is_demo', [
+                'id' => $this->id,
+                'is_demo_attr' => $this->is_demo,
+                'attributes' => $this->getAttributes(),
+            ]);
+        }
+
+        return $result;
     }
 }
