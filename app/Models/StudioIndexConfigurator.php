@@ -6,7 +6,7 @@ use Larelastic\Elastic\Constants\Datatypes;
 use Larelastic\Elastic\Models\IndexConfigurator;
 use Larelastic\Elastic\Traits\Migratable;
 
-class ArtistIndexConfigurator extends IndexConfigurator
+class StudioIndexConfigurator extends IndexConfigurator
 {
     use Migratable;
 
@@ -102,14 +102,6 @@ class ArtistIndexConfigurator extends IndexConfigurator
         ],
     ];
 
-    const SUBJECT = [
-        'type' => 'nested',
-        'properties' => [
-            'id' => Datatypes::INTEGER,
-            'name' => Datatypes::KEYWORD,
-        ],
-    ];
-
     const IMAGE = [
         'type' => 'nested',
         'properties' => [
@@ -161,9 +153,7 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'location' => Datatypes::KEYWORD,
             'location_lat_long' => Datatypes::GEO_POINT,
             'name' => Datatypes::TEXT,
-            'studio_name' => Datatypes::TEXT,
             'phone' => Datatypes::KEYWORD,
-            'studio' => self::STUDIO,
             'type' => Datatypes::KEYWORD,
             'is_featured' => Datatypes::BOOLEAN,
             'is_demo' => Datatypes::BOOLEAN,
@@ -171,9 +161,6 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'rating' => Datatypes::FLOAT,
             'styles' => self::STYLE,
             'primary_image' => self::IMAGE,
-            'username' => Datatypes::TEXT,
-            'settings' => self::SETTINGS,
-            'social_media_links' => self::SOCIAL_MEDIA_LINK,
         ]
     ];
 
