@@ -343,11 +343,100 @@ class UserController extends Controller
     }
 
     /**
-     * @return void
+     * Delete the authenticated user's account and all associated data.
      */
-    public function delete()
+    public function deleteAccount(Request $request): JsonResponse
     {
+        $user = $request->user();
 
+        try {
+            $this->performUserDeletion($user);
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Account deleted successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to delete user account', [
+                'user_id' => $user->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete account. Please try again.',
+            ], 500);
+        }
+    }
+
+    /**
+     * Perform full user deletion with all relationship cleanup.
+     * Used by both self-deletion and admin deletion.
+     */
+    protected function performUserDeletion(User $user): void
+    {
+        \DB::beginTransaction();
+
+        try {
+            // If user is an artist, remove from Elasticsearch
+            if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
+                $artist = Artist::find($user->id);
+                if ($artist) {
+                    $artist->unsearchable();
+                }
+
+                // Clear all tattoos from elastic index
+                $tattooIndex = config('elastic.client.tattoos_index', 'tattoos');
+                $this->elasticService->deleteByQuery('artist_id', (string) $user->id, $tattooIndex);
+            }
+
+            // Revoke all API tokens
+            $user->tokens()->delete();
+
+            // Delete hasMany relationships
+            $user->passwords()->delete();
+            $user->socialMediaLinks()->delete();
+            $user->tattooLeads()->delete();
+            $user->artistWishlists()->delete();
+            $user->conversationParticipants()->delete();
+            $user->profileViews()->delete();
+
+            // Delete artist settings if exists
+            if ($user->settings) {
+                $user->settings()->delete();
+            }
+
+            // Delete calendar connection if exists
+            if ($user->calendarConnection) {
+                $user->calendarConnection()->delete();
+            }
+
+            // Detach many-to-many relationships
+            $user->styles()->detach();
+            $user->tattoos()->detach();
+            $user->artists()->detach();
+            $user->wishlistArtists()->detach();
+            $user->affiliatedStudios()->detach();
+            $user->blockedUsers()->detach();
+            $user->blockedByUsers()->detach();
+            $user->conversations()->detach();
+
+            // Handle owned studio - remove ownership but keep studio
+            if ($user->ownedStudio) {
+                $user->ownedStudio->update([
+                    'owner_id' => null,
+                    'is_claimed' => false,
+                ]);
+            }
+
+            // Delete the user
+            $user->delete();
+
+            \DB::commit();
+        } catch (\Exception $e) {
+            \DB::rollBack();
+            throw $e;
+        }
     }
 
     // ==================== Admin Methods ====================
@@ -484,7 +573,15 @@ class UserController extends Controller
             $artistSettingsData = $data['artist_settings'];
             unset($data['artist_settings']);
 
-            $artistSettings = ArtistSettings::firstOrNew(['artist_id' => $user->id]);
+            $artistSettings = ArtistSettings::firstOrNew(
+                ['artist_id' => $user->id],
+                [
+                    'hourly_rate' => 0,
+                    'deposit_amount' => 0,
+                    'consultation_fee' => 0,
+                    'minimum_session' => 0,
+                ]
+            );
 
             $allowedFields = [
                 'books_open',
@@ -509,6 +606,14 @@ class UserController extends Controller
                 }
             }
 
+            // Ensure required integer fields have defaults (can't be null)
+            $integerDefaults = ['hourly_rate', 'deposit_amount', 'consultation_fee', 'minimum_session'];
+            foreach ($integerDefaults as $field) {
+                if ($artistSettings->{$field} === null) {
+                    $artistSettings->{$field} = 0;
+                }
+            }
+
             $artistSettings->save();
         }
 
@@ -520,7 +625,14 @@ class UserController extends Controller
         }
 
         $user->save();
-        $user->searchable(); //just in case
+
+        // Re-index in Elasticsearch if this is an artist
+        if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
+            $artist = Artist::find($user->id);
+            if ($artist) {
+                $artist->searchable();
+            }
+        }
 
         // Return user with artist_settings
         $user->load('artistSettings');
@@ -548,23 +660,23 @@ class UserController extends Controller
             ], 404);
         }
 
-        if ($user->type == UserTypes::ARTIST) {
-            // Remove artist from ES index BEFORE deleting
-            $artist = Artist::find($user->id);
-            if ($artist) {
-                $artist->unsearchable();
-            }
+        try {
+            $this->performUserDeletion($user);
 
-            // Clear all tattoos from elastic index (artist_id is KEYWORD, cast to string)
-            $tattooIndex = config('elastic.client.tattoos_index', 'tattoos');
-            $this->elasticService->deleteByQuery('artist_id', (string) $user->id, $tattooIndex);
+            return response()->json([
+                'data' => ['id' => $id],
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Admin failed to delete user', [
+                'user_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to delete user.',
+            ], 500);
         }
-
-        $user->delete();
-
-        return response()->json([
-            'data' => ['id' => $id],
-        ]);
     }
 
     /**
