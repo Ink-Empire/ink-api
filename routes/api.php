@@ -90,6 +90,7 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('users')->group(function () {
         Route::get('/me', [UserController::class, 'me']);
         Route::put('/password', [UpdatePasswordController::class, 'update']);
+        Route::post('/me/delete', [UserController::class, 'deleteAccount']);
         Route::post('/favorites/{type}', [UserController::class, 'toggleFavorite']);
         Route::post('/block', [UserController::class, 'blockUser']);
         Route::post('/unblock', [UserController::class, 'unblockUser']);
