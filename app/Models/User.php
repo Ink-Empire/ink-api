@@ -56,6 +56,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_subscribed',
         'is_email_verified',
         'last_seen_at',
+        'email_unsubscribed',
     ];
 
     /**
@@ -80,6 +81,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_admin' => 'boolean',
         'is_demo' => 'boolean',
         'is_email_verified' => 'boolean',
+        'email_unsubscribed' => 'boolean',
     ];
 
     /**SCOPES**/
@@ -453,5 +455,14 @@ class User extends Authenticatable implements MustVerifyEmail
     public function isBlocked(int $userId): bool
     {
         return $this->hasBlocked($userId) || $this->isBlockedBy($userId);
+    }
+
+    /**
+     * Check if user wants to receive marketing/notification emails.
+     * Returns false if they have unsubscribed.
+     */
+    public function wantsMarketingEmails(): bool
+    {
+        return !$this->email_unsubscribed;
     }
 }

@@ -7,16 +7,17 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
+use App\Notifications\Traits\RespectsEmailPreferences;
 
 class WelcomeNotification extends Notification
 {
-    use Queueable;
+    use Queueable, RespectsEmailPreferences;
 
     public const EVENT_TYPE = 'welcome';
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
     }
 
     public function toMail(object $notifiable): MailMessage

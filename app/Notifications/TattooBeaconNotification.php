@@ -7,10 +7,11 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Notifications\Traits\RespectsEmailPreferences;
 
 class TattooBeaconNotification extends Notification
 {
-    use Queueable;
+    use Queueable, RespectsEmailPreferences;
 
     public const EVENT_TYPE = 'beacon_request';
 
@@ -21,7 +22,7 @@ class TattooBeaconNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
     }
 
     public function toMail(object $notifiable): MailMessage

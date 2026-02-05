@@ -7,9 +7,12 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Notifications\Traits\RespectsEmailPreferences;
 
 class ArtistJoinRequestNotification extends Notification
 {
+    use RespectsEmailPreferences;
+
     public const EVENT_TYPE = 'artist_join_request';
 
     public function __construct(
@@ -19,7 +22,7 @@ class ArtistJoinRequestNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
     }
 
     public function toMail(object $notifiable): MailMessage
