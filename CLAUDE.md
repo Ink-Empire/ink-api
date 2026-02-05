@@ -103,24 +103,21 @@ $this->search->take($perPage);
 - Laravel models should be used directly in tests whenever possible
 - All test methods should be prefixed with "test"; this is required in the latest version of PHPUnit
 
-### Test Database Setup (IMPORTANT)
-Tests use a **separate database** (`inkedin_test`) to avoid dropping local development data.
+### Test Database
+Tests use a separate MySQL database (`inkedin_test`) to avoid affecting development data.
 
 **First-time setup:**
 ```bash
-# Create the test database
-mysql -u sail -p -e "CREATE DATABASE IF NOT EXISTS inkedin_test;"
-
-# Run migrations on the test database
-php artisan migrate --env=testing
+# In Docker container, create the test database:
+mysql -u sail -ppassword -e "CREATE DATABASE IF NOT EXISTS inkedin_test;"
 ```
 
-**How it works:**
-- `phpunit.xml` sets `APP_ENV=testing`
-- Laravel loads `.env.testing` which sets `DB_DATABASE=inkedin_test`
-- Tests using `RefreshDatabase` trait will only affect the test database
+**Run tests:**
+```bash
+php artisan test
+```
 
-**Never run tests without the test database configured** - `RefreshDatabase` runs `migrate:fresh` which drops ALL tables.
+The `phpunit.xml` uses `force="true"` to ensure the `inkedin_test` database is always used.
 
 All code changes must pass CI tests and receive an approval before merging to develop.
 Always check the /docs directory to understand the flow and update it when we make changes to a process

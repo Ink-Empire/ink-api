@@ -347,7 +347,7 @@ class DashboardService
      * Get cached suggested artists for a user.
      * Cache duration: 2 minutes.
      */
-    private function getCachedSuggestedArtists(User $user, int $limit = 6): array
+    private function getCachedSuggestedArtists(User $user, int $limit = 6): \Illuminate\Database\Eloquent\Collection
     {
         $cacheKey = "client:{$user->id}:suggested-artists";
         $cacheDuration = 120; // 2 minutes
@@ -406,7 +406,7 @@ class DashboardService
     /**
      * Get suggested artists based on user preferences.
      */
-    public function getSuggestedArtists(User $user, int $limit = 6): array
+    public function getSuggestedArtists(User $user, int $limit = 6): \Illuminate\Database\Eloquent\Collection
     {
         // Get user's favorited style IDs
         $favoritedStyleIds = $user->styles()->pluck('styles.id')->toArray();
@@ -443,8 +443,7 @@ class DashboardService
 
         return $query->inRandomOrder()
             ->take($limit)
-            ->get()
-            ->toArray();
+            ->get();
     }
 
     /**

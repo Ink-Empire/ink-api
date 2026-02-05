@@ -18,17 +18,6 @@ abstract class TestCase extends BaseTestCase
     }
 
     /**
-     * Specify the migrations path for RefreshDatabase trait.
-     * Uses the minimal testing migrations instead of full migrations.
-     */
-    protected function migrateFreshUsing()
-    {
-        return [
-            '--path' => 'database/migrations/testing',
-        ];
-    }
-
-    /**
      * Export a JSON fixture for use in frontend tests.
      * Only exports when EXPORT_FIXTURES=true environment variable is set.
      */

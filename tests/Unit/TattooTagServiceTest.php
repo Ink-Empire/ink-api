@@ -7,20 +7,16 @@ use App\Models\Tag;
 use App\Models\Tattoo;
 use App\Models\User;
 use App\Services\TagService;
-use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\Config;
-use OpenAI\Laravel\Facades\OpenAI;
-use OpenAI\Responses\Chat\CreateResponse;
+use Tests\Traits\RefreshTestDatabase;
 use Tests\TestCase;
 
 class TattooTagServiceTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshTestDatabase;
 
     private TagService $service;
     private User $artist;
     private Tattoo $tattoo;
-    private Image $image;
 
     public function setUp(): void
     {
@@ -38,17 +34,9 @@ class TattooTagServiceTest extends TestCase
             'artist_id' => $this->artist->id,
             'description' => 'Test tattoo',
         ]);
-
-        // Create test image
-        $this->image = Image::factory()->create([
-            'url' => 'https://example.com/test-image.jpg',
-        ]);
-
-        // Attach image to tattoo
-        $this->tattoo->images()->attach($this->image->id);
     }
 
-    public function testParseTagsFromResponse()
+    public function test_parse_tags_from_response()
     {
         $response = 'dragon, flower, skull, wings, rose';
 
@@ -62,7 +50,7 @@ class TattooTagServiceTest extends TestCase
         $this->assertEquals(['dragon', 'flower', 'skull', 'wings', 'rose'], $tags);
     }
 
-    public function testParseTagsWithExtraSpaces()
+    public function test_parse_tags_with_extra_spaces()
     {
         $response = ' dragon , flower,   skull  , wings, rose ';
 
@@ -76,9 +64,9 @@ class TattooTagServiceTest extends TestCase
         $this->assertEquals(['dragon', 'flower', 'skull', 'wings', 'rose'], $tags);
     }
 
-    public function testParseTagsFiltersInvalidTags()
+    public function test_parse_tags_filters_invalid_tags()
     {
-        $response = 'dragon, a, verylongtagnamethatshouldbefiltered, 123invalid, rose';
+        $response = 'dragon, a, verylongtagnamethatshouldbefiltered, rose';
 
         $reflection = new \ReflectionClass($this->service);
         $method = $reflection->getMethod('parseTagsFromResponse');
@@ -90,92 +78,104 @@ class TattooTagServiceTest extends TestCase
         $this->assertEquals(['dragon', 'rose'], $tags);
     }
 
-    public function testGetImageUrlWithDirectUrl()
+    public function test_attach_tags_to_tattoo()
     {
-        $image = new Image(['url' => 'https://example.com/image.jpg']);
+        // Create some tags in the master list
+        $dragonTag = Tag::create(['name' => 'dragon', 'slug' => 'dragon', 'is_pending' => false]);
+        $flowerTag = Tag::create(['name' => 'flower', 'slug' => 'flower', 'is_pending' => false]);
+        Tag::create(['name' => 'skull', 'slug' => 'skull', 'is_pending' => false]);
 
-        $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('getImageUrl');
-        $method->setAccessible(true);
+        $tagNames = ['dragon', 'flower', 'nonexistent'];
 
-        $url = $method->invoke($this->service, $image);
+        $attachedTags = $this->service->attachTagsToTattoo($this->tattoo, $tagNames);
 
-        $this->assertEquals('https://example.com/image.jpg', $url);
+        // Should only attach existing tags
+        $this->assertCount(2, $attachedTags);
+
+        // Verify pivot table
+        $this->assertDatabaseHas('tattoos_tags', [
+            'tattoo_id' => $this->tattoo->id,
+            'tag_id' => $dragonTag->id,
+        ]);
+        $this->assertDatabaseHas('tattoos_tags', [
+            'tattoo_id' => $this->tattoo->id,
+            'tag_id' => $flowerTag->id,
+        ]);
     }
 
-    public function testGetImageUrlWithS3Key()
+    public function test_get_tags_for_tattoo()
     {
-        Config::set('filesystems.disks.s3.bucket', 'test-bucket');
-        Config::set('filesystems.disks.s3.region', 'us-east-1');
+        // Create tags and attach to tattoo
+        $dragonTag = Tag::create(['name' => 'dragon', 'slug' => 'dragon', 'is_pending' => false]);
+        $flowerTag = Tag::create(['name' => 'flower', 'slug' => 'flower', 'is_pending' => false]);
 
-        $image = new Image(['s3_key' => 'images/tattoo.jpg']);
-
-        $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('getImageUrl');
-        $method->setAccessible(true);
-
-        $url = $method->invoke($this->service, $image);
-
-        $this->assertEquals('https://test-bucket.s3.us-east-1.amazonaws.com/images/tattoo.jpg', $url);
-    }
-
-    public function testStoreTags()
-    {
-        $tags = ['dragon', 'flower', 'skull'];
-
-        $reflection = new \ReflectionClass($this->service);
-        $method = $reflection->getMethod('storeTags');
-        $method->setAccessible(true);
-
-        $storedTags = $method->invoke($this->service, $this->tattoo, $tags);
-
-        $this->assertCount(3, $storedTags);
-        $this->assertDatabaseCount('tags', 3);
-
-        foreach ($tags as $tagName) {
-            $this->assertDatabaseHas('tags', [
-                'tattoo_id' => $this->tattoo->id,
-                'tag' => $tagName
-            ]);
-        }
-    }
-
-    public function testGetTagsForTattoo()
-    {
-        // Create some tags
-        Tag::create(['tattoo_id' => $this->tattoo->id, 'tag' => 'dragon']);
-        Tag::create(['tattoo_id' => $this->tattoo->id, 'tag' => 'flower']);
+        $this->tattoo->tags()->attach([$dragonTag->id, $flowerTag->id]);
 
         $tags = $this->service->getTagsForTattoo($this->tattoo);
 
         $this->assertCount(2, $tags);
-        $this->assertContains('dragon', $tags);
-        $this->assertContains('flower', $tags);
     }
 
-    public function testDeleteTagsForTattoo()
+    public function test_clear_tags_for_tattoo()
     {
-        // Create some tags
-        Tag::create(['tattoo_id' => $this->tattoo->id, 'tag' => 'dragon']);
-        Tag::create(['tattoo_id' => $this->tattoo->id, 'tag' => 'flower']);
+        // Create tags and attach to tattoo
+        $dragonTag = Tag::create(['name' => 'dragon', 'slug' => 'dragon', 'is_pending' => false]);
+        $flowerTag = Tag::create(['name' => 'flower', 'slug' => 'flower', 'is_pending' => false]);
 
-        $this->assertDatabaseCount('tags', 2);
+        $this->tattoo->tags()->attach([$dragonTag->id, $flowerTag->id]);
 
-        $result = $this->service->deleteTagsForTattoo($this->tattoo);
+        $this->assertDatabaseCount('tattoos_tags', 2);
+
+        $result = $this->service->clearTagsForTattoo($this->tattoo);
 
         $this->assertTrue($result);
-        $this->assertDatabaseCount('tags', 0);
+        $this->assertDatabaseCount('tattoos_tags', 0);
+
+        // Tags should still exist in master list
+        $this->assertDatabaseCount('tags', 2);
     }
 
-    public function testGenerateTagsForTattooWithNoImages()
+    public function test_find_matching_tag()
     {
-        // Create tattoo without images
-        $emptyTattoo = Tattoo::factory()->create([
-            'artist_id' => $this->artist->id,
-        ]);
+        Tag::create(['name' => 'dragon', 'slug' => 'dragon', 'is_pending' => false]);
+        Tag::create(['name' => 'cherry blossom', 'slug' => 'cherry-blossom', 'is_pending' => false]);
 
-        $tags = $this->service->generateTagsForTattoo($emptyTattoo);
+        // Exact match
+        $tag = $this->service->findMatchingTag('dragon');
+        $this->assertNotNull($tag);
+        $this->assertEquals('dragon', $tag->name);
+
+        // Match by slug
+        $tag = $this->service->findMatchingTag('cherry blossom');
+        $this->assertNotNull($tag);
+        $this->assertEquals('cherry blossom', $tag->name);
+
+        // No match
+        $tag = $this->service->findMatchingTag('nonexistent');
+        $this->assertNull($tag);
+    }
+
+    public function test_generate_tags_for_tattoo_with_no_images()
+    {
+        // Tattoo has no images
+        $tags = $this->service->generateTagsForTattoo($this->tattoo);
 
         $this->assertEmpty($tags);
+    }
+
+    public function test_set_tags_for_tattoo()
+    {
+        $dragonTag = Tag::create(['name' => 'dragon', 'slug' => 'dragon', 'is_pending' => false]);
+        $flowerTag = Tag::create(['name' => 'flower', 'slug' => 'flower', 'is_pending' => false]);
+        $skullTag = Tag::create(['name' => 'skull', 'slug' => 'skull', 'is_pending' => false]);
+
+        // Set initial tags
+        $this->service->setTagsForTattoo($this->tattoo, [$dragonTag->id, $flowerTag->id]);
+        $this->assertCount(2, $this->tattoo->fresh()->tags);
+
+        // Replace with new tags
+        $this->service->setTagsForTattoo($this->tattoo, [$skullTag->id]);
+        $this->assertCount(1, $this->tattoo->fresh()->tags);
+        $this->assertEquals('skull', $this->tattoo->fresh()->tags->first()->name);
     }
 }

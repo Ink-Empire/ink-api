@@ -2,7 +2,7 @@
 
 namespace Tests\Feature;
 
-// use Illuminate\Foundation\Testing\RefreshDatabase;
+// use Tests\Traits\RefreshTestDatabase;
 use Tests\TestCase;
 
 class ExampleTest extends TestCase
@@ -12,7 +12,8 @@ class ExampleTest extends TestCase
      */
     public function test_the_application_returns_a_successful_response(): void
     {
-        $response = $this->get('/');
+        // Test that the API is running - styles endpoint is public
+        $response = $this->getJson('/api/styles');
 
         $response->assertStatus(200);
     }
