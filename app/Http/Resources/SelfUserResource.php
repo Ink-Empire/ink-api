@@ -65,6 +65,8 @@ class SelfUserResource extends JsonResource
             'blocked_users' => BlockedUserResource::collection($this->blockedUsers),
             // Social media links
             'social_media_links' => SocialMediaLinkResource::collection($this->socialMediaLinks),
+            // Email preferences
+            'email_unsubscribed' => (bool) $this->email_unsubscribed,
         ];
     }
 }

@@ -6,10 +6,11 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Notifications\Traits\RespectsEmailPreferences;
 
 class BooksOpenNotification extends Notification
 {
-    use Queueable;
+    use Queueable, RespectsEmailPreferences;
 
     public const EVENT_TYPE = 'books_open';
 
@@ -19,7 +20,7 @@ class BooksOpenNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
     }
 
     public function toMail(object $notifiable): MailMessage

@@ -6,9 +6,12 @@ use App\Models\Appointment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Notifications\Traits\RespectsEmailPreferences;
 
 class BookingAcceptedNotification extends Notification
 {
+    use RespectsEmailPreferences;
+
     public const EVENT_TYPE = 'booking_accepted';
 
     public function __construct(
@@ -17,7 +20,7 @@ class BookingAcceptedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
     }
 
     public function toMail(object $notifiable): MailMessage

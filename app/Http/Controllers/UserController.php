@@ -343,6 +343,25 @@ class UserController extends Controller
     }
 
     /**
+     * Update the authenticated user's email preferences.
+     */
+    public function updateEmailPreferences(Request $request): JsonResponse
+    {
+        $request->validate([
+            'email_unsubscribed' => 'required|boolean',
+        ]);
+
+        $user = $request->user();
+        $user->email_unsubscribed = $request->input('email_unsubscribed');
+        $user->save();
+
+        return response()->json([
+            'success' => true,
+            'email_unsubscribed' => $user->email_unsubscribed,
+        ]);
+    }
+
+    /**
      * Delete the authenticated user's account and all associated data.
      */
     public function deleteAccount(Request $request): JsonResponse

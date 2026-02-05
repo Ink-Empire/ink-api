@@ -7,9 +7,12 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use App\Notifications\Traits\RespectsEmailPreferences;
 
 class BookingRequestNotification extends Notification
 {
+    use RespectsEmailPreferences;
+
     // Note: Removed ShouldQueue temporarily for testing - add back when queue is configured
 
     public const EVENT_TYPE = 'booking_request';
@@ -20,7 +23,7 @@ class BookingRequestNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['mail'];
+        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
     }
 
     public function toMail(object $notifiable): MailMessage
