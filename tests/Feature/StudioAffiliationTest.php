@@ -4,9 +4,9 @@ use App\Models\User;
 use App\Models\Studio;
 use App\Models\Artist;
 use App\Enums\UserTypes;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Traits\RefreshTestDatabase;
 
-uses(RefreshDatabase::class);
+uses(RefreshTestDatabase::class);
 
 beforeEach(function () {
     // Create an artist user

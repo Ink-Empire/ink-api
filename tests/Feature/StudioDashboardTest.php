@@ -5,9 +5,9 @@ use App\Models\Studio;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Enums\UserTypes;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Traits\RefreshTestDatabase;
 
-uses(RefreshDatabase::class);
+uses(RefreshTestDatabase::class);
 
 beforeEach(function () {
     // Create studio owner

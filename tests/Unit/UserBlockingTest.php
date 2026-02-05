@@ -4,12 +4,12 @@ namespace Tests\Unit;
 
 use App\Models\User;
 use App\Models\UserBlock;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use Tests\Traits\RefreshTestDatabase;
 use Tests\TestCase;
 
 class UserBlockingTest extends TestCase
 {
-    use RefreshDatabase;
+    use RefreshTestDatabase;
 
     public function test_user_can_block_another_user(): void
     {
