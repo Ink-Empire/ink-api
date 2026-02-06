@@ -38,6 +38,8 @@ class TattooController extends Controller
         protected SearchImpressionService $impressionService,
         protected PaginationService $paginationService
     ) {
+
+        \Log::info("hello?");
     }
 
     /**
