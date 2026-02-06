@@ -44,14 +44,11 @@ class Handler extends ExceptionHandler
     public function register()
     {
         $this->reportable(function (Throwable $e) {
-            //
-        });
-
-        // Suppress PHP deprecation warnings (e.g. dynamic properties in vendor packages)
-        $this->renderable(function (\ErrorException $e) {
-            if (str_contains($e->getMessage(), 'Creation of dynamic property') && $e->getSeverity() === E_DEPRECATED) {
-                return null;
-            }
+            \Log::error('Exception caught: ' . get_class($e) . ' - ' . $e->getMessage(), [
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+                'trace' => $e->getTraceAsString(),
+            ]);
         });
     }
 }
