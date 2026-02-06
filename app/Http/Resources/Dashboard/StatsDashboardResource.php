@@ -8,23 +8,25 @@ class StatsDashboardResource extends JsonResource
 {
     public function toArray($request): array
     {
+        $data = is_array($this->resource) ? $this->resource : (array) $this->resource;
+
         return [
             'page_views' => [
-                'count' => $this->resource['page_views']['count'] ?? 0,
-                'trend' => $this->resource['page_views']['trend'] ?? 0,
-                'trend_label' => $this->resource['page_views']['trend_label'] ?? '+0%',
+                'count' => $data['page_views']['count'] ?? 0,
+                'trend' => $data['page_views']['trend'] ?? 0,
+                'trend_label' => $data['page_views']['trend_label'] ?? '+0%',
             ],
             'bookings' => [
-                'count' => $this->resource['bookings']['count'] ?? 0,
-                'trend' => $this->resource['bookings']['trend'] ?? 0,
-                'trend_label' => $this->resource['bookings']['trend_label'] ?? '+0',
+                'count' => $data['bookings']['count'] ?? 0,
+                'trend' => $data['bookings']['trend'] ?? 0,
+                'trend_label' => $data['bookings']['trend_label'] ?? '+0',
             ],
             'inquiries' => [
-                'count' => $this->resource['inquiries']['count'] ?? 0,
-                'trend' => $this->resource['inquiries']['trend'] ?? 0,
-                'trend_label' => $this->resource['inquiries']['trend_label'] ?? '',
+                'count' => $data['inquiries']['count'] ?? 0,
+                'trend' => $data['inquiries']['trend'] ?? 0,
+                'trend_label' => $data['inquiries']['trend_label'] ?? '',
             ],
-            'artists_count' => $this->resource['artists_count'] ?? 0,
+            'artists_count' => $data['artists_count'] ?? 0,
         ];
     }
 }

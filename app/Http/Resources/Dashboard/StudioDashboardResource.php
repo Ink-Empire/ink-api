@@ -89,7 +89,7 @@ class StudioDashboardResource extends JsonResource
     private function getStats()
     {
         $stats = $this->getAttribute('dashboard_stats') ?? [];
-        return new StatsDashboardResource((object) $stats);
+        return new StatsDashboardResource($stats);
     }
 
     private function getWorkingHours()
