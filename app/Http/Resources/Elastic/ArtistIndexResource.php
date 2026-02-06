@@ -46,6 +46,7 @@ class ArtistIndexResource extends JsonResource
             'studio_name' => $studio?->name,
             'is_featured' => (bool) $this->is_featured,
             'is_demo' => (bool) $this->is_demo,
+            'saved_count' => (int) ($this->saved_count ?? 0),
             'styles' => StyleResource::collection($this->styles ?? []),
             'type' => UserTypes::ARTIST,
             'primary_image' => $this->primary_image ?? null,
@@ -56,6 +57,7 @@ class ArtistIndexResource extends JsonResource
                 'username' => $link->username,
                 'url' => $link->url,
             ])->values()->toArray() ?? [],
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

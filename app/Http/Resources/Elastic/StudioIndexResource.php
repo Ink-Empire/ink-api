@@ -40,10 +40,12 @@ class StudioIndexResource extends JsonResource
             'is_featured' => (bool) $this->is_featured,
             'is_demo' => (bool) $this->is_demo,
             'is_claimed' => (bool) ($this->is_claimed ?? false),
+            'saved_count' => (int) ($this->saved_count ?? 0),
             'rating' => $this->rating,
             'styles' => StyleResource::collection($this->styles ?? []),
             'type' => UserTypes::STUDIO,
             'primary_image' => $imageData,
+            'created_at' => $this->created_at?->toIso8601String(),
         ];
     }
 }

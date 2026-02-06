@@ -46,6 +46,7 @@ class TattooIndexResource extends JsonResource
             'tags' => $this->getTags(),
             'is_featured' => (bool) $this->is_featured,
             'is_demo' => (bool) $this->is_demo,
+            'saved_count' => (int) ($this->saved_count ?? 0),
             'created_at' => $this->created_at?->toIso8601String(),
         ];
     }

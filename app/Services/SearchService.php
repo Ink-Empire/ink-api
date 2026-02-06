@@ -60,6 +60,7 @@ abstract class SearchService
 
         $this->applyCommonFilters();
         $this->applySpecificFilters();
+        $this->applySorting();
         $this->applyPagination();
 
         return $this->search->get();
@@ -74,6 +75,63 @@ abstract class SearchService
 
         $this->search->from($pagination['offset']);
         $this->search->take($pagination['per_page']);
+    }
+
+    /**
+     * Apply sorting based on the sort parameter
+     * Supported values: popular, recent, nearest
+     * Default: featured first, then recent
+     */
+    protected function applySorting(): void
+    {
+        $sort = $this->filters['sort'] ?? null;
+
+        switch ($sort) {
+            case 'popular':
+                $this->search->sort('saved_count', 'desc');
+                $this->search->sort('created_at', 'desc');
+                break;
+
+            case 'recent':
+                $this->search->sort('created_at', 'desc');
+                break;
+
+            case 'nearest':
+                $this->applyNearestSort();
+                break;
+
+            default:
+                // Default: featured first, then recent
+                $this->search->sort('is_featured', 'desc');
+                $this->search->sort('created_at', 'desc');
+                break;
+        }
+    }
+
+    /**
+     * Apply nearest/distance-based sorting
+     */
+    protected function applyNearestSort(): void
+    {
+        $locationField = $this->getDistanceField();
+
+        // Try to get location from various sources
+        $latLongString = null;
+
+        if (isset($this->filters['locationCoords'])) {
+            $latLongString = $this->filters['locationCoords'];
+        } elseif (isset($this->filters['useMyLocation']) && $this->filters['useMyLocation'] && $this->user) {
+            $latLongString = $this->user->location_lat_long;
+        } elseif ($this->latLongString) {
+            $latLongString = $this->latLongString;
+        }
+
+        if ($latLongString) {
+            $this->buildGeoParam($locationField, $latLongString);
+        } else {
+            // Fallback to recent if no location available
+            $this->search->sort('created_at', 'desc');
+        }
     }
 
     /**

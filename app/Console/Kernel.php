@@ -24,6 +24,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // Update popularity counts (saved_count) for sorting
+        $schedule->command('popularity:update')
+            ->dailyAt('12:00')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // Periodic sync for all calendars (backup for webhooks)
         // Syncs calendars that haven't been synced in the last 6 hours
         $schedule->call(function () {
