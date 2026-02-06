@@ -41,14 +41,17 @@ class Handler extends ExceptionHandler
      *
      * @return void
      */
+    public function report(Throwable $e)
+    {
+        \Log::error('FORCED: ' . get_class($e) . ' - ' . $e->getMessage(), [
+            'file' => $e->getFile(),
+            'line' => $e->getLine(),
+        ]);
+        parent::report($e);
+    }
+
     public function register()
     {
-        $this->reportable(function (Throwable $e) {
-            \Log::error('Exception caught: ' . get_class($e) . ' - ' . $e->getMessage(), [
-                'file' => $e->getFile(),
-                'line' => $e->getLine(),
-                'trace' => $e->getTraceAsString(),
-            ]);
-        });
+        //
     }
 }
