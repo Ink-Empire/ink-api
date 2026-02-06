@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Models\Address;
 use App\Models\Studio;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
@@ -142,7 +143,7 @@ class GooglePlacesService
     }
 
     /**
-     * Get additional details for a place (phone, website, etc.)
+     * Get additional details for a place (phone, website, address components, etc.)
      */
     public function getPlaceDetails(string $placeId): ?array
     {
@@ -153,7 +154,7 @@ class GooglePlacesService
         try {
             $response = Http::get('https://maps.googleapis.com/maps/api/place/details/json', [
                 'place_id' => $placeId,
-                'fields' => 'name,formatted_phone_number,website,opening_hours,formatted_address,geometry,rating',
+                'fields' => 'name,formatted_phone_number,website,opening_hours,formatted_address,address_components,geometry,rating',
                 'key' => $this->apiKey,
             ]);
 
@@ -170,8 +171,72 @@ class GooglePlacesService
     }
 
     /**
+     * Parse Google Places address_components into a structured address.
+     */
+    protected function parseAddressComponents(array $components): array
+    {
+        $address = [
+            'street_number' => '',
+            'route' => '',
+            'city' => '',
+            'state' => '',
+            'postal_code' => '',
+            'country_code' => '',
+        ];
+
+        foreach ($components as $component) {
+            $types = $component['types'] ?? [];
+
+            if (in_array('street_number', $types)) {
+                $address['street_number'] = $component['long_name'];
+            }
+            if (in_array('route', $types)) {
+                $address['route'] = $component['long_name'];
+            }
+            if (in_array('locality', $types)) {
+                $address['city'] = $component['long_name'];
+            }
+            if (in_array('administrative_area_level_1', $types)) {
+                $address['state'] = $component['short_name'];
+            }
+            if (in_array('postal_code', $types)) {
+                $address['postal_code'] = $component['long_name'];
+            }
+            if (in_array('country', $types)) {
+                $address['country_code'] = $component['short_name'];
+            }
+        }
+
+        return $address;
+    }
+
+    /**
+     * Create an Address record from Google Places address components.
+     */
+    protected function createAddressFromComponents(array $components): ?Address
+    {
+        $parsed = $this->parseAddressComponents($components);
+
+        // Build address1 from street number and route
+        $address1 = trim($parsed['street_number'] . ' ' . $parsed['route']);
+
+        // Only create address if we have meaningful data
+        if (empty($address1) && empty($parsed['city'])) {
+            return null;
+        }
+
+        return Address::create([
+            'address1' => $address1 ?: '',
+            'city' => $parsed['city'] ?: '',
+            'state' => $parsed['state'] ?: '',
+            'postal_code' => $parsed['postal_code'] ?: '',
+            'country_code' => $parsed['country_code'] ?: 'US',
+        ]);
+    }
+
+    /**
      * Create a studio from a Google Place ID.
-     * Fetches full details from Google and creates an unclaimed studio.
+     * Fetches full details from Google and creates an unclaimed studio with address.
      */
     public function createStudioFromPlaceId(string $placeId): ?Studio
     {
@@ -191,6 +256,12 @@ class GooglePlacesService
         $lat = $location['lat'] ?? null;
         $lng = $location['lng'] ?? null;
 
+        // Create address record from address components
+        $address = null;
+        if (!empty($details['address_components'])) {
+            $address = $this->createAddressFromComponents($details['address_components']);
+        }
+
         $studio = Studio::create([
             'name' => $details['name'] ?? 'Unknown Studio',
             'slug' => Str::slug($details['name'] ?? 'studio') . '-' . Str::random(6),
@@ -200,6 +271,7 @@ class GooglePlacesService
             'website' => $details['website'] ?? null,
             'google_place_id' => $placeId,
             'rating' => $details['rating'] ?? null,
+            'address_id' => $address?->id,
             'is_claimed' => false,
         ]);
 

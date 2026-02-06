@@ -23,6 +23,7 @@ class StudioResource extends JsonResource
             'postal_code' => $this->address?->postal_code,
             'email' => $this->email,
             'phone' => $this->phone,
+            'website' => $this->website,
             'image' => $this->getImage(),
             'is_verified' => $this->is_verified,
             'is_claimed' => (bool) $this->is_claimed,

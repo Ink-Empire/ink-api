@@ -39,7 +39,7 @@ class StudioIndexResource extends JsonResource
             'slug' => $this->slug,
             'is_featured' => (bool) $this->is_featured,
             'is_demo' => (bool) $this->is_demo,
-            'is_claimed' => (bool) ($this->is_claimed ?? true),
+            'is_claimed' => (bool) ($this->is_claimed ?? false),
             'rating' => $this->rating,
             'styles' => StyleResource::collection($this->styles ?? []),
             'type' => UserTypes::STUDIO,
