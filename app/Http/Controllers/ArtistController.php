@@ -2,7 +2,7 @@
 
 namespace App\Http\Controllers;
 
-use App\Http\Resources\DashboardArtistResource;
+use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\WorkingHoursResource;
 use App\Jobs\NotifyWishlistUsersOfBooksOpen;
@@ -219,7 +219,7 @@ class ArtistController extends Controller
             return $this->returnErrorResponse('No artist found with that username or email', 404);
         }
 
-        return $this->returnResponse('artist', new DashboardArtistResource($artist));
+        return $this->returnResponse('artist', new ArtistDashboardResource($artist));
     }
 
     /**

@@ -31,7 +31,7 @@ class VerifyEmailController extends Controller
 
             // Load relationships for SelfUserResource
             $user->load([
-                'ownedStudio',
+                'ownedStudio.image',
                 'verifiedStudios.image',
                 'blockedUsers.image',
                 'styles',
@@ -67,7 +67,7 @@ class VerifyEmailController extends Controller
 
         // Load relationships for SelfUserResource
         $user->load([
-            'ownedStudio',
+            'ownedStudio.image',
             'verifiedStudios.image',
             'blockedUsers.image',
             'styles',

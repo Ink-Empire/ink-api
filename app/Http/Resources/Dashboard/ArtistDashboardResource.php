@@ -1,14 +1,17 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Dashboard;
 
+use App\Http\Resources\BriefImageResource;
+use App\Http\Resources\BriefStudioResource;
+use App\Http\Resources\StyleResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Resource for artist cards displayed on dashboards.
  * Used for suggested artists, favorites, and wishlist items.
  */
-class DashboardArtistResource extends JsonResource
+class ArtistDashboardResource extends JsonResource
 {
     /**
      * Maximum number of styles to include.

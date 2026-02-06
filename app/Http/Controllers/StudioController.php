@@ -3,10 +3,10 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserTypes;
-use App\Http\Resources\DashboardArtistResource;
-use App\Http\Resources\StudioArtistResource;
+use App\Http\Resources\Dashboard\ArtistDashboardResource;
+use App\Http\Resources\Dashboard\StudioArtistDashboardResource;
+use App\Http\Resources\Dashboard\WorkingHoursDashboardResource;
 use App\Http\Resources\StudioResource;
-use App\Http\Resources\StudioWorkingHoursResource;
 use App\Http\Resources\UserResource;
 use App\Models\StudioAvailability;
 use App\Models\Studio;
@@ -311,7 +311,7 @@ class StudioController extends Controller
 
         $availability = StudioAvailability::where('studio_id', $studio->id)->get();
 
-        return StudioWorkingHoursResource::collection($availability);
+        return WorkingHoursDashboardResource::collection($availability);
     }
 
     /**
@@ -421,7 +421,7 @@ class StudioController extends Controller
 
         $artists = $this->studioService->getStudioArtists($studio);
 
-        return $this->returnResponse('artists', StudioArtistResource::collection($artists));
+        return $this->returnResponse('artists', StudioArtistDashboardResource::collection($artists));
     }
 
     public function addArtist(Request $request, $id): JsonResponse
@@ -457,7 +457,7 @@ class StudioController extends Controller
         // Load image relation for consistent response
         $artist->load('image');
 
-        return $this->returnResponse('artist', new DashboardArtistResource($artist));
+        return $this->returnResponse('artist', new ArtistDashboardResource($artist));
     }
 
     public function removeArtist($id, $userId): JsonResponse
