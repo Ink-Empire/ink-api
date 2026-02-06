@@ -3,15 +3,13 @@
 namespace App\Http\Controllers;
 
 use App\Enums\UserTypes;
-use App\Http\Resources\ClientDashboardAppointmentResource;
 use App\Http\Resources\ConversationResource;
-use App\Http\Resources\DashboardArtistResource;
-use App\Http\Resources\StudioArtistResource;
-use App\Http\Resources\StudioDashboardResource;
-use App\Http\Resources\StudioStatsResource;
-use App\Http\Resources\StudioWorkingHoursResource;
-use App\Http\Resources\SuggestedArtistResource;
-use App\Http\Resources\WishlistArtistResource;
+use App\Http\Resources\Dashboard\AppointmentDashboardResource;
+use App\Http\Resources\Dashboard\ArtistDashboardResource;
+use App\Http\Resources\Dashboard\StatsDashboardResource;
+use App\Http\Resources\Dashboard\StudioDashboardResource;
+use App\Http\Resources\Dashboard\SuggestedArtistDashboardResource;
+use App\Http\Resources\Dashboard\WishlistArtistDashboardResource;
 use App\Models\Studio;
 use App\Models\User;
 use App\Services\DashboardService;
@@ -32,7 +30,7 @@ class DashboardController extends Controller
      */
     public function getStudioDashboard(Request $request, int $id): JsonResponse
     {
-        $studio = Studio::with(['image', 'address', 'announcements'])->find($id);
+        $studio = Studio::with(['image', 'address', 'announcements', 'business_hours'])->find($id);
 
         if (!$studio) {
             return response()->json(['error' => 'Studio not found'], 404);
@@ -46,13 +44,12 @@ class DashboardController extends Controller
 
         $data = $this->dashboardService->getStudioDashboardData($studio);
 
-        return new StudioDashboardResource(
-            $studio,
-            StudioArtistResource::collection($data['artists'])->toArray($request),
-            $data['announcements'],
-            $data['stats'],
-            $data['working_hours']
-        );
+        // Attach dashboard data to studio for the resource
+        $studio->setAttribute('dashboard_artists', $data['artists']);
+        $studio->setAttribute('dashboard_stats', $data['stats']);
+        $studio->setAttribute('dashboard_working_hours', $data['working_hours']);
+
+        return response()->json(new StudioDashboardResource($studio));
     }
 
     /**
@@ -74,7 +71,7 @@ class DashboardController extends Controller
 
         $stats = $this->dashboardService->getStudioStatsData($studio);
 
-        return response()->json(new StudioStatsResource($stats));
+        return response()->json(new StatsDashboardResource($stats));
     }
 
     /**
@@ -156,11 +153,11 @@ class DashboardController extends Controller
         $data = $this->dashboardService->getClientDashboardData($user);
 
         return response()->json([
-            'appointments' => ClientDashboardAppointmentResource::collection($data['appointments']),
+            'appointments' => AppointmentDashboardResource::collection($data['appointments']),
             'conversations' => ConversationResource::collection($data['conversations']),
-            'favorites' => DashboardArtistResource::collection($data['favorites']),
+            'favorites' => ArtistDashboardResource::collection($data['favorites']),
             'wishlist_count' => $data['wishlist_count'],
-            'suggested_artists' => SuggestedArtistResource::collection($data['suggested_artists']),
+            'suggested_artists' => SuggestedArtistDashboardResource::collection($data['suggested_artists']),
         ]);
     }
 
@@ -174,7 +171,7 @@ class DashboardController extends Controller
         $wishlistItems = $this->dashboardService->getClientWishlist($user);
 
         return response()->json([
-            'wishlist' => WishlistArtistResource::collection($wishlistItems),
+            'wishlist' => WishlistArtistDashboardResource::collection($wishlistItems),
         ]);
     }
 
@@ -188,7 +185,7 @@ class DashboardController extends Controller
         $favoriteArtists = $this->dashboardService->getClientFavorites($user);
 
         return response()->json([
-            'favorites' => DashboardArtistResource::collection($favoriteArtists),
+            'favorites' => ArtistDashboardResource::collection($favoriteArtists),
         ]);
     }
 
@@ -293,7 +290,7 @@ class DashboardController extends Controller
         $artists = $this->dashboardService->getSuggestedArtists($user, $limit);
 
         return response()->json([
-            'artists' => SuggestedArtistResource::collection($artists),
+            'artists' => SuggestedArtistDashboardResource::collection($artists),
         ]);
     }
 }

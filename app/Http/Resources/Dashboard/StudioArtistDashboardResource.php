@@ -1,10 +1,11 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Dashboard;
 
+use App\Http\Resources\UserResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class StudioArtistResource extends JsonResource
+class StudioArtistDashboardResource extends JsonResource
 {
     public function toArray($request): array
     {

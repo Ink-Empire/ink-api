@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Dashboard;
 
 /**
  * Resource for artists on a user's wishlist.
- * Extends DashboardArtistResource with pivot data for notification preferences.
+ * Extends ArtistDashboardResource with pivot data for notification preferences.
  */
-class WishlistArtistResource extends DashboardArtistResource
+class WishlistArtistDashboardResource extends ArtistDashboardResource
 {
     public function toArray($request): array
     {

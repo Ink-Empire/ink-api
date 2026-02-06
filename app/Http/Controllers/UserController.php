@@ -40,7 +40,7 @@ class UserController extends Controller
     public function me(Request $request): SelfUserResource
     {
         $user = $request->user()->load([
-            'ownedStudio',
+            'ownedStudio.image',
             'verifiedStudios.image',
             'blockedUsers.image',
             'styles',

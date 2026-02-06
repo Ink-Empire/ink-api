@@ -1,12 +1,12 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Dashboard;
 
 /**
  * Resource for suggested artists on the client dashboard.
- * Extends DashboardArtistResource with demo indicator.
+ * Extends ArtistDashboardResource with demo indicator.
  */
-class SuggestedArtistResource extends DashboardArtistResource
+class SuggestedArtistDashboardResource extends ArtistDashboardResource
 {
     public function toArray($request): array
     {

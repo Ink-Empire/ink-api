@@ -1,10 +1,10 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Dashboard;
 
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class StudioWorkingHoursResource extends JsonResource
+class WorkingHoursDashboardResource extends JsonResource
 {
     public function toArray($request)
     {

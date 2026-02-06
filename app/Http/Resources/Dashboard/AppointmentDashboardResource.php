@@ -1,14 +1,16 @@
 <?php
 
-namespace App\Http\Resources;
+namespace App\Http\Resources\Dashboard;
 
+use App\Http\Resources\BriefImageResource;
+use App\Http\Resources\BriefStudioResource;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
  * Resource for appointments displayed on the client dashboard.
  * Provides a simpler format than the calendar-focused AppointmentResource.
  */
-class ClientDashboardAppointmentResource extends JsonResource
+class AppointmentDashboardResource extends JsonResource
 {
     public function toArray($request): array
     {
