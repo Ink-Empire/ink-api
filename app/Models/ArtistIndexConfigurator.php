@@ -168,6 +168,8 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'is_featured' => Datatypes::BOOLEAN,
             'is_demo' => Datatypes::BOOLEAN,
             'is_claimed' => Datatypes::BOOLEAN,
+            'saved_count' => Datatypes::INTEGER,
+            'created_at' => self::DATE,
             'rating' => Datatypes::FLOAT,
             'styles' => self::STYLE,
             'primary_image' => self::IMAGE,

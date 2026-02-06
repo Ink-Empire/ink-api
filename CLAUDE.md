@@ -123,3 +123,4 @@ All code changes must pass CI tests and receive an approval before merging to de
 Always check the /docs directory to understand the flow and update it when we make changes to a process
 Keep comments to a minimum and never put emojis into this project
 Do not change the order of database migrations or attempt to rename them.
+Do not make proactive decisions about implementation. Always present options and wait for direction before writing code.

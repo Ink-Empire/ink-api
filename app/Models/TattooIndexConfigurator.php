@@ -177,6 +177,7 @@ class TattooIndexConfigurator extends IndexConfigurator
             'artist_books_open' => Datatypes::BOOLEAN,
             'is_featured' => Datatypes::BOOLEAN,
             'is_demo' => Datatypes::BOOLEAN,
+            'saved_count' => Datatypes::INTEGER,
             'created_at' => self::DATE,
 
             'tags' => [
