@@ -37,10 +37,7 @@ class TattooController extends Controller
         protected GooglePlacesService $googlePlacesService,
         protected SearchImpressionService $impressionService,
         protected PaginationService $paginationService
-    ) {
-
-        \Log::info("hello?");
-    }
+    ) {}
 
     /**
      * @param $id
