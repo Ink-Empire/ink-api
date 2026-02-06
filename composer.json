@@ -7,7 +7,7 @@
     "repositories": [
         {
             "type": "vcs",
-            "url": "https://github.com/ccennis/larelastic.git"
+            "url": "git@github.com:Ink-Empire/larelastic.git"
         }
     ],
     "require": {
