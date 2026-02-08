@@ -27,13 +27,12 @@ class ConversationController extends Controller
             ->with(['users', 'latestMessage.sender', 'appointment.artist'])
             ->withCount(['messages as unread_count' => function ($q) use ($user) {
                 $q->where('sender_id', '!=', $user->id)
-                    ->where(function ($sq) use ($user) {
-                        $sq->whereDoesntHave('conversation.participants', function ($pq) use ($user) {
-                            $pq->where('user_id', $user->id)
-                                ->whereNotNull('last_read_at')
-                                ->whereColumn('last_read_at', '>=', 'messages.created_at');
-                        });
-                    });
+                    ->whereRaw('messages.created_at > COALESCE(
+                        (SELECT cp.last_read_at FROM conversation_participants cp
+                         WHERE cp.conversation_id = messages.conversation_id
+                         AND cp.user_id = ?),
+                        \'1970-01-01\'
+                    )', [$user->id]);
             }]);
 
         // Filter out conversations with blocked users
@@ -74,12 +73,8 @@ class ConversationController extends Controller
             });
         }
 
-        $conversations = $query->orderByDesc(
-            Message::select('created_at')
-                ->whereColumn('conversation_id', 'conversations.id')
-                ->orderByDesc('created_at')
-                ->limit(1)
-        )->paginate($request->get('limit', 20));
+        $conversations = $query->orderByDesc('updated_at')
+            ->paginate($request->get('limit', 20));
 
         return response()->json([
             'conversations' => ConversationResource::collection($conversations),

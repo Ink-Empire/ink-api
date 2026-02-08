@@ -51,6 +51,10 @@ class Conversation extends Model
      */
     public function getOtherParticipant(int $userId)
     {
+        if ($this->relationLoaded('users')) {
+            return $this->users->firstWhere('id', '!=', $userId);
+        }
+
         return $this->users()->where('users.id', '!=', $userId)->first();
     }
 
