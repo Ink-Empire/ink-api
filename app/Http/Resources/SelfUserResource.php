@@ -67,6 +67,8 @@ class SelfUserResource extends JsonResource
             'social_media_links' => SocialMediaLinkResource::collection($this->socialMediaLinks),
             // Email preferences
             'email_unsubscribed' => (bool) $this->email_unsubscribed,
+            'is_email_verified' => $this->is_email_verified,
+            'email_verified_at' => $this->email_verified_at
         ];
     }
 }

@@ -177,6 +177,9 @@ class UserController extends Controller
             return $this->returnErrorResponse($e->getMessage());
         }
 
+        // Reload relations that may have been modified by sync calls
+        $user->load(['styles', 'artists', 'tattoos', 'socialMediaLinks', 'type', 'image', 'verifiedStudios.image', 'ownedStudio']);
+
         return $this->returnResponse(UserTypes::USER, new UserResource($user));
     }
 
