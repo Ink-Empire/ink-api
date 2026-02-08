@@ -62,6 +62,8 @@ class UserResource extends JsonResource
                     'url' => $link->url,
                 ];
             })->values()->toArray(),
+            'is_email_verified' => $this->is_email_verified,
+            'email_verified_at' => $this->email_verified_at
         ];
 
         // Only include sensitive fields for authorized users

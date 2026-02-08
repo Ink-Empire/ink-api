@@ -160,6 +160,7 @@ class TattooIndexConfigurator extends IndexConfigurator
             'artist_id' => Datatypes::KEYWORD,
             'artist_slug' => Datatypes::KEYWORD,
             'artist_image_uri' => Datatypes::KEYWORD,
+            'artist_location' => Datatypes::KEYWORD,
             'artist_location_lat_long' => Datatypes::GEO_POINT,
             'artist_name' => Datatypes::TEXT,
             'studio_id' => Datatypes::KEYWORD,
