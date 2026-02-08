@@ -1,0 +1,239 @@
+<?php
+
+namespace App\Services;
+
+use App\Enums\UserTypes;
+use App\Models\Conversation;
+use App\Models\ConversationParticipant;
+use App\Models\Image;
+use App\Models\Message;
+use App\Models\MessageDeletion;
+use App\Notifications\NewMessageNotification;
+use Illuminate\Support\Facades\DB;
+
+class ConversationService
+{
+    /**
+     * Find an existing conversation between two users, or create a new one.
+     */
+    public function findOrCreate(int $userId, int $participantId, string $type = 'booking', ?int $appointmentId = null): Conversation
+    {
+        $existing = Conversation::whereHas('participants', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->whereHas('participants', function ($q) use ($participantId) {
+                $q->where('user_id', $participantId);
+            })
+            ->first();
+
+        if ($existing) {
+            if ($appointmentId && !$existing->appointment_id) {
+                $existing->update(['appointment_id' => $appointmentId]);
+            }
+
+            return $existing;
+        }
+
+        return DB::transaction(function () use ($userId, $participantId, $type, $appointmentId) {
+            $conversation = Conversation::create([
+                'type' => $type,
+                'appointment_id' => $appointmentId,
+            ]);
+
+            ConversationParticipant::create([
+                'conversation_id' => $conversation->id,
+                'user_id' => $userId,
+            ]);
+
+            ConversationParticipant::create([
+                'conversation_id' => $conversation->id,
+                'user_id' => $participantId,
+            ]);
+
+            return $conversation;
+        });
+    }
+
+    /**
+     * Mark a conversation as read for a given user.
+     */
+    public function markAsRead(int $conversationId, int $userId): void
+    {
+        $participant = ConversationParticipant::where('conversation_id', $conversationId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if ($participant) {
+            $participant->markAsRead();
+        }
+
+        Message::where('conversation_id', $conversationId)
+            ->where('recipient_id', $userId)
+            ->whereNull('read_at')
+            ->update(['read_at' => now()]);
+    }
+
+    /**
+     * Send a message in a conversation.
+     */
+    public function sendMessage(
+        Conversation $conversation,
+        int $senderId,
+        ?string $content,
+        string $type = 'text',
+        ?array $metadata = null,
+        ?array $attachmentIds = null,
+        ?WatermarkService $watermarkService = null
+    ): Message {
+        return DB::transaction(function () use ($conversation, $senderId, $content, $type, $metadata, $attachmentIds, $watermarkService) {
+            $otherParticipant = $conversation->getOtherParticipant($senderId);
+
+            $message = Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $senderId,
+                'recipient_id' => $otherParticipant?->id,
+                'content' => $content,
+                'type' => $type,
+                'metadata' => $metadata,
+            ]);
+
+            if ($attachmentIds && $watermarkService) {
+                $sender = \App\Models\User::find($senderId);
+                $isArtist = $sender && $sender->type_id === UserTypes::ARTIST_TYPE_ID;
+                $shouldWatermark = in_array($type, ['design_share', 'image']) && $isArtist;
+
+                foreach ($attachmentIds as $imageId) {
+                    $finalImageId = $imageId;
+
+                    if ($shouldWatermark) {
+                        $sourceImage = Image::find($imageId);
+                        if ($sourceImage) {
+                            $watermarkedImage = $watermarkService->applyWatermark($sourceImage, $senderId);
+                            if ($watermarkedImage) {
+                                $finalImageId = $watermarkedImage->id;
+                            }
+                        }
+                    }
+
+                    $message->attachments()->create(['image_id' => $finalImageId]);
+                }
+            } elseif ($attachmentIds) {
+                foreach ($attachmentIds as $imageId) {
+                    $message->attachments()->create(['image_id' => $imageId]);
+                }
+            }
+
+            $conversation->touch();
+
+            // Notify the recipient outside the transaction won't cause rollback issues
+            if ($otherParticipant) {
+                try {
+                    $otherParticipant->notify(new NewMessageNotification($message, \App\Models\User::find($senderId)));
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to send new message notification', [
+                        'recipient_id' => $otherParticipant->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
+            }
+
+            return $message;
+        });
+    }
+
+    /**
+     * Send a typed message (booking_card, deposit_request, design_share, price_quote).
+     */
+    public function sendTypedMessage(Conversation $conversation, int $senderId, string $content, string $type, array $metadata): Message
+    {
+        $otherParticipant = $conversation->getOtherParticipant($senderId);
+
+        $message = Message::create([
+            'conversation_id' => $conversation->id,
+            'sender_id' => $senderId,
+            'recipient_id' => $otherParticipant?->id,
+            'content' => $content,
+            'type' => $type,
+            'metadata' => $metadata,
+        ]);
+
+        $conversation->touch();
+
+        return $message;
+    }
+
+    /**
+     * Get the total unread message count for a user across all conversations.
+     */
+    public function getUnreadCount(int $userId): int
+    {
+        return Conversation::forUser($userId)
+            ->withCount(['messages as unread_count' => function ($q) use ($userId) {
+                $q->where('sender_id', '!=', $userId)
+                    ->whereDoesntHave('conversation.participants', function ($pq) use ($userId) {
+                        $pq->where('user_id', $userId)
+                            ->whereNotNull('last_read_at')
+                            ->whereColumn('last_read_at', '>=', 'messages.created_at');
+                    });
+            }])
+            ->get()
+            ->sum('unread_count');
+    }
+
+    /**
+     * Mark all conversations as read for a user.
+     */
+    public function markAllAsRead(int $userId): void
+    {
+        $now = now();
+
+        ConversationParticipant::where('user_id', $userId)
+            ->whereNull('deleted_at')
+            ->update(['last_read_at' => $now]);
+
+        Message::where('recipient_id', $userId)
+            ->whereNull('read_at')
+            ->update(['read_at' => $now]);
+    }
+
+    /**
+     * Delete a conversation for a specific user (hide from their view).
+     */
+    public function deleteConversation(int $conversationId, int $userId): bool
+    {
+        $participant = ConversationParticipant::where('conversation_id', $conversationId)
+            ->where('user_id', $userId)
+            ->first();
+
+        if (!$participant) {
+            return false;
+        }
+
+        $participant->update(['deleted_at' => now()]);
+
+        return true;
+    }
+
+    /**
+     * Delete a message for a specific user (hide from their view).
+     */
+    public function deleteMessage(int $messageId, int $userId): bool
+    {
+        $message = Message::where('id', $messageId)
+            ->whereHas('conversation.participants', function ($q) use ($userId) {
+                $q->where('user_id', $userId);
+            })
+            ->first();
+
+        if (!$message) {
+            return false;
+        }
+
+        MessageDeletion::firstOrCreate([
+            'message_id' => $messageId,
+            'user_id' => $userId,
+        ]);
+
+        return true;
+    }
+}

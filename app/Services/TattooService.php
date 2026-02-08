@@ -153,6 +153,8 @@ class TattooService extends SearchService
         $this->search->sort('is_featured', 'desc');
         $this->search->sort('created_at', 'desc');
 
+        $this->applyPagination();
+
         return $this->search->get();
     }
 

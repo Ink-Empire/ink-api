@@ -80,7 +80,8 @@ class Conversation extends Model
     public function scopeForUser($query, int $userId)
     {
         return $query->whereHas('participants', function ($q) use ($userId) {
-            $q->where('user_id', $userId);
+            $q->where('user_id', $userId)
+                ->whereNull('deleted_at');
         });
     }
 

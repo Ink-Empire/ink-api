@@ -2,19 +2,14 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UserTypes;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
-use App\Models\ConversationParticipant;
-use App\Models\Image;
 use App\Models\Message;
-use App\Models\User;
-use App\Notifications\NewMessageNotification;
+use App\Services\ConversationService;
 use App\Services\WatermarkService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 
 class ConversationController extends Controller
 {
@@ -110,6 +105,7 @@ class ConversationController extends Controller
 
         // Get paginated messages (oldest first for display)
         $messagesQuery = $conversation->messages()
+            ->visibleTo($user->id)
             ->with(['sender', 'attachments.image']);
 
         // Support cursor pagination for infinite scroll (load older messages)
@@ -129,7 +125,7 @@ class ConversationController extends Controller
     /**
      * Create a new conversation.
      */
-    public function store(Request $request): JsonResponse
+    public function store(Request $request, ConversationService $conversationService): JsonResponse
     {
         $request->validate([
             'participant_id' => 'required|exists:users,id',
@@ -146,72 +142,48 @@ class ConversationController extends Controller
             return response()->json(['error' => 'Cannot start conversation with this user'], 403);
         }
 
-        // Check if conversation already exists between these users
-        $existingConversation = Conversation::forUser($user->id)
-            ->whereHas('participants', function ($q) use ($participantId) {
-                $q->where('user_id', $participantId);
-            })
-            ->when($request->appointment_id, function ($q, $appointmentId) {
-                $q->where('appointment_id', $appointmentId);
-            })
-            ->first();
+        $conversation = $conversationService->findOrCreate(
+            $user->id,
+            $participantId,
+            $request->get('type', 'booking'),
+            $request->appointment_id
+        );
 
-        if ($existingConversation) {
+        $wasRecentlyCreated = $conversation->wasRecentlyCreated;
+
+        // Create initial message if provided (only for new conversations)
+        if ($wasRecentlyCreated && $request->initial_message) {
+            Message::create([
+                'conversation_id' => $conversation->id,
+                'sender_id' => $user->id,
+                'recipient_id' => $participantId,
+                'content' => $request->initial_message,
+                'type' => 'text',
+            ]);
+        }
+
+        $conversation->load(['users', 'appointment']);
+
+        if (!$wasRecentlyCreated) {
             return response()->json([
-                'conversation' => new ConversationResource($existingConversation->load(['users', 'appointment'])),
+                'conversation' => new ConversationResource($conversation),
                 'message' => 'Conversation already exists',
             ]);
         }
 
-        DB::beginTransaction();
-        try {
-            // Create conversation
-            $conversation = Conversation::create([
-                'type' => $request->get('type', 'booking'),
-                'appointment_id' => $request->appointment_id,
-            ]);
-
-            // Add participants
-            ConversationParticipant::create([
-                'conversation_id' => $conversation->id,
-                'user_id' => $user->id,
-            ]);
-
-            ConversationParticipant::create([
-                'conversation_id' => $conversation->id,
-                'user_id' => $participantId,
-            ]);
-
-            // Create initial message if provided
-            if ($request->initial_message) {
-                Message::create([
-                    'conversation_id' => $conversation->id,
-                    'sender_id' => $user->id,
-                    'recipient_id' => $participantId,
-                    'content' => $request->initial_message,
-                    'type' => 'text',
-                ]);
-            }
-
-            DB::commit();
-
-            return response()->json([
-                'conversation' => new ConversationResource($conversation->load(['users', 'appointment'])),
-            ], 201);
-        } catch (\Exception $e) {
-            DB::rollBack();
-            return response()->json(['error' => 'Failed to create conversation'], 500);
-        }
+        return response()->json([
+            'conversation' => new ConversationResource($conversation),
+        ], 201);
     }
 
     /**
      * Mark conversation as read for the authenticated user.
      */
-    public function markAsRead(Request $request, int $id): JsonResponse
+    public function markAsRead(Request $request, int $id, ConversationService $conversationService): JsonResponse
     {
         $user = $request->user();
 
-        $participant = ConversationParticipant::where('conversation_id', $id)
+        $participant = \App\Models\ConversationParticipant::where('conversation_id', $id)
             ->where('user_id', $user->id)
             ->first();
 
@@ -219,14 +191,7 @@ class ConversationController extends Controller
             return response()->json(['error' => 'Conversation not found'], 404);
         }
 
-        // Update conversation participant's last_read_at
-        $participant->markAsRead();
-
-        // Mark individual messages as read (messages sent TO this user)
-        Message::where('conversation_id', $id)
-            ->where('recipient_id', $user->id)
-            ->whereNull('read_at')
-            ->update(['read_at' => now()]);
+        $conversationService->markAsRead($id, $user->id);
 
         return response()->json(['success' => true]);
     }
@@ -242,11 +207,17 @@ class ConversationController extends Controller
         $conversation = Conversation::forUser($user->id)->findOrFail($id);
 
         $messagesQuery = $conversation->messages()
+            ->visibleTo($user->id)
             ->with(['sender', 'attachments.image']);
 
         // Cursor pagination (load older messages)
         if ($request->has('before')) {
             $messagesQuery->where('id', '<', $request->before);
+        }
+
+        // Fetch only newer messages (for polling)
+        if ($request->has('after')) {
+            $messagesQuery->where('id', '>', $request->after);
         }
 
         // Order by created_at ascending (oldest first)
@@ -261,7 +232,7 @@ class ConversationController extends Controller
     /**
      * Send a message in a conversation.
      */
-    public function sendMessage(Request $request, int $id, WatermarkService $watermarkService): JsonResponse
+    public function sendMessage(Request $request, int $id, WatermarkService $watermarkService, ConversationService $conversationService): JsonResponse
     {
         $request->validate([
             'content' => 'nullable|string|max:5000',
@@ -289,63 +260,21 @@ class ConversationController extends Controller
             return response()->json(['error' => 'Cannot send message to this user'], 403);
         }
 
-        DB::beginTransaction();
         try {
-            $message = Message::create([
-                'conversation_id' => $conversation->id,
-                'sender_id' => $user->id,
-                'recipient_id' => $otherParticipant?->id,
-                'content' => $request->content,
-                'type' => $request->get('type', 'text'),
-                'metadata' => $request->metadata,
-            ]);
-
-            // Add attachments (with watermark for design shares from artists)
-            if ($request->attachment_ids) {
-                $messageType = $request->get('type', 'text');
-                $isArtist = $user->type_id === UserTypes::ARTIST_TYPE_ID;
-                $shouldWatermark = in_array($messageType, ['design_share', 'image']) && $isArtist;
-
-                foreach ($request->attachment_ids as $imageId) {
-                    $finalImageId = $imageId;
-
-                    // Apply watermark if applicable
-                    if ($shouldWatermark) {
-                        $sourceImage = Image::find($imageId);
-                        if ($sourceImage) {
-                            $watermarkedImage = $watermarkService->applyWatermark($sourceImage, $user->id);
-                            if ($watermarkedImage) {
-                                $finalImageId = $watermarkedImage->id;
-                            }
-                        }
-                    }
-
-                    $message->attachments()->create(['image_id' => $finalImageId]);
-                }
-            }
-
-            // Update conversation updated_at
-            $conversation->touch();
-
-            DB::commit();
-
-            // Notify the recipient about the new message
-            if ($otherParticipant) {
-                try {
-                    $otherParticipant->notify(new NewMessageNotification($message, $user));
-                } catch (\Exception $e) {
-                    \Log::warning('Failed to send new message notification', [
-                        'recipient_id' => $otherParticipant->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+            $message = $conversationService->sendMessage(
+                $conversation,
+                $user->id,
+                $request->content,
+                $request->get('type', 'text'),
+                $request->metadata,
+                $request->attachment_ids,
+                $watermarkService
+            );
 
             return response()->json([
                 'message' => new MessageResource($message->load(['sender', 'attachments.image'])),
             ], 201);
         } catch (\Exception $e) {
-            DB::rollBack();
             \Log::error('Failed to send message', [
                 'error' => $e->getMessage(),
                 'line' => $e->getLine(),
@@ -358,7 +287,7 @@ class ConversationController extends Controller
     /**
      * Send a booking card message.
      */
-    public function sendBookingCard(Request $request, int $id): JsonResponse
+    public function sendBookingCard(Request $request, int $id, ConversationService $conversationService): JsonResponse
     {
         $request->validate([
             'date' => 'required|string',
@@ -369,23 +298,13 @@ class ConversationController extends Controller
 
         $user = $request->user();
         $conversation = Conversation::forUser($user->id)->findOrFail($id);
-        $otherParticipant = $conversation->getOtherParticipant($user->id);
 
-        $message = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'recipient_id' => $otherParticipant?->id,
-            'content' => "Here's the booking details:",
-            'type' => 'booking_card',
-            'metadata' => [
-                'date' => $request->date,
-                'time' => $request->time,
-                'duration' => $request->duration,
-                'deposit' => $request->deposit_amount,
-            ],
+        $message = $conversationService->sendTypedMessage($conversation, $user->id, "Here's the booking details:", 'booking_card', [
+            'date' => $request->date,
+            'time' => $request->time,
+            'duration' => $request->duration,
+            'deposit' => $request->deposit_amount,
         ]);
-
-        $conversation->touch();
 
         return response()->json([
             'message' => new MessageResource($message->load('sender')),
@@ -395,7 +314,7 @@ class ConversationController extends Controller
     /**
      * Send a deposit request message.
      */
-    public function sendDepositRequest(Request $request, int $id): JsonResponse
+    public function sendDepositRequest(Request $request, int $id, ConversationService $conversationService): JsonResponse
     {
         $request->validate([
             'amount' => 'required|string',
@@ -404,21 +323,11 @@ class ConversationController extends Controller
 
         $user = $request->user();
         $conversation = Conversation::forUser($user->id)->findOrFail($id);
-        $otherParticipant = $conversation->getOtherParticipant($user->id);
 
-        $message = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'recipient_id' => $otherParticipant?->id,
-            'content' => 'Deposit request',
-            'type' => 'deposit_request',
-            'metadata' => [
-                'amount' => $request->amount,
-                'appointment_id' => $request->appointment_id,
-            ],
+        $message = $conversationService->sendTypedMessage($conversation, $user->id, 'Deposit request', 'deposit_request', [
+            'amount' => $request->amount,
+            'appointment_id' => $request->appointment_id,
         ]);
-
-        $conversation->touch();
 
         return response()->json([
             'message' => new MessageResource($message->load('sender')),
@@ -428,7 +337,7 @@ class ConversationController extends Controller
     /**
      * Send a design share message.
      */
-    public function sendDesignShare(Request $request, int $id): JsonResponse
+    public function sendDesignShare(Request $request, int $id, ConversationService $conversationService): JsonResponse
     {
         $request->validate([
             'tattoo_id' => 'required|exists:tattoos,id',
@@ -437,21 +346,11 @@ class ConversationController extends Controller
 
         $user = $request->user();
         $conversation = Conversation::forUser($user->id)->findOrFail($id);
-        $otherParticipant = $conversation->getOtherParticipant($user->id);
 
-        $message = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'recipient_id' => $otherParticipant?->id,
-            'content' => $request->notes ?? 'Check out this design',
-            'type' => 'design_share',
-            'metadata' => [
-                'tattoo_id' => $request->tattoo_id,
-                'notes' => $request->notes,
-            ],
+        $message = $conversationService->sendTypedMessage($conversation, $user->id, $request->notes ?? 'Check out this design', 'design_share', [
+            'tattoo_id' => $request->tattoo_id,
+            'notes' => $request->notes,
         ]);
-
-        $conversation->touch();
 
         return response()->json([
             'message' => new MessageResource($message->load('sender')),
@@ -461,7 +360,7 @@ class ConversationController extends Controller
     /**
      * Send a price quote message.
      */
-    public function sendPriceQuote(Request $request, int $id): JsonResponse
+    public function sendPriceQuote(Request $request, int $id, ConversationService $conversationService): JsonResponse
     {
         $request->validate([
             'items' => 'required|array',
@@ -474,22 +373,12 @@ class ConversationController extends Controller
 
         $user = $request->user();
         $conversation = Conversation::forUser($user->id)->findOrFail($id);
-        $otherParticipant = $conversation->getOtherParticipant($user->id);
 
-        $message = Message::create([
-            'conversation_id' => $conversation->id,
-            'sender_id' => $user->id,
-            'recipient_id' => $otherParticipant?->id,
-            'content' => $request->notes ?? 'Here\'s your quote',
-            'type' => 'price_quote',
-            'metadata' => [
-                'items' => $request->items,
-                'total' => $request->total,
-                'valid_until' => $request->valid_until,
-            ],
+        $message = $conversationService->sendTypedMessage($conversation, $user->id, $request->notes ?? 'Here\'s your quote', 'price_quote', [
+            'items' => $request->items,
+            'total' => $request->total,
+            'valid_until' => $request->valid_until,
         ]);
-
-        $conversation->touch();
 
         return response()->json([
             'message' => new MessageResource($message->load('sender')),
@@ -499,22 +388,50 @@ class ConversationController extends Controller
     /**
      * Get unread count for the authenticated user.
      */
-    public function getUnreadCount(Request $request): JsonResponse
+    public function getUnreadCount(Request $request, ConversationService $conversationService): JsonResponse
     {
         $user = $request->user();
 
-        $count = Conversation::forUser($user->id)
-            ->withCount(['messages as unread_count' => function ($q) use ($user) {
-                $q->where('sender_id', '!=', $user->id)
-                    ->whereDoesntHave('conversation.participants', function ($pq) use ($user) {
-                        $pq->where('user_id', $user->id)
-                            ->whereNotNull('last_read_at')
-                            ->whereColumn('last_read_at', '>=', 'messages.created_at');
-                    });
-            }])
-            ->get()
-            ->sum('unread_count');
+        $count = $conversationService->getUnreadCount($user->id);
 
         return response()->json(['unread_count' => $count]);
+    }
+
+    /**
+     * Mark all conversations as read for the authenticated user.
+     */
+    public function markAllAsRead(Request $request, ConversationService $conversationService): JsonResponse
+    {
+        $conversationService->markAllAsRead($request->user()->id);
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Delete a conversation for the authenticated user (hides from their view).
+     */
+    public function destroy(Request $request, int $id, ConversationService $conversationService): JsonResponse
+    {
+        $deleted = $conversationService->deleteConversation($id, $request->user()->id);
+
+        if (!$deleted) {
+            return response()->json(['error' => 'Conversation not found'], 404);
+        }
+
+        return response()->json(['success' => true]);
+    }
+
+    /**
+     * Delete a message for the authenticated user (hides from their view).
+     */
+    public function deleteMessage(Request $request, int $id, int $messageId, ConversationService $conversationService): JsonResponse
+    {
+        $deleted = $conversationService->deleteMessage($messageId, $request->user()->id);
+
+        if (!$deleted) {
+            return response()->json(['error' => 'Message not found'], 404);
+        }
+
+        return response()->json(['success' => true]);
     }
 }
