@@ -167,17 +167,18 @@ class ConversationService
      */
     public function getUnreadCount(int $userId): int
     {
-        return Conversation::forUser($userId)
-            ->withCount(['messages as unread_count' => function ($q) use ($userId) {
-                $q->where('sender_id', '!=', $userId)
-                    ->whereDoesntHave('conversation.participants', function ($pq) use ($userId) {
-                        $pq->where('user_id', $userId)
-                            ->whereNotNull('last_read_at')
-                            ->whereColumn('last_read_at', '>=', 'messages.created_at');
-                    });
-            }])
-            ->get()
-            ->sum('unread_count');
+        $result = DB::selectOne("
+            SELECT COUNT(*) as total
+            FROM messages m
+            INNER JOIN conversation_participants cp
+                ON cp.conversation_id = m.conversation_id
+                AND cp.user_id = ?
+                AND cp.deleted_at IS NULL
+            WHERE m.sender_id != ?
+              AND m.created_at > COALESCE(cp.last_read_at, '1970-01-01')
+        ", [$userId, $userId]);
+
+        return (int) ($result->total ?? 0);
     }
 
     /**
