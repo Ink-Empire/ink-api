@@ -178,6 +178,37 @@ class ArtistController extends Controller
     }
 
     /**
+     * Get an artist's tattoo portfolio with pagination.
+     * Accepts artist ID or slug.
+     */
+    public function getPortfolio(Request $request, $id): JsonResponse
+    {
+        $artistModel = ModelLookup::findArtist($id);
+
+        if (!$artistModel) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        $params = $request->all();
+        $pagination = $this->paginationService->extractParams($params);
+
+        $tattoos = $this->tattooService->getByArtistId($id, $params);
+
+        $tattooData = $tattoos['response'] ?? [];
+        if ($tattooData instanceof \Illuminate\Support\Collection) {
+            $tattooData = $tattooData->values()->toArray();
+        }
+
+        $total = $tattoos['total'] ?? count($tattooData);
+        $paginationMeta = $this->paginationService->buildMeta($total, $pagination['page'], $pagination['per_page']);
+
+        return response()->json([
+            'response' => $tattooData,
+            ...$paginationMeta,
+        ]);
+    }
+
+    /**
      * Lookup an artist by username or email.
      * Used to validate an artist exists before adding them to a studio.
      */

@@ -76,6 +76,18 @@ class Message extends Model
         return $this->belongsToMany(Image::class, 'message_attachments');
     }
 
+    public function deletions(): HasMany
+    {
+        return $this->hasMany(MessageDeletion::class);
+    }
+
+    public function scopeVisibleTo($query, int $userId)
+    {
+        return $query->whereDoesntHave('deletions', function ($q) use ($userId) {
+            $q->where('user_id', $userId);
+        });
+    }
+
     public function isRead(): bool
     {
         return !is_null($this->read_at);

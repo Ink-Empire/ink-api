@@ -63,8 +63,8 @@ The SearchService is the core component for creating and executing search querie
 ### Artists
 
 - `POST /api/artists`: Search for artists with filters (public access)
-- `GET /api/artists/{id}`: Get artist by ID or slug (public access)
-- `GET /api/artists/{id}/portfolio`: Get artist's portfolio (public access)
+- `GET /api/artists/{id}`: Get artist by ID or slug (public access). Response includes `tattoos` array fetched from the tattoos index via `TattooService::getByArtistId()`. Accepts both numeric ID and slug.
+- `GET /api/artists/{id}/portfolio`: Get artist's tattoo portfolio with pagination (public access). Accepts ID or slug. Supports `page` and `per_page` query params. Returns `{ response, total, page, per_page, has_more }`.
 - `GET /api/artists/{id}/working-hours`: Get artist's availability schedule (public access)
 - `PUT /api/artist/{id}`: Update artist information (requires authentication)
 - `POST /api/artists/{id}/working-hours`: Set artist's working hours (requires authentication)
@@ -118,9 +118,10 @@ The search functionality supports various parameters for filtering results:
 ### Tattoo-Specific Parameters
 
 - `studio_id`: Filter tattoos by studio
-- `artist_id`: Filter tattoos by artist
 - `saved_tattoos`: Only show tattoos saved by the user
 - `saved_artists`: Only show tattoos by artists saved by the user
+
+Note: To get tattoos for a specific artist, use `GET /api/artists/{id}` which returns tattoos embedded in the response. The `POST /api/tattoos` search endpoint does not support filtering by `artist_id`.
 
 ### Artist-Specific Parameters
 

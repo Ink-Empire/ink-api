@@ -10,11 +10,11 @@ use App\Models\Appointment;
 use App\Models\Artist;
 use App\Models\CalendarConnection;
 use App\Models\Conversation;
-use App\Models\ConversationParticipant;
 use App\Models\Message;
 use App\Models\User;
 use App\Notifications\BookingRequestNotification;
 use App\Notifications\BookingAcceptedNotification;
+use App\Services\ConversationService;
 use App\Util\ModelLookup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -117,7 +117,7 @@ class AppointmentController extends Controller
         return new AppointmentResource($appointment);
     }
 
-    public function store(Request $request)
+    public function store(Request $request, ConversationService $conversationService)
     {
         $artist_id = $request->get('artist_id');
         if (!$artist_id) {
@@ -156,21 +156,18 @@ class AppointmentController extends Controller
 
         $appointment = $artist->appointments()->create($data);
 
-        // Create a conversation for this appointment
-        $conversation = Conversation::create([
-            'type' => $data['type'],
-            'appointment_id' => $appointment->id,
-        ]);
+        // Find existing conversation between client and artist, or create one
+        $conversation = $conversationService->findOrCreate(
+            $data['client_id'],
+            $artist->id,
+            $data['type'],
+            $appointment->id
+        );
 
-        // Add both client and artist as participants
-        ConversationParticipant::create([
-            'conversation_id' => $conversation->id,
-            'user_id' => $data['client_id'],
-        ]);
-        ConversationParticipant::create([
-            'conversation_id' => $conversation->id,
-            'user_id' => $artist->id,
-        ]);
+        // Always link the new appointment to the conversation
+        if ($conversation->appointment_id !== $appointment->id) {
+            $conversation->update(['appointment_id' => $appointment->id]);
+        }
 
         // Create initial message from the client
         $typeLabel = $data['type'] === 'consultation' ? 'consultation' : 'appointment';

@@ -58,6 +58,7 @@ Route::prefix('api')->group(function () {
         Route::middleware('auth.optional')->group(function () {
             Route::post('/', [ArtistController::class, 'search']);
             Route::get('/{id}', [ArtistController::class, 'getById']);
+            Route::get('/{id}/portfolio', [ArtistController::class, 'getPortfolio']);
             Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
         });
         Route::post('/{id}/view', [ArtistController::class, 'recordView']);
@@ -90,10 +91,13 @@ Route::prefix('api')->group(function () {
             Route::get('/', [ConversationController::class, 'index']);
             Route::post('/', [ConversationController::class, 'store']);
             Route::get('/unread-count', [ConversationController::class, 'getUnreadCount']);
+            Route::put('/read-all', [ConversationController::class, 'markAllAsRead']);
             Route::get('/{id}', [ConversationController::class, 'show']);
             Route::put('/{id}/read', [ConversationController::class, 'markAsRead']);
+            Route::delete('/{id}', [ConversationController::class, 'destroy']);
             Route::get('/{id}/messages', [ConversationController::class, 'getMessages']);
             Route::post('/{id}/messages', [ConversationController::class, 'sendMessage']);
+            Route::delete('/{id}/messages/{messageId}', [ConversationController::class, 'deleteMessage']);
             Route::post('/{id}/messages/booking-card', [ConversationController::class, 'sendBookingCard']);
             Route::post('/{id}/messages/deposit-request', [ConversationController::class, 'sendDepositRequest']);
             Route::post('/{id}/messages/design-share', [ConversationController::class, 'sendDesignShare']);

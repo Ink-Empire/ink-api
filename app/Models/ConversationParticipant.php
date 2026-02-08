@@ -13,10 +13,12 @@ class ConversationParticipant extends Model
         'conversation_id',
         'user_id',
         'last_read_at',
+        'deleted_at',
     ];
 
     protected $casts = [
         'last_read_at' => 'datetime',
+        'deleted_at' => 'datetime',
         'created_at' => 'datetime',
         'updated_at' => 'datetime',
     ];
