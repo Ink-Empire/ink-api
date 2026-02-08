@@ -91,6 +91,7 @@ Route::prefix('api')->group(function () {
             Route::get('/', [ConversationController::class, 'index']);
             Route::post('/', [ConversationController::class, 'store']);
             Route::get('/unread-count', [ConversationController::class, 'getUnreadCount']);
+            Route::get('/search-users', [ConversationController::class, 'searchUsers']);
             Route::put('/read-all', [ConversationController::class, 'markAllAsRead']);
             Route::get('/{id}', [ConversationController::class, 'show']);
             Route::put('/{id}/read', [ConversationController::class, 'markAsRead']);

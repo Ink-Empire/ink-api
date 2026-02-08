@@ -2,10 +2,12 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Resources\BriefImageResource;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
 use App\Models\Conversation;
 use App\Models\Message;
+use App\Models\User;
 use App\Services\ConversationService;
 use App\Services\WatermarkService;
 use Illuminate\Http\JsonResponse;
@@ -428,5 +430,40 @@ class ConversationController extends Controller
         }
 
         return response()->json(['success' => true]);
+    }
+
+    /**
+     * Search users by username, email, or name for starting conversations.
+     */
+    public function searchUsers(Request $request): JsonResponse
+    {
+        $query = trim($request->input('q', ''));
+        if (strlen($query) < 2) {
+            return response()->json(['users' => []]);
+        }
+
+        $currentUser = $request->user();
+        $likeQuery = '%' . $query . '%';
+
+        $users = User::with('image')
+            ->where('id', '!=', $currentUser->id)
+            ->where(function ($q) use ($likeQuery) {
+                $q->where('username', 'like', $likeQuery)
+                  ->orWhere('email', 'like', $likeQuery)
+                  ->orWhere('name', 'like', $likeQuery);
+            })
+            ->limit(10)
+            ->get()
+            ->map(function ($user) {
+                return [
+                    'id' => $user->id,
+                    'name' => $user->name,
+                    'username' => $user->username,
+                    'slug' => $user->slug,
+                    'image' => $user->image ? new BriefImageResource($user->image) : null,
+                ];
+            });
+
+        return response()->json(['users' => $users]);
     }
 }
