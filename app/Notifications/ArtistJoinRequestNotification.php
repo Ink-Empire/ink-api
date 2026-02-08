@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 use App\Notifications\Traits\RespectsEmailPreferences;
 
 class ArtistJoinRequestNotification extends Notification
@@ -33,6 +34,8 @@ class ArtistJoinRequestNotification extends Notification
         $artistName = $this->artist->name ?? 'An artist';
         $studioName = $this->studio->name ?? 'your studio';
 
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+
         return (new MailMessage)
             ->subject("{$artistName} wants to join {$studioName} - InkedIn")
             ->view('mail.artist-join-request', [
@@ -40,6 +43,7 @@ class ArtistJoinRequestNotification extends Notification
                 'artistUsername' => $this->artist->username,
                 'studioName' => $studioName,
                 'dashboardUrl' => $dashboardUrl,
+                'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
 

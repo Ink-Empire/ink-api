@@ -61,8 +61,9 @@ Route::get('/artists/{id}/settings', [\App\Http\Controllers\ArtistController::cl
 // Google Places config (returns API key for frontend SDK use)
 Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'config']);
 
-// Subscription route (signed URL from email)
+// Subscription routes (signed URLs from email)
 Route::get('/subscribe', [SubscriptionController::class, 'subscribe'])->name('subscribe');
+Route::get('/unsubscribe', [SubscriptionController::class, 'unsubscribe'])->name('unsubscribe');
 
 // Feedback submission (public)
 Route::post('/feedback', [FeedbackController::class, 'submit']);
