@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 use App\Notifications\Traits\RespectsEmailPreferences;
 
 class TattooBeaconNotification extends Notification
@@ -34,6 +35,8 @@ class TattooBeaconNotification extends Notification
         $location = $this->client->location ?? 'your area';
         $timing = $this->getTimingLabel($this->lead->timing);
 
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+
         return (new MailMessage)
             ->subject("Someone near you is looking for a tattoo! - InkedIn")
             ->view('mail.tattoo-beacon', [
@@ -42,6 +45,7 @@ class TattooBeaconNotification extends Notification
                 'timing' => $timing,
                 'description' => $this->lead->description,
                 'leadsUrl' => $leadsUrl,
+                'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
 

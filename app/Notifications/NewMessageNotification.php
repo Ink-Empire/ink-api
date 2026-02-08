@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 use App\Notifications\Traits\RespectsEmailPreferences;
 
 class NewMessageNotification extends Notification
@@ -32,12 +33,15 @@ class NewMessageNotification extends Notification
 
         $senderName = $this->sender->name ?? $this->sender->first_name ?? 'Someone';
 
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+
         return (new MailMessage)
             ->subject("New message from {$senderName} - InkedIn")
             ->view('mail.new-message', [
                 'senderName' => $senderName,
                 'inboxUrl' => $inboxUrl,
                 'recipientName' => $notifiable->first_name ?? $notifiable->name ?? 'there',
+                'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
 

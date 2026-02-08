@@ -6,6 +6,7 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 use App\Notifications\Traits\RespectsEmailPreferences;
 
 class BooksOpenNotification extends Notification
@@ -30,12 +31,15 @@ class BooksOpenNotification extends Notification
 
         $artistName = $this->artist->name ?? $this->artist->username;
 
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+
         return (new MailMessage)
             ->subject("{$artistName} has opened their books! - InkedIn")
             ->view('mail.books-open', [
                 'artistName' => $artistName,
                 'artistUsername' => $this->artist->username,
                 'artistUrl' => $artistUrl,
+                'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
 

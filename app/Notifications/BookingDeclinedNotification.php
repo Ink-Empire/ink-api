@@ -6,6 +6,7 @@ use App\Models\Appointment;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 use App\Notifications\Traits\RespectsEmailPreferences;
 
 class BookingDeclinedNotification extends Notification
@@ -36,6 +37,8 @@ class BookingDeclinedNotification extends Notification
         $endTime = $this->appointment->end_time ? date('g:i A', strtotime($this->appointment->end_time)) : '';
         $timeRange = $startTime && $endTime ? "{$startTime} - {$endTime}" : '';
 
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+
         return (new MailMessage)
             ->subject("Your {$type} request update - InkedIn")
             ->view('mail.booking-declined', [
@@ -45,6 +48,7 @@ class BookingDeclinedNotification extends Notification
                 'timeRange' => $timeRange,
                 'reason' => $this->reason,
                 'inboxUrl' => $inboxUrl,
+                'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
 

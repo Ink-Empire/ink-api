@@ -35,4 +35,30 @@ class SubscriptionController extends Controller
         // Redirect to frontend with success message
         return redirect(config('app.frontend_url') . '/updates?subscribed=true');
     }
+
+    /**
+     * Unsubscribe user from marketing emails via signed URL
+     */
+    public function unsubscribe(Request $request)
+    {
+        if (!$request->hasValidSignature()) {
+            return redirect(config('app.frontend_url') . '/unsubscribed?error=invalid_link');
+        }
+
+        $userId = $request->query('user');
+
+        if (!$userId) {
+            return redirect(config('app.frontend_url') . '/unsubscribed?error=invalid_link');
+        }
+
+        $user = User::find($userId);
+
+        if (!$user) {
+            return redirect(config('app.frontend_url') . '/unsubscribed?error=user_not_found');
+        }
+
+        $user->update(['email_unsubscribed' => true]);
+
+        return redirect(config('app.frontend_url') . '/unsubscribed?success=true');
+    }
 }

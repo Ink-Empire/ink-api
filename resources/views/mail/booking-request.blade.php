@@ -103,6 +103,9 @@
                             <p style="margin: 0; font-size: 12px; color: #888888;">
                                 &copy; {{ date('Y') }} InkedIn. All rights reserved.
                             </p>
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #aaaaaa;">
+                                <a href="{{ $unsubscribeUrl }}" style="color: #888888; text-decoration: underline;">Unsubscribe</a> from InkedIn emails
+                            </p>
                         </td>
                     </tr>
                 </table>

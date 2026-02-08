@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 use App\Notifications\Traits\RespectsEmailPreferences;
 
 class AffiliationAcceptedNotification extends Notification
@@ -50,6 +51,8 @@ class AffiliationAcceptedNotification extends Notification
             $message = "Great news! {$studioName} has approved your request to join. You are now a verified member of the studio.";
         }
 
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+
         return (new MailMessage)
             ->subject("{$subject} - InkedIn")
             ->view('mail.affiliation-accepted', [
@@ -58,6 +61,7 @@ class AffiliationAcceptedNotification extends Notification
                 'message' => $message,
                 'dashboardUrl' => $dashboardUrl,
                 'acceptedByType' => $this->acceptedByType,
+                'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
 

@@ -33,6 +33,8 @@ class WelcomeNotification extends Notification
         // Generate a signed URL for subscribing to updates (valid for 30 days)
         $updatesUrl = URL::signedRoute('subscribe', ['user' => $notifiable->id], now()->addDays(30));
 
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+
         return (new MailMessage)
             ->subject("You're in! Welcome to InkedIn")
             ->view('mail.welcome', [
@@ -40,6 +42,7 @@ class WelcomeNotification extends Notification
                 'updatesUrl' => $updatesUrl,
                 'isArtist' => $isArtist,
                 'userName' => $notifiable->name,
+                'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
 

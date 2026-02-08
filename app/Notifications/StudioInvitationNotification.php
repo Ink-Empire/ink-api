@@ -7,6 +7,7 @@ use App\Models\User;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
+use Illuminate\Support\Facades\URL;
 use App\Notifications\Traits\RespectsEmailPreferences;
 
 class StudioInvitationNotification extends Notification
@@ -33,6 +34,8 @@ class StudioInvitationNotification extends Notification
         $studioName = $this->studio->name ?? 'A studio';
         $inviterName = $this->invitedBy?->name ?? $this->studio->owner?->name ?? 'The studio owner';
 
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+
         return (new MailMessage)
             ->subject("You've been invited to join {$studioName} - InkedIn")
             ->view('mail.studio-invitation', [
@@ -40,6 +43,7 @@ class StudioInvitationNotification extends Notification
                 'inviterName' => $inviterName,
                 'studioLocation' => $this->studio->location,
                 'dashboardUrl' => $dashboardUrl,
+                'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
 
