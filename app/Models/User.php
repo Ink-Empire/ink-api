@@ -57,6 +57,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_email_verified',
         'last_seen_at',
         'email_unsubscribed',
+        'has_accepted_toc',
+        'has_accepted_privacy_policy',
     ];
 
     /**
@@ -82,6 +84,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_demo' => 'boolean',
         'is_email_verified' => 'boolean',
         'email_unsubscribed' => 'boolean',
+        'has_accepted_toc' => 'boolean',
+        'has_accepted_privacy_policy' => 'boolean',
     ];
 
     /**SCOPES**/
