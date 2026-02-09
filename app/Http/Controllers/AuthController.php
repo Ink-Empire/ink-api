@@ -47,6 +47,8 @@ class AuthController extends Controller
             'slug' => 'required|string|max:30|unique:users',
             'studio_id' => 'nullable|integer|exists:studios,id', // Optional studio affiliation for artists
             'selected_styles.*' => 'integer|exists:styles,id',
+            'has_accepted_toc' => 'required|accepted',
+            'has_accepted_privacy_policy' => 'required|accepted',
         ]);
 
         if (isset($request->address)) {
@@ -70,6 +72,8 @@ class AuthController extends Controller
             'type_id' => UserTypes::getTypeId($request->type ?? UserTypes::USER),
             'address_id' => $address->id ?? null,
             'experience_level' => $request->experience_level ?? null,
+            'has_accepted_toc' => true,
+            'has_accepted_privacy_policy' => true,
         ]);
 
         // Store password in history

@@ -121,9 +121,8 @@ class StudioController extends Controller
         }
 
         $request->validate([
-            'owner_id' => 'required|integer|exists:users,id',
-            'name' => 'required|string|max:255',
-            'slug' => 'required|string|max:255',
+            'name' => 'nullable|string|max:255',
+            'slug' => 'nullable|string|max:255',
             'about' => 'nullable|string',
             'location' => 'nullable|string',
             'location_lat_long' => 'nullable|string',
@@ -131,15 +130,15 @@ class StudioController extends Controller
             'phone' => 'nullable|string',
         ]);
 
-        // Update the studio with the new owner's info and mark as claimed
+        // Update the studio with the authenticated user as owner and mark as claimed
         $studio->update([
-            'owner_id' => $request->input('owner_id'),
-            'name' => $request->input('name'),
-            'slug' => $request->input('slug'),
-            'about' => $request->input('about'),
+            'owner_id' => $request->user()->id,
+            'name' => $request->input('name') ?: $studio->name,
+            'slug' => $request->input('slug') ?: $studio->slug,
+            'about' => $request->input('about') ?: $studio->about,
             'location' => $request->input('location') ?: $studio->location,
             'location_lat_long' => $request->input('location_lat_long') ?: $studio->location_lat_long,
-            'email' => $request->input('email'),
+            'email' => $request->input('email') ?: $studio->email,
             'phone' => $request->input('phone') ?: $studio->phone,
             'is_claimed' => true,
         ]);
