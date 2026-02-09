@@ -36,6 +36,9 @@ Route::prefix('api')->group(function () {
         });
     });
 
+    // Unclaimed studios endpoint (loaded async, separate from search)
+    Route::post('/unclaimed-studios', [TattooController::class, 'unclaimedStudios']);
+
     Route::middleware('auth:sanctum')->group(function () {
         Route::group(['prefix' => 'users'], function () {
             Route::post('profile-photo', [UserController::class, 'upload']);
