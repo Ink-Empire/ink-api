@@ -134,7 +134,7 @@ class AuthController extends Controller
 
         // Create a temporary token for profile image upload
         // User still needs to verify email before normal login
-        $token = $user->createToken('registration-upload')->plainTextToken;
+        $token = $user->createToken('registration-upload', ['*'], now()->addMinutes(30))->plainTextToken;
 
         return response()->json([
             'message' => 'Registration successful. Please check your email to verify your account.',

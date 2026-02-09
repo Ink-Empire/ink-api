@@ -24,9 +24,13 @@ class VerifyEmailController extends Controller
         }
 
         if ($user->hasVerifiedEmail()) {
-            // Generate token for already verified users too
-            // Only delete the temporary registration token, keep other valid session tokens
-            $user->tokens()->where('name', 'registration-upload')->delete();
+            // Upgrade any temporary registration token to a permanent auth token
+            $user->tokens()->where('name', 'registration-upload')->update([
+                'name' => 'authToken',
+                'expires_at' => null,
+            ]);
+
+            // Generate token for the browser redirect
             $token = $user->createToken('authToken')->plainTextToken;
 
             // Load relationships for SelfUserResource
@@ -60,9 +64,14 @@ class VerifyEmailController extends Controller
             SendWelcomeNotification::dispatch($user->id);
         }
 
-        // Generate a new token for the user
-        // Only delete the temporary registration token, keep other valid session tokens
-        $user->tokens()->where('name', 'registration-upload')->delete();
+        // Upgrade any temporary registration token to a permanent auth token
+        // so mobile apps polling /users/me continue working
+        $user->tokens()->where('name', 'registration-upload')->update([
+            'name' => 'authToken',
+            'expires_at' => null,
+        ]);
+
+        // Generate a new token for the browser redirect
         $token = $user->createToken('authToken')->plainTextToken;
 
         // Load relationships for SelfUserResource
