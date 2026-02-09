@@ -5,14 +5,15 @@ namespace App\Notifications;
 use App\Models\Studio;
 use App\Models\User;
 use Illuminate\Bus\Queueable;
+use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
 use App\Notifications\Traits\RespectsEmailPreferences;
 
-class ArtistJoinRequestNotification extends Notification
+class ArtistJoinRequestNotification extends Notification implements ShouldQueue
 {
-    use RespectsEmailPreferences;
+    use Queueable, RespectsEmailPreferences;
 
     public const EVENT_TYPE = 'artist_join_request';
 

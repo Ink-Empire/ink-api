@@ -2,24 +2,20 @@
 
 namespace App\Observers;
 
+use App\Jobs\SendSlackNewUserNotification;
 use App\Models\User;
 use App\Models\Artist;
 use App\Enums\UserTypes;
-use App\Services\SlackService;
 
 class UserObserver
 {
-    public function __construct(
-        protected SlackService $slackService
-    ) {}
-
     public function created(User $user)
     {
         if ($user->is_demo) {
             return;
         }
 
-        $this->slackService->notifyNewUser($user);
+        SendSlackNewUserNotification::dispatch($user->id);
     }
 
     public function saved(User $user)
