@@ -87,41 +87,27 @@ class TattooController extends Controller
                 "3. Broaden your search radius to find more results.";
         }
 
-        // Filter out tattoos from blocked artists
-        $user = $request->user();
-        if ($user) {
-            $blockedIds = $user->getAllBlockedIds();
-
-            if (!empty($blockedIds)) {
-                $response['response'] = $response['response']->filter(function ($tattoo) use ($blockedIds) {
-                    $artistId = is_array($tattoo) ? ($tattoo['artist_id'] ?? null) : ($tattoo->artist_id ?? null);
-                    return !in_array($artistId, $blockedIds);
-                })->values();
-            }
-        }
-
         $total = $response['total'] ?? 0;
         $paginationMeta = $this->paginationService->buildMeta($total, $pagination['page'], $pagination['per_page']);
 
-        // Get unclaimed studios only on first page
-        $unclaimedStudios = $pagination['page'] === 1 ? $this->getUnclaimedStudios($params, $request) : [];
-
         return response()->json([
             'response' => $response['response'],
-            'unclaimed_studios' => $unclaimedStudios,
             ...$paginationMeta,
             'none_found' => $response['none_found'] ?? null,
         ]);
     }
 
     /**
-     * Get unclaimed studios from Google Places based on search params
+     * Standalone endpoint for fetching unclaimed studios asynchronously.
+     * Called from frontend in parallel with search results.
      */
-    function getUnclaimedStudios(array $params, Request $request): array
+    public function unclaimedStudios(Request $request): JsonResponse
     {
+        $params = $request->all();
+
         // Don't hit Google Places API when viewing demo data
         if (!empty($params['is_demo'])) {
-            return [];
+            return response()->json(['unclaimed_studios' => []]);
         }
 
         $locationCoords = $params['locationCoords'] ?? null;
@@ -129,7 +115,7 @@ class TattooController extends Controller
 
         // Don't search Google Places if no location or searching "Anywhere"
         if (!$locationCoords || $useAnyLocation) {
-            return [];
+            return response()->json(['unclaimed_studios' => []]);
         }
 
         $distance = $params['distance'] ?? 25;
@@ -163,7 +149,7 @@ class TattooController extends Controller
             }
         }
 
-        return $unclaimedStudios;
+        return response()->json(['unclaimed_studios' => $unclaimedStudios]);
     }
 
     /**

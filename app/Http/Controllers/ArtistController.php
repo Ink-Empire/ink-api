@@ -14,8 +14,6 @@ use App\Models\User;
 use App\Services\ArtistService;
 use App\Services\ImageService;
 use App\Services\TattooService;
-use App\Services\GooglePlacesService;
-use App\Services\SearchImpressionService;
 use App\Services\PaginationService;
 use App\Util\ModelLookup;
 use Carbon\Carbon;
@@ -32,8 +30,6 @@ class ArtistController extends Controller
         protected ArtistService $artistService,
         protected ImageService $imageService,
         protected TattooService $tattooService,
-        protected GooglePlacesService $googlePlacesService,
-        protected SearchImpressionService $impressionService,
         protected PaginationService $paginationService
     ) {
     }
@@ -49,73 +45,20 @@ class ArtistController extends Controller
 
         $response = $this->artistService->search($params);
 
-        // Get unclaimed studios only on first page
-        $unclaimedStudios = $pagination['page'] === 1 ? $this->getUnclaimedStudios($params, $request) : [];
-
-        // Sanitize response - $request->user() works via auth.optional middleware
-        $sanitizedResponse = $this->sanitizeArtistData($response['response'], $request->user());
+        // Remove PII for unauthenticated users
+        $sanitizedResponse = $request->user()
+            ? $response['response']
+            : $this->sanitizePii($response['response']);
 
         $total = $response['total'] ?? 0;
         $paginationMeta = $this->paginationService->buildMeta($total, $pagination['page'], $pagination['per_page']);
 
         return response()->json([
             'response' => $sanitizedResponse,
-            'unclaimed_studios' => $unclaimedStudios,
             ...$paginationMeta,
         ]);
     }
 
-    /**
-     * Get unclaimed studios from Google Places based on search params
-     */
-    protected function getUnclaimedStudios(array $params, Request $request): array
-    {
-        // Don't hit Google Places API when viewing demo data
-        if (!empty($params['is_demo'])) {
-            return [];
-        }
-
-        $locationCoords = $params['locationCoords'] ?? null;
-        $useAnyLocation = $params['useAnyLocation'] ?? false;
-
-        // Don't search Google Places if no location or searching "Anywhere"
-        if (!$locationCoords || $useAnyLocation) {
-            return [];
-        }
-
-        $distance = $params['distance'] ?? 25;
-        $distanceUnit = $params['distanceUnit'] ?? 'mi';
-
-        // Convert to meters for Google Places API
-        $radiusMeters = $distanceUnit === 'km'
-            ? $distance * 1000
-            : $distance * 1609.34;
-
-        $unclaimedStudios = $this->googlePlacesService->searchTattooParlors(
-            $locationCoords,
-            (int) min($radiusMeters, 50000), // Max 50km for Google Places
-            5 // Limit to 5 unclaimed studios
-        );
-
-        // Record impressions for unclaimed studios
-        if (!empty($unclaimedStudios)) {
-            $unclaimedIds = collect($unclaimedStudios)->pluck('id')->toArray();
-            $this->impressionService->recordStudioImpressions(
-                $unclaimedIds,
-                $params['location'] ?? null,
-                $locationCoords,
-                $params,
-                $request->ip()
-            );
-
-            // Add weekly impression counts to each studio
-            foreach ($unclaimedStudios as $studio) {
-                $studio->weekly_impressions = $this->impressionService->getWeeklyImpressionCount($studio->id);
-            }
-        }
-
-        return $unclaimedStudios;
-    }
 
 
     public function get(Request $request)
@@ -517,30 +460,16 @@ class ArtistController extends Controller
     }
 
     /**
-     * Sanitize and filter artist data.
-     * - Filters out blocked users (for authenticated users)
-     * - Removes PII (for unauthenticated users)
+     * Remove PII from artist data for unauthenticated users.
      */
-    private function sanitizeArtistData($artists, $user): mixed
+    private function sanitizePii($artists): mixed
     {
-        // Get blocked user IDs if authenticated
-        $blockedIds = $user ? $user->getAllBlockedIds() : [];
-
-        // Filter function to remove blocked artists
-        $filterBlocked = function ($artist) use ($blockedIds) {
-            if (empty($blockedIds)) return true;
-            $artistId = is_array($artist) ? ($artist['id'] ?? null) : ($artist->id ?? null);
-            return !in_array($artistId, $blockedIds);
-        };
-
         if ($artists instanceof \Illuminate\Support\Collection) {
-            $filtered = $artists->filter($filterBlocked);
-            return $user ? $filtered->values() : $filtered->map(fn($artist) => $this->sanitizeSingleArtist($artist))->values();
+            return $artists->map(fn($artist) => $this->sanitizeSingleArtist($artist))->values();
         }
 
         if (is_array($artists)) {
-            $filtered = array_filter($artists, $filterBlocked);
-            return $user ? array_values($filtered) : array_values(array_map(fn($artist) => $this->sanitizeSingleArtist($artist), $filtered));
+            return array_values(array_map(fn($artist) => $this->sanitizeSingleArtist($artist), $artists));
         }
 
         return $artists;
