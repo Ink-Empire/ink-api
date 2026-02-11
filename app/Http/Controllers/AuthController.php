@@ -108,6 +108,36 @@ class AuthController extends Controller
             }
         }
 
+        // If registering as a studio owner, create or claim the studio
+        if (($request->type ?? '') === 'studio') {
+            if ($request->claim_studio_id) {
+                // Claiming an existing unclaimed studio
+                $studio = Studio::find($request->claim_studio_id);
+                if ($studio && !$studio->is_claimed) {
+                    $studio->update([
+                        'owner_id' => $user->id,
+                        'is_claimed' => true,
+                        'about' => $request->about ?? $studio->about,
+                        'phone' => $request->studio_phone ?? $studio->phone,
+                        'email' => $request->studio_email ?? $studio->email,
+                    ]);
+                }
+            } else {
+                // Create a new studio
+                $studio = Studio::create([
+                    'name' => $request->name,
+                    'slug' => $request->slug,
+                    'about' => $request->about ?? null,
+                    'location' => $request->location ?? null,
+                    'location_lat_long' => $request->location_lat_long ?? null,
+                    'email' => $request->studio_email ?? null,
+                    'phone' => $request->studio_phone ?? null,
+                    'owner_id' => $user->id,
+                    'is_claimed' => true,
+                ]);
+            }
+        }
+
         // Save selected styles if provided
         if ($request->has('selected_styles') && is_array($request->selected_styles)) {
             $user->styles()->sync($request->selected_styles);
@@ -121,13 +151,19 @@ class AuthController extends Controller
         // User still needs to verify email before normal login
         $token = $user->createToken('registration-upload', ['*'], now()->addMinutes(30))->plainTextToken;
 
-        return response()->json([
+        $response = [
             'message' => 'Registration successful. Please check your email to verify your account.',
             'requires_verification' => true,
             'email' => $user->email,
             'user' => ['id' => $user->id],
             'token' => $token,
-        ], 201);
+        ];
+
+        if (isset($studio)) {
+            $response['studio'] = ['id' => $studio->id];
+        }
+
+        return response()->json($response, 201);
     }
 
     public function checkUsername(Request $request)
