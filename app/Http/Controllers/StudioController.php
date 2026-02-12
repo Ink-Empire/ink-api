@@ -117,7 +117,7 @@ class StudioController extends Controller
         }
 
         if ($studio->is_claimed) {
-            return response()->json(['error' => 'This studio has already been claimed'], 422);
+            return response()->json(['error' => 'This studio has already been claimed. If you believe this is in error, contact us at info@getinked.in'], 422);
         }
 
         $request->validate([
