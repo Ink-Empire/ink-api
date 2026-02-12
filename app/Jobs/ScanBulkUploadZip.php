@@ -38,6 +38,9 @@ class ScanBulkUploadZip implements ShouldQueue
         }
 
         try {
+            // Clean up any items from prior attempts (retries)
+            $bulkUpload->items()->delete();
+
             // Download ZIP from S3 to temp file
             $tempPath = $this->downloadZipToTemp($bulkUpload);
 
@@ -190,6 +193,12 @@ class ScanBulkUploadZip implements ShouldQueue
 
             // Skip directories
             if (str_ends_with($filename, '/')) {
+                continue;
+            }
+
+            // Skip macOS resource fork files and __MACOSX directory
+            $basename = basename($filename);
+            if (str_starts_with($basename, '._') || str_contains($filename, '__MACOSX/')) {
                 continue;
             }
 
