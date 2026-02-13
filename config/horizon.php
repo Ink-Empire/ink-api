@@ -83,7 +83,9 @@ return [
     |
     */
 
-    'middleware' => ['web'],
+    'middleware' => app()->environment('production')
+        ? ['web', 'auth.basic']
+        : ['web'],
 
     /*
     |--------------------------------------------------------------------------
