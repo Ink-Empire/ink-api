@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Jobs\IndexTattooJob;
 use App\Models\Tag;
 use App\Models\Tattoo;
 use App\Services\TagService;
@@ -180,8 +181,7 @@ class TagController extends Controller
         $tagIds = $request->input('tag_ids', []);
         $tags = $this->tagService->setTagsForTattoo($tattoo, $tagIds);
 
-        // Re-index tattoo for search
-        $tattoo->searchable();
+        IndexTattooJob::dispatch($tattoo->id);
 
         return response()->json([
             'success' => true,
@@ -243,8 +243,7 @@ class TagController extends Controller
             ], 404);
         }
 
-        // Re-index tattoo for search
-        $tattoo->searchable();
+        IndexTattooJob::dispatch($tattoo->id);
 
         return response()->json([
             'success' => true,
@@ -286,8 +285,7 @@ class TagController extends Controller
 
         $this->tagService->removeTagFromTattoo($tattoo, $tagId);
 
-        // Re-index tattoo for search
-        $tattoo->searchable();
+        IndexTattooJob::dispatch($tattoo->id);
 
         return response()->json([
             'success' => true,
@@ -328,8 +326,7 @@ class TagController extends Controller
 
         $tags = $this->tagService->generateTagsForTattoo($tattoo);
 
-        // Re-index tattoo for search
-        $tattoo->searchable();
+        IndexTattooJob::dispatch($tattoo->id);
 
         return response()->json([
             'success' => true,

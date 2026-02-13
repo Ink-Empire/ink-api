@@ -8,9 +8,9 @@ When an artist uploads a tattoo, the system:
 1. Uploads and processes images
 2. Creates the tattoo record with metadata
 3. Attaches user-selected tags
-4. Generates AI-suggested tags
-5. Returns new suggestions for user review
-6. Indexes the tattoo for search
+4. Dispatches `GenerateAiTagsJob` for async AI tag generation
+5. Dispatches `IndexTattooJob` for async Elasticsearch indexing
+6. Returns the tattoo immediately (AI tags and search indexing happen in background)
 
 ## Upload Flow
 
@@ -80,9 +80,14 @@ After successful upload, the frontend shows a modal with AI suggestions:
 
 ### Step 6: Search Indexing
 
-After creation and tagging:
-- Tattoo is indexed to Elasticsearch
-- Artist is re-indexed to include new tattoo data
+Search indexing happens asynchronously via `IndexTattooJob`:
+- `TattooController::create` dispatches `IndexTattooJob` immediately after creating the tattoo
+- `GenerateAiTagsJob` dispatches another `IndexTattooJob` after AI tags are attached
+- `IndexTattooJob` eagerly loads all relations (`tags`, `styles`, `images`, `artist`, `studio`, `primary_style`, `primary_image`), indexes the tattoo to Elasticsearch, and re-indexes the artist
+- The job has 3 retries with backoff (5s, 15s, 30s)
+- Tag changes via `TagController` also dispatch `IndexTattooJob` to keep the index in sync
+
+The frontend shows a message: "Tattoo published! It will appear in search shortly."
 
 ---
 
@@ -177,6 +182,8 @@ For existing tattoos without tags:
 - `app/Services/TagService.php` - AI tag generation
 - `app/Models/Tag.php` - Tag model
 - `app/Models/Tattoo.php` - Tattoo model (has `tags()` relationship)
+- `app/Jobs/IndexTattooJob.php` - Async ES indexing (standard for all tattoo index operations)
+- `app/Jobs/GenerateAiTagsJob.php` - Async AI tag generation
 
 **Frontend:**
 - `components/TattooCreateForm.tsx` - Upload form with AI modal

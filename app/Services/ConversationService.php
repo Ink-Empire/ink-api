@@ -9,6 +9,8 @@ use App\Models\Image;
 use App\Models\Message;
 use App\Models\MessageDeletion;
 use App\Notifications\NewMessageNotification;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ConversationService
@@ -71,6 +73,8 @@ class ConversationService
             ->where('recipient_id', $userId)
             ->whereNull('read_at')
             ->update(['read_at' => now()]);
+
+        Cache::forget("unread_count:{$userId}");
     }
 
     /**
@@ -137,6 +141,8 @@ class ConversationService
                 }
             }
 
+            Cache::forget("unread_count:{$otherParticipant?->id}");
+
             return $message;
         });
     }
@@ -158,6 +164,7 @@ class ConversationService
         ]);
 
         $conversation->touch();
+        Cache::forget("unread_count:{$otherParticipant?->id}");
 
         return $message;
     }
@@ -167,7 +174,8 @@ class ConversationService
      */
     public function getUnreadCount(int $userId): int
     {
-        $result = DB::selectOne("
+        return Cache::remember("unread_count:{$userId}", 60, function () use ($userId) {
+            $result = DB::selectOne("
             SELECT COUNT(*) as total
             FROM messages m
             INNER JOIN conversation_participants cp
@@ -178,7 +186,8 @@ class ConversationService
               AND m.created_at > COALESCE(cp.last_read_at, '1970-01-01')
         ", [$userId, $userId]);
 
-        return (int) ($result->total ?? 0);
+            return (int) ($result->total ?? 0);
+        });
     }
 
     /**
@@ -195,6 +204,8 @@ class ConversationService
         Message::where('recipient_id', $userId)
             ->whereNull('read_at')
             ->update(['read_at' => $now]);
+
+        Cache::forget("unread_count:{$userId}");
     }
 
     /**
@@ -236,5 +247,27 @@ class ConversationService
         ]);
 
         return true;
+    }
+
+
+    /**
+     * Apply the unread count subquery using a join instead of a correlated subquery.
+     * This resolves last_read_at once via join rather than per-row.
+     */
+    private function withUnreadCount(Builder $query, int $userId): Builder
+    {
+        return $query
+            ->leftJoinSub(
+                DB::table('conversation_participants')
+                    ->select('conversation_id', 'last_read_at')
+                    ->where('user_id', $userId),
+                'cp_unread',
+                'cp_unread.conversation_id',
+                'conversations.id'
+            )
+            ->withCount(['messages as unread_count' => function ($q) use ($userId) {
+                $q->where('sender_id', '!=', $userId)
+                    ->whereColumn('messages.created_at', '>', DB::raw("COALESCE(cp_unread.last_read_at, '1970-01-01')"));
+            }]);
     }
 }

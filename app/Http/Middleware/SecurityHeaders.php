@@ -15,6 +15,11 @@ class SecurityHeaders
     {
         $response = $next($request);
 
+        // Skip strict CSP for Horizon dashboard (it needs JS/CSS to render)
+        if ($request->is('horizon', 'horizon/*')) {
+            return $response;
+        }
+
         // Prevent MIME type sniffing
         $response->headers->set('X-Content-Type-Options', 'nosniff');
 

@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\Message;
 use App\Models\User;
+use App\Services\ConversationService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
@@ -32,6 +33,22 @@ class NewMessageNotification extends Notification
         return $this->filterChannelsForPush($notifiable, $channels);
     }
 
+    public function getMessageCount(object $notifiable): int
+    {
+        try {
+            $conversationService = app(ConversationService::class);
+            return $conversationService->getUnreadCount($notifiable->id);
+        } catch (\Exception $e) {
+            \Log::error("Unable to get message count", [
+                'error' => $e->getMessage(),
+                'line' => $e->getLine(),
+                'file' => $e->getFile()
+            ]);
+
+            return 0;
+        }
+    }
+
     public function toMail(object $notifiable): MailMessage
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
@@ -54,6 +71,7 @@ class NewMessageNotification extends Notification
     public function toFcm(object $notifiable): FcmMessage
     {
         $senderName = $this->sender->name ?? $this->sender->username ?? 'Someone';
+        $count = $this->getMessageCount($notifiable);
 
         return (new FcmMessage(notification: new FcmNotification(
             title: "New message from {$senderName}",
@@ -69,7 +87,7 @@ class NewMessageNotification extends Notification
                     'payload' => [
                         'aps' => [
                             'sound' => 'default',
-                            'badge' => 1,
+                            'badge' => $count,
                         ],
                     ],
                 ],
