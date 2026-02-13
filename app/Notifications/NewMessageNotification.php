@@ -8,11 +8,14 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
+use NotificationChannels\Fcm\FcmMessage;
+use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 use App\Notifications\Traits\RespectsEmailPreferences;
+use App\Notifications\Traits\RespectsPushPreferences;
 
 class NewMessageNotification extends Notification
 {
-    use RespectsEmailPreferences;
+    use RespectsEmailPreferences, RespectsPushPreferences;
 
     public const EVENT_TYPE = 'new_message';
 
@@ -23,7 +26,9 @@ class NewMessageNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
+        $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', 'fcm']);
+
+        return $this->filterChannelsForPush($notifiable, $channels);
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -42,6 +47,30 @@ class NewMessageNotification extends Notification
                 'inboxUrl' => $inboxUrl,
                 'recipientName' => $notifiable->first_name ?? $notifiable->name ?? 'there',
                 'unsubscribeUrl' => $unsubscribeUrl,
+            ]);
+    }
+
+    public function toFcm(object $notifiable): FcmMessage
+    {
+        $senderName = $this->sender->name ?? $this->sender->username ?? 'Someone';
+
+        return (new FcmMessage(notification: new FcmNotification(
+            title: "New message from {$senderName}",
+            body: 'You have a new message on InkedIn.',
+        )))
+            ->data([
+                'type' => self::EVENT_TYPE,
+                'conversation_id' => (string) $this->message->conversation_id,
+                'sender_id' => (string) $this->sender->id,
+            ])
+            ->custom([
+                'apns' => [
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'default',
+                        ],
+                    ],
+                ],
             ]);
     }
 

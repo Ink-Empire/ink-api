@@ -469,4 +469,36 @@ class User extends Authenticatable implements MustVerifyEmail
     {
         return !$this->email_unsubscribed;
     }
+
+    public function deviceTokens()
+    {
+        return $this->hasMany(DeviceToken::class);
+    }
+
+    public function notificationPreferences()
+    {
+        return $this->hasMany(NotificationPreference::class);
+    }
+
+    /**
+     * Check if the user wants push notifications for a given type.
+     * Missing preference row = enabled by default.
+     */
+    public function wantsPushNotification(string $type): bool
+    {
+        $pref = $this->notificationPreferences()
+            ->where('notification_type', $type)
+            ->where('channel', 'push')
+            ->first();
+
+        return $pref ? $pref->enabled : true;
+    }
+
+    /**
+     * Route notifications for the FCM channel.
+     */
+    public function routeNotificationForFcm(): array
+    {
+        return $this->deviceTokens()->pluck('token')->toArray();
+    }
 }
