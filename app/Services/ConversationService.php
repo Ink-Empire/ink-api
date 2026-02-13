@@ -129,7 +129,10 @@ class ConversationService
 
             $conversation->touch();
 
-            // Notify the recipient outside the transaction won't cause rollback issues
+            // Clear cached unread count BEFORE sending notification
+            // so the notification picks up the fresh count including this new message
+            Cache::forget("unread_count:{$otherParticipant?->id}");
+
             if ($otherParticipant) {
                 try {
                     $otherParticipant->notify(new NewMessageNotification($message, \App\Models\User::find($senderId)));
@@ -140,8 +143,6 @@ class ConversationService
                     ]);
                 }
             }
-
-            Cache::forget("unread_count:{$otherParticipant?->id}");
 
             return $message;
         });
