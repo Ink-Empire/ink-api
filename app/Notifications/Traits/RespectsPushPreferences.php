@@ -2,6 +2,8 @@
 
 namespace App\Notifications\Traits;
 
+use NotificationChannels\Fcm\FcmChannel;
+
 trait RespectsPushPreferences
 {
     /**
@@ -10,7 +12,7 @@ trait RespectsPushPreferences
      */
     protected function filterChannelsForPush(object $notifiable, array $channels): array
     {
-        if (!in_array('fcm', $channels)) {
+        if (!in_array(FcmChannel::class, $channels)) {
             return $channels;
         }
 
@@ -19,14 +21,14 @@ trait RespectsPushPreferences
         // Remove FCM if user has no device tokens
         if (!method_exists($notifiable, 'routeNotificationForFcm')
             || empty($notifiable->routeNotificationForFcm())) {
-            return array_values(array_filter($channels, fn ($ch) => $ch !== 'fcm'));
+            return array_values(array_filter($channels, fn ($ch) => $ch !== FcmChannel::class));
         }
 
         // Remove FCM if user has explicitly disabled push for this type
         if ($eventType
             && method_exists($notifiable, 'wantsPushNotification')
             && !$notifiable->wantsPushNotification($eventType)) {
-            return array_values(array_filter($channels, fn ($ch) => $ch !== 'fcm'));
+            return array_values(array_filter($channels, fn ($ch) => $ch !== FcmChannel::class));
         }
 
         return $channels;

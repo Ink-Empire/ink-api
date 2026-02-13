@@ -5,12 +5,13 @@ namespace App\Listeners;
 use App\Models\DeviceToken;
 use Illuminate\Notifications\Events\NotificationFailed;
 use Illuminate\Support\Facades\Log;
+use NotificationChannels\Fcm\FcmChannel;
 
 class CleanupFailedFcmToken
 {
     public function handle(NotificationFailed $event): void
     {
-        if ($event->channel !== 'fcm') {
+        if ($event->channel !== FcmChannel::class) {
             return;
         }
 
