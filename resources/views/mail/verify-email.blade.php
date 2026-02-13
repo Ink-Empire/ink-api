@@ -47,13 +47,6 @@
                                             Click the button below to verify your email address and complete your account setup.
                                         </p>
 
-                                        <!-- Spam Warning -->
-                                        <div style="padding: 16px; background-color: rgba(212, 168, 83, 0.1); border: 1px solid rgba(212, 168, 83, 0.3); border-radius: 8px; margin-bottom: 24px;">
-                                            <p style="margin: 0; font-size: 14px; line-height: 1.5; color: #D4A853;">
-                                                <strong>Can't find this email?</strong> Check your spam or junk folder. To ensure you receive our emails, add <strong>noreply@getinked.in</strong> to your contacts.
-                                            </p>
-                                        </div>
-
                                         <!-- Button -->
                                         <table role="presentation" width="100%" cellspacing="0" cellpadding="0">
                                             <tr>

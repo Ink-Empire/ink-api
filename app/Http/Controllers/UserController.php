@@ -135,6 +135,23 @@ class UserController extends Controller
     }
 
     /**
+     * Remove the authenticated user's profile photo.
+     */
+    public function deleteProfilePhoto(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return $this->returnErrorResponse("Not authenticated", "Please log in");
+        }
+
+        $user->image_id = null;
+        $user->save();
+
+        return $this->returnResponse('user', new UserResource($user));
+    }
+
+    /**
      * @return JsonResponse
      */
     public function update(Request $request, $id)
