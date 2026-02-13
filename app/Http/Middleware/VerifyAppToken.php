@@ -13,6 +13,8 @@ class VerifyAppToken
      * These are typically webhook endpoints called by external services.
      */
     protected array $except = [
+        'horizon',
+        'horizon/*',
         'api/webhooks/*',
         'api/calendar/callback',
         'api/places/config',

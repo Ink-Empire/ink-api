@@ -2,7 +2,6 @@
 
 namespace App\Jobs;
 
-use App\Models\Artist;
 use App\Models\Tattoo;
 use App\Services\TagService;
 use Illuminate\Bus\Queueable;
@@ -57,13 +56,7 @@ class GenerateAiTagsJob implements ShouldQueue
             ]);
 
             // Re-index the tattoo and artist after tags are added
-            // This will be queued if SCOUT_QUEUE=true
-            $tattoo->refresh();
-            $tattoo->searchable();
-
-            if ($tattoo->artist_id) {
-                Artist::find($tattoo->artist_id)?->searchable();
-            }
+            IndexTattooJob::dispatch($tattoo->id);
 
             Log::info("GenerateAiTagsJob: Completed successfully", [
                 'tattoo_id' => $this->tattooId

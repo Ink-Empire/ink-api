@@ -130,15 +130,18 @@ flowchart TD
 3. Select primary style + additional styles
 4. Add tags manually
 5. `POST /api/tattoos/create`
-6. AI generates additional tags asynchronously
-7. Indexed in Elasticsearch
+6. `GenerateAiTagsJob` dispatched for async AI tag generation
+7. `IndexTattooJob` dispatched for async Elasticsearch indexing (tattoo + artist re-index)
+8. Frontend shows "Tattoo published! It will appear in search shortly."
 
 #### Bulk Upload
 1. Upload ZIP file
 2. System extracts and scans images
 3. Edit metadata for each tattoo
 4. `POST /api/bulk-uploads/{id}/publish`
-5. Batch creates all tattoos
+5. `PublishBulkUploadItems` job creates all tattoos, then batch indexes to Elasticsearch
+6. Falls back to individual `IndexTattooJob` dispatches if batch indexing fails
+7. Frontend shows "Your tattoos are being processed and will appear in search shortly."
 
 ## Password Requirements
 

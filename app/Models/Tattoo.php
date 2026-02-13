@@ -102,7 +102,7 @@ class Tattoo extends Model
 
     public function getIsFeaturedAttribute()
     {
-
+        return (bool) ($this->attributes['is_featured'] ?? false);
     }
 
     /*

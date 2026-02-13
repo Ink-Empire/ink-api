@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\QueueNames;
+use App\Models\Artist;
 use App\Models\BulkUpload;
 use App\Models\BulkUploadItem;
 use App\Models\Tattoo;
@@ -56,21 +57,26 @@ class PublishBulkUploadItems implements ShouldQueue
             });
 
             $publishedCount = 0;
+            $tattooIds = [];
 
             foreach ($grouped as $groupKey => $groupItems) {
                 try {
                     if (str_starts_with($groupKey, 'single_')) {
-                        // Single image tattoo
-                        $this->publishSingleItem($groupItems->first(), $bulkUpload);
+                        $tattoo = $this->publishSingleItem($groupItems->first(), $bulkUpload);
                     } else {
-                        // Carousel - multiple images, one tattoo
-                        $this->publishGroupedItems($groupItems, $bulkUpload);
+                        $tattoo = $this->publishGroupedItems($groupItems, $bulkUpload);
                     }
+                    $tattooIds[] = $tattoo->id;
                     $publishedCount++;
                 } catch (\Exception $e) {
                     Log::error("Failed to publish group {$groupKey}: " . $e->getMessage());
                     // Continue with next group
                 }
+            }
+
+            // Batch index all published tattoos after all transactions have committed
+            if (!empty($tattooIds)) {
+                $this->batchIndex($tattooIds, $bulkUpload->artist_id);
             }
 
             // Update counts
@@ -83,17 +89,14 @@ class PublishBulkUploadItems implements ShouldQueue
                 ->count();
 
             if ($remainingItems === 0) {
-                // All done - every item is either published or skipped
                 $bulkUpload->update([
                     'status' => 'completed',
                     'completed_at' => now(),
                 ]);
 
-                // Clean up the ZIP file - no longer needed after completing
                 $bulkUpload->deleteZipFile();
                 Log::info("Deleted ZIP file for completed bulk upload {$this->bulkUploadId}");
             } else {
-                // Some items remain - mark as incomplete
                 $bulkUpload->update(['status' => 'incomplete']);
                 Log::info("Bulk upload {$this->bulkUploadId} marked incomplete - {$remainingItems} items remaining");
             }
@@ -106,12 +109,14 @@ class PublishBulkUploadItems implements ShouldQueue
         }
     }
 
-    private function publishSingleItem(BulkUploadItem $item, BulkUpload $bulkUpload): void
+    private function publishSingleItem(BulkUploadItem $item, BulkUpload $bulkUpload): Tattoo
     {
-        DB::transaction(function () use ($item, $bulkUpload) {
-            // Create tattoo
+        $artist = $bulkUpload->artist;
+
+        return DB::transaction(function () use ($item, $bulkUpload, $artist) {
             $tattoo = Tattoo::create([
                 'artist_id' => $bulkUpload->artist_id,
+                'studio_id' => $artist?->primary_studio?->id,
                 'title' => $item->title,
                 'description' => $item->description,
                 'placement' => $item->placement?->name,
@@ -119,43 +124,38 @@ class PublishBulkUploadItems implements ShouldQueue
                 'primary_image_id' => $item->image_id,
             ]);
 
-            // Attach image
             if ($item->image_id) {
                 $tattoo->images()->attach($item->image_id);
             }
 
-            // Attach styles
             $styleIds = $item->getAllStyleIds();
             if (!empty($styleIds)) {
                 $tattoo->styles()->sync($styleIds);
             }
 
-            // Attach tags
             $tagIds = $item->getAllTagIds();
             if (!empty($tagIds)) {
                 $tattoo->tags()->sync($tagIds);
             }
 
-            // Mark item as published
             $item->update([
                 'is_published' => true,
                 'tattoo_id' => $tattoo->id,
             ]);
 
-            // Index to Elasticsearch
-            $tattoo->searchable();
+            return $tattoo;
         });
     }
 
-    private function publishGroupedItems(Collection $items, BulkUpload $bulkUpload): void
+    private function publishGroupedItems(Collection $items, BulkUpload $bulkUpload): Tattoo
     {
-        DB::transaction(function () use ($items, $bulkUpload) {
-            // Get primary item (first in group)
-            $primaryItem = $items->firstWhere('is_primary_in_group', true) ?? $items->first();
+        $artist = $bulkUpload->artist;
+        $primaryItem = $items->firstWhere('is_primary_in_group', true) ?? $items->first();
 
-            // Create tattoo from primary item's metadata
+        return DB::transaction(function () use ($items, $bulkUpload, $artist, $primaryItem) {
             $tattoo = Tattoo::create([
                 'artist_id' => $bulkUpload->artist_id,
+                'studio_id' => $artist?->primary_studio?->id,
                 'title' => $primaryItem->title,
                 'description' => $primaryItem->description,
                 'placement' => $primaryItem->placement?->name,
@@ -163,25 +163,21 @@ class PublishBulkUploadItems implements ShouldQueue
                 'primary_image_id' => $primaryItem->image_id,
             ]);
 
-            // Attach all images from the group
             $imageIds = $items->pluck('image_id')->filter()->unique()->toArray();
             if (!empty($imageIds)) {
                 $tattoo->images()->attach($imageIds);
             }
 
-            // Attach styles from primary item
             $styleIds = $primaryItem->getAllStyleIds();
             if (!empty($styleIds)) {
                 $tattoo->styles()->sync($styleIds);
             }
 
-            // Attach tags from primary item
             $tagIds = $primaryItem->getAllTagIds();
             if (!empty($tagIds)) {
                 $tattoo->tags()->sync($tagIds);
             }
 
-            // Mark all items in group as published
             foreach ($items as $item) {
                 $item->update([
                     'is_published' => true,
@@ -189,8 +185,31 @@ class PublishBulkUploadItems implements ShouldQueue
                 ]);
             }
 
-            // Index to Elasticsearch
-            $tattoo->searchable();
+            return $tattoo;
         });
+    }
+
+    private function batchIndex(array $tattooIds, int $artistId): void
+    {
+        try {
+            $tattoos = Tattoo::with([
+                'tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image',
+            ])->whereIn('id', $tattooIds)->get();
+
+            $tattoos->searchable();
+
+            Artist::find($artistId)?->searchable();
+
+            Log::info("Batch indexed {$tattoos->count()} tattoos for bulk upload {$this->bulkUploadId}");
+        } catch (\Exception $e) {
+            Log::error("Batch ES indexing failed for bulk upload {$this->bulkUploadId}, falling back to individual jobs: " . $e->getMessage());
+
+            // Fall back to individual IndexTattooJob dispatches
+            foreach ($tattooIds as $tattooId) {
+                IndexTattooJob::dispatch($tattooId, false);
+            }
+            // Re-index artist once
+            Artist::find($artistId)?->searchable();
+        }
     }
 }

@@ -266,11 +266,15 @@ Paginated thumbnail grid:
 1. Get all ready items (processed, not skipped, not published)
 2. Group by `post_group_id`
 3. For each group/single:
-   - Create Tattoo record
+   - Create Tattoo record inside a DB transaction (includes `studio_id` from artist's primary studio)
    - Attach images, tags, styles
-   - Index to Elasticsearch
-4. Mark `is_published = true`
-5. Update counts
+   - Mark `is_published = true`
+4. After all items are published, batch index to Elasticsearch:
+   - Loads all created tattoos with relations in a single query
+   - Calls collection `searchable()` for efficient bulk indexing
+   - Re-indexes the artist once
+   - On batch failure, falls back to dispatching individual `IndexTattooJob` per tattoo
+5. Update counts and mark bulk upload as completed
 
 ---
 

@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Http\Resources\Elastic\TattooResource;
 use App\Jobs\GenerateAiTagsJob;
+use App\Jobs\IndexTattooJob;
 use App\Models\Artist;
 use App\Models\Image;
 use App\Models\Style;
@@ -187,8 +188,7 @@ class TattooController extends Controller
                 ]);
             }
 
-            // Re-index the tattoo for search
-            $tattoo->searchable();
+            IndexTattooJob::dispatch($tattoo->id);
 
             return $this->returnResponse('tags', [
                 'message' => 'Tags generated successfully',
@@ -323,22 +323,16 @@ class TattooController extends Controller
                     }
                 }
 
-                // Dispatch AI tag generation to background job for async processing
+                // Dispatch background jobs for AI tags and ES indexing
                 GenerateAiTagsJob::dispatch($tattoo->id, $userSelectedTagIds);
-                \Log::info("Dispatched GenerateAiTagsJob for tattoo", ['tattoo_id' => $tattoo->id]);
+                IndexTattooJob::dispatch($tattoo->id);
 
-                // Refresh and index the tattoo (will be async with SCOUT_QUEUE=true)
                 $tattoo->refresh();
-                $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style']);
-                $tattoo->searchable();
-                Artist::find($user->id)?->searchable();
+                $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
 
-                // Return immediately - AI suggestions will be generated in background
-                // Frontend can poll /tattoos/{id} or use websockets to get updated tags
                 return response()->json([
                     'tattoo' => new TattooResource($tattoo),
-                    'ai_suggested_tags' => [], // Tags generated async, will be available shortly
-                    'ai_tags_pending' => true  // Signal to frontend that AI tags are being generated
+                    'ai_tags_pending' => true,
                 ]);
             } else {
                 return $this->returnErrorResponse("No images uploaded", "No files uploaded");
@@ -453,12 +447,10 @@ class TattooController extends Controller
 
             \Log::info("updated tattoo", ['tattoo' => $tattoo->id]);
 
-            // Refresh to ensure all relationships are loaded before indexing
+            IndexTattooJob::dispatch($tattoo->id);
+
             $tattoo->refresh();
             $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
-            $tattoo->searchable();
-
-            \Log::info("indexed tattoo", ['tattoo' => $tattoo->id]);
 
             return $this->returnResponse('tattoo', new TattooResource($tattoo));
 
@@ -496,8 +488,10 @@ class TattooController extends Controller
             $tattoo->is_featured = $featured;
             $tattoo->save();
 
-            // Re-index for search
-            $tattoo->searchable();
+            IndexTattooJob::dispatch($tattoo->id);
+
+            $tattoo->refresh();
+            $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
 
             return $this->returnResponse('tattoo', new TattooResource($tattoo));
 
@@ -653,7 +647,6 @@ class TattooController extends Controller
         }
 
         $tattoo->save();
-        $tattoo->searchable();
 
         // Handle tags if provided
         if ($request->has('tag_names')) {
@@ -697,9 +690,10 @@ class TattooController extends Controller
             }
         }
 
+        IndexTattooJob::dispatch($tattoo->id);
+
         $tattoo->refresh();
         $tattoo->load('styles');
-        $tattoo->searchable();
 
         return response()->json([
             'data' => [

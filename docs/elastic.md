@@ -308,11 +308,18 @@ Several Artisan commands manage the Elasticsearch indices:
 
 Background jobs handle resource-intensive Elasticsearch operations:
 
-1. **ElasticRebuildJob** (`app/Jobs/ElasticRebuildJob.php`)
-   - Processes index rebuilds asynchronously
+1. **IndexTattooJob** (`app/Jobs/IndexTattooJob.php`)
+   - Standard job for all tattoo indexing operations (single uploads, tag changes, feature toggles, etc.)
+   - Eagerly loads all relations (`tags`, `styles`, `images`, `artist`, `studio`, `primary_style`, `primary_image`) before indexing
+   - Re-indexes the associated artist by default (can be disabled with `reindexArtist: false`)
+   - 3 retries with backoff (5s, 15s, 30s)
+   - Used by `TattooController`, `TagController`, and `GenerateAiTagsJob`
+
+2. **ElasticRebuildJob** (`app/Jobs/ElasticRebuildJob.php`)
+   - Processes full index rebuilds asynchronously
    - Takes a model and IDs to rebuild specific documents
 
-2. **ElasticMigrateJob** (`app/Jobs/ElasticMigrateJob.php`)
+3. **ElasticMigrateJob** (`app/Jobs/ElasticMigrateJob.php`)
    - Handles index migration processes in the background
    - Manages alias updates and reindexing
 
