@@ -7,6 +7,7 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
+use NotificationChannels\Fcm\FcmChannel;
 use NotificationChannels\Fcm\FcmMessage;
 use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 use App\Notifications\Traits\RespectsEmailPreferences;
@@ -25,7 +26,7 @@ class BookingDeclinedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', 'fcm']);
+        $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', FcmChannel::class]);
 
         return $this->filterChannelsForPush($notifiable, $channels);
     }
