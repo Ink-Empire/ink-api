@@ -226,6 +226,14 @@ return [
                 'timeout' => 120,
                 'memory' => 256,
             ],
+            'supervisor-mail' => [
+                'maxProcesses' => 1,
+                'connection' => 'redis',
+                'queue' => ['mail'],
+                'tries' => 3,
+                'timeout' => 30,
+                'memory' => 128,
+            ],
             'supervisor-bulk' => [
                 'maxProcesses' => 3,
                 'balanceMaxShift' => 1,
@@ -242,7 +250,7 @@ return [
             'supervisor-1' => [
                 'maxProcesses' => 3,
                 'connection' => 'redis',
-                'queue' => ['default', 'elastic-rebuild', 'elastic-reindex'],
+                'queue' => ['default', 'elastic-rebuild', 'elastic-reindex', 'mail'],
                 'tries' => 3,
                 'timeout' => 120,
             ],

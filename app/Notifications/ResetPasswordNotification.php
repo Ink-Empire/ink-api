@@ -11,6 +11,8 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
 {
     use Queueable;
 
+    public int $tries = 3;
+
     /**
      * The password reset token.
      */
@@ -22,6 +24,12 @@ class ResetPasswordNotification extends Notification implements ShouldQueue
     public function __construct(string $token)
     {
         $this->token = $token;
+        $this->onQueue('mail');
+    }
+
+    public function backoff(): array
+    {
+        return [5, 15, 30];
     }
 
     /**

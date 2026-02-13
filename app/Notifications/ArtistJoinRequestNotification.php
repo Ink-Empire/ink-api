@@ -20,7 +20,9 @@ class ArtistJoinRequestNotification extends Notification implements ShouldQueue
     public function __construct(
         public User $artist,
         public Studio $studio
-    ) {}
+    ) {
+        $this->onQueue('mail');
+    }
 
     public function via(object $notifiable): array
     {
