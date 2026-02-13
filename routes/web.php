@@ -42,6 +42,7 @@ Route::prefix('api')->group(function () {
     Route::middleware('auth:sanctum')->group(function () {
         Route::group(['prefix' => 'users'], function () {
             Route::post('profile-photo', [UserController::class, 'upload']);
+            Route::delete('profile-photo', [UserController::class, 'deleteProfilePhoto']);
             Route::put('/{id}', [UserController::class, 'update']);
             Route::post('/favorites/{type}', [UserController::class, 'toggleFavorite']);
             Route::delete('/favorites/{type}/{id}', [UserController::class, 'removeFavorite']);

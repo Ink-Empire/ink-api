@@ -69,6 +69,7 @@ class NewMessageNotification extends Notification
                     'payload' => [
                         'aps' => [
                             'sound' => 'default',
+                            'badge' => 1,
                         ],
                     ],
                 ],
