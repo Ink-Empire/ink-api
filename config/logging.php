@@ -54,7 +54,10 @@ return [
     'channels' => [
         'stack' => [
             'driver' => 'stack',
-            'channels' => filter_var(env('LOG_STDOUT_STDERR'), FILTER_VALIDATE_BOOLEAN) ? ['stdout', 'stderr'] : ['daily', 'debug'],
+            'channels' => array_filter(array_merge(
+                filter_var(env('LOG_STDOUT_STDERR'), FILTER_VALIDATE_BOOLEAN) ? ['stdout', 'stderr'] : ['daily', 'debug'],
+                env('SENTRY_LARAVEL_DSN') ? ['sentry'] : []
+            )),
         ],
 
         'single' => [
@@ -124,6 +127,11 @@ return [
             'driver' => 'errorlog',
             'level' => env('LOG_LEVEL', 'debug'),
             'replace_placeholders' => true,
+        ],
+
+        'sentry' => [
+            'driver' => 'sentry',
+            'level' => 'error',
         ],
 
         'null' => [
