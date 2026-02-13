@@ -83,7 +83,7 @@ return [
     |
     */
 
-    'middleware' => app()->environment('production')
+    'middleware' => env('APP_ENV') === 'production'
         ? ['web', 'auth.basic']
         : ['web'],
 
