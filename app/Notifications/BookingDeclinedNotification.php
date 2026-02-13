@@ -7,11 +7,14 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
+use NotificationChannels\Fcm\FcmMessage;
+use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 use App\Notifications\Traits\RespectsEmailPreferences;
+use App\Notifications\Traits\RespectsPushPreferences;
 
 class BookingDeclinedNotification extends Notification
 {
-    use RespectsEmailPreferences;
+    use RespectsEmailPreferences, RespectsPushPreferences;
 
     public const EVENT_TYPE = 'booking_declined';
 
@@ -22,7 +25,9 @@ class BookingDeclinedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
+        $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', 'fcm']);
+
+        return $this->filterChannelsForPush($notifiable, $channels);
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -49,6 +54,29 @@ class BookingDeclinedNotification extends Notification
                 'reason' => $this->reason,
                 'inboxUrl' => $inboxUrl,
                 'unsubscribeUrl' => $unsubscribeUrl,
+            ]);
+    }
+
+    public function toFcm(object $notifiable): FcmMessage
+    {
+        $type = $this->appointment->type === 'consultation' ? 'consultation' : 'appointment';
+
+        return (new FcmMessage(notification: new FcmNotification(
+            title: "{$type} request update",
+            body: 'Your request status has been updated on InkedIn.',
+        )))
+            ->data([
+                'type' => self::EVENT_TYPE,
+                'appointment_id' => (string) $this->appointment->id,
+            ])
+            ->custom([
+                'apns' => [
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'default',
+                        ],
+                    ],
+                ],
             ]);
     }
 

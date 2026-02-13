@@ -8,11 +8,14 @@ use Illuminate\Bus\Queueable;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
+use NotificationChannels\Fcm\FcmMessage;
+use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 use App\Notifications\Traits\RespectsEmailPreferences;
+use App\Notifications\Traits\RespectsPushPreferences;
 
 class TattooBeaconNotification extends Notification
 {
-    use Queueable, RespectsEmailPreferences;
+    use Queueable, RespectsEmailPreferences, RespectsPushPreferences;
 
     public const EVENT_TYPE = 'beacon_request';
 
@@ -23,7 +26,9 @@ class TattooBeaconNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
+        $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', 'fcm']);
+
+        return $this->filterChannelsForPush($notifiable, $channels);
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -46,6 +51,27 @@ class TattooBeaconNotification extends Notification
                 'description' => $this->lead->description,
                 'leadsUrl' => $leadsUrl,
                 'unsubscribeUrl' => $unsubscribeUrl,
+            ]);
+    }
+
+    public function toFcm(object $notifiable): FcmMessage
+    {
+        return (new FcmMessage(notification: new FcmNotification(
+            title: 'New tattoo request nearby!',
+            body: 'Someone in your area is looking for a tattoo artist.',
+        )))
+            ->data([
+                'type' => self::EVENT_TYPE,
+                'lead_id' => (string) $this->lead->id,
+            ])
+            ->custom([
+                'apns' => [
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'default',
+                        ],
+                    ],
+                ],
             ]);
     }
 

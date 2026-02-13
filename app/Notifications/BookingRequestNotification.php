@@ -8,11 +8,14 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
+use NotificationChannels\Fcm\FcmMessage;
+use NotificationChannels\Fcm\Resources\Notification as FcmNotification;
 use App\Notifications\Traits\RespectsEmailPreferences;
+use App\Notifications\Traits\RespectsPushPreferences;
 
 class BookingRequestNotification extends Notification
 {
-    use RespectsEmailPreferences;
+    use RespectsEmailPreferences, RespectsPushPreferences;
 
     // Note: Removed ShouldQueue temporarily for testing - add back when queue is configured
 
@@ -24,7 +27,9 @@ class BookingRequestNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
+        $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', 'fcm']);
+
+        return $this->filterChannelsForPush($notifiable, $channels);
     }
 
     public function toMail(object $notifiable): MailMessage
@@ -54,6 +59,30 @@ class BookingRequestNotification extends Notification
                 'description' => $this->appointment->description,
                 'inboxUrl' => $inboxUrl,
                 'unsubscribeUrl' => $unsubscribeUrl,
+            ]);
+    }
+
+    public function toFcm(object $notifiable): FcmMessage
+    {
+        $type = $this->appointment->type === 'consultation' ? 'consultation' : 'appointment';
+        $clientName = $this->appointment->client?->name ?? 'A client';
+
+        return (new FcmMessage(notification: new FcmNotification(
+            title: "New {$type} request",
+            body: "{$clientName} has requested a {$type} on InkedIn.",
+        )))
+            ->data([
+                'type' => self::EVENT_TYPE,
+                'appointment_id' => (string) $this->appointment->id,
+            ])
+            ->custom([
+                'apns' => [
+                    'payload' => [
+                        'aps' => [
+                            'sound' => 'default',
+                        ],
+                    ],
+                ],
             ]);
     }
 

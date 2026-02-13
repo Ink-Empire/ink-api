@@ -24,6 +24,8 @@ use App\Http\Controllers\EmailTestController;
 use App\Http\Controllers\SubscriptionController;
 use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\SocialMediaLinkController;
+use App\Http\Controllers\DeviceTokenController;
+use App\Http\Controllers\NotificationPreferenceController;
 
 /*
 |--------------------------------------------------------------------------
@@ -178,6 +180,14 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/publish', [\App\Http\Controllers\BulkUploadController::class, 'publish']);
         Route::get('/{id}/publish-status', [\App\Http\Controllers\BulkUploadController::class, 'publishStatus']);
     });
+
+    // Device token routes (push notifications)
+    Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
+    Route::post('/device-tokens/unregister', [DeviceTokenController::class, 'destroy']);
+
+    // Notification preference routes
+    Route::get('/notification-preferences', [NotificationPreferenceController::class, 'index']);
+    Route::put('/notification-preferences', [NotificationPreferenceController::class, 'update']);
 
     // Tattoo lead routes (for users looking for tattoos)
     Route::prefix('leads')->group(function () {
