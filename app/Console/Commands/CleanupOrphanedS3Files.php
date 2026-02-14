@@ -15,7 +15,7 @@ class CleanupOrphanedS3Files extends Command
                             {--dry-run : Show what would be deleted without actually deleting}
                             {--batch-size=100 : Number of S3 files to check per batch}
                             {--max-batches=10 : Maximum number of batches to process (0 for unlimited)}
-                            {--env= : Environment prefix to process (e.g. local, dev, production)}
+                            {--target-env= : Environment prefix to process (e.g. local, dev, production)}
                             {--min-age=24 : Minimum age in hours before a file can be deleted}
                             {--delete-limit=50 : Maximum number of files to delete per run}
                             {--skip-bulk-uploads : Skip the bulk-uploads folder (handled by separate command)}';
@@ -27,13 +27,13 @@ class CleanupOrphanedS3Files extends Command
         $dryRun = $this->option('dry-run');
         $batchSize = (int) $this->option('batch-size');
         $maxBatches = (int) $this->option('max-batches');
-        $env = $this->option('env');
+        $env = $this->option('target-env');
         $minAgeHours = (int) $this->option('min-age');
         $deleteLimit = (int) $this->option('delete-limit');
         $skipBulkUploads = $this->option('skip-bulk-uploads');
 
         if (!$env) {
-            $this->error('The --env option is required (e.g. --env=production)');
+            $this->error('The --target-env option is required (e.g. --target-env=production)');
 
             return Command::FAILURE;
         }
