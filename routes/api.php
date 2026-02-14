@@ -251,6 +251,8 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::post('elastic/rebuild-bypass', [\App\Http\Controllers\ElasticController::class, 'rebuildBypass']);
     Route::post('elastic/rebuild-by-elastic', [\App\Http\Controllers\ElasticController::class, 'rebuildByElasticQuery']);
     Route::post('elastic/migrate', [\App\Http\Controllers\ElasticController::class, 'migrateAlias']);
+    Route::post('elastic/find-orphans', [\App\Http\Controllers\ElasticController::class, 'findOrphans']);
+    Route::post('elastic/delete-orphans', [\App\Http\Controllers\ElasticController::class, 'deleteOrphans']);
 
     // Email testing
     Route::get('email-test/types', [EmailTestController::class, 'getTypes']);
