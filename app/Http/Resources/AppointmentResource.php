@@ -20,6 +20,7 @@ class AppointmentResource extends JsonResource
             'start' => $this->getISODateTime($this->date, $this->start_time),
             'end' => $this->getISODateTime($this->date, $this->end_time),
             'allDay' => $this->all_day,
+            'client_id' => $this->client_id,
             'extendedProps' => [
                 'status' => $this->status,
                 'description' => $this->description,

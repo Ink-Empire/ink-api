@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\BriefImageResource;
 use App\Http\Resources\ConversationResource;
 use App\Http\Resources\MessageResource;
+use App\Models\Appointment;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
@@ -232,7 +233,7 @@ class ConversationController extends Controller
     {
         $request->validate([
             'content' => 'nullable|string|max:5000',
-            'type' => 'in:text,image,design_share,booking_card,deposit_request,price_quote',
+            'type' => 'in:text,image,design_share,booking_card,deposit_request,price_quote,cancellation,reschedule',
             'metadata' => 'nullable|array',
             'attachment_ids' => 'nullable|array',
             'attachment_ids.*' => 'exists:images,id',
@@ -365,6 +366,139 @@ class ConversationController extends Controller
             'items' => $request->items,
             'total' => $request->total,
             'valid_until' => $request->valid_until,
+        ]);
+    }
+
+    /**
+     * Send a cancellation message and cancel the appointment.
+     */
+    public function sendCancellationRequest(Request $request, int $id, ConversationService $conversationService): JsonResponse
+    {
+        $request->validate([
+            'appointment_id' => 'required|exists:appointments,id',
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $user = $request->user();
+        $conversation = Conversation::forUser($user->id)->findOrFail($id);
+
+        $appointment = Appointment::findOrFail($request->appointment_id);
+
+        // Verify the user is the artist on this appointment
+        if ($appointment->artist_id !== $user->id) {
+            return response()->json(['error' => 'Only the artist can cancel this appointment'], 403);
+        }
+
+        // Cancel the appointment
+        $appointment->update(['status' => 'cancelled']);
+
+        $content = $request->reason
+            ? "Appointment cancelled: {$request->reason}"
+            : 'Appointment cancelled';
+
+        $message = $conversationService->sendTypedMessage($conversation, $user->id, $content, 'cancellation', [
+            'appointment_id' => $request->appointment_id,
+            'reason' => $request->reason,
+        ]);
+
+        return response()->json([
+            'message' => new MessageResource($message->load('sender')),
+        ], 201);
+    }
+
+    /**
+     * Send a reschedule request message.
+     */
+    public function sendRescheduleRequest(Request $request, int $id, ConversationService $conversationService): JsonResponse
+    {
+        $request->validate([
+            'appointment_id' => 'required|exists:appointments,id',
+            'proposed_date' => 'required|date',
+            'proposed_start_time' => 'required|string',
+            'proposed_end_time' => 'required|string',
+            'reason' => 'nullable|string|max:1000',
+        ]);
+
+        $user = $request->user();
+        $conversation = Conversation::forUser($user->id)->findOrFail($id);
+
+        $appointment = Appointment::findOrFail($request->appointment_id);
+
+        if ($appointment->artist_id !== $user->id) {
+            return response()->json(['error' => 'Only the artist can request a reschedule'], 403);
+        }
+
+        $content = $request->reason
+            ? "Reschedule requested: {$request->reason}"
+            : 'Reschedule requested';
+
+        $message = $conversationService->sendTypedMessage($conversation, $user->id, $content, 'reschedule', [
+            'appointment_id' => $request->appointment_id,
+            'proposed_date' => $request->proposed_date,
+            'proposed_start_time' => $request->proposed_start_time,
+            'proposed_end_time' => $request->proposed_end_time,
+            'reason' => $request->reason,
+            'status' => 'pending',
+        ]);
+
+        return response()->json([
+            'message' => new MessageResource($message->load('sender')),
+        ], 201);
+    }
+
+    /**
+     * Respond to a reschedule request (accept/decline).
+     */
+    public function respondToReschedule(Request $request, int $id, int $messageId, ConversationService $conversationService): JsonResponse
+    {
+        $request->validate([
+            'action' => 'required|in:accept,decline',
+        ]);
+
+        $user = $request->user();
+        $conversation = Conversation::forUser($user->id)->findOrFail($id);
+
+        $message = Message::where('id', $messageId)
+            ->where('conversation_id', $id)
+            ->where('type', 'reschedule')
+            ->firstOrFail();
+
+        $metadata = $message->metadata ?? [];
+
+        if (($metadata['status'] ?? null) !== 'pending') {
+            return response()->json(['error' => 'This reschedule request has already been responded to'], 422);
+        }
+
+        // Verify the responder is the client (not the sender of the reschedule)
+        if ($message->sender_id === $user->id) {
+            return response()->json(['error' => 'You cannot respond to your own reschedule request'], 403);
+        }
+
+        $action = $request->action;
+
+        if ($action === 'accept') {
+            $appointment = Appointment::findOrFail($metadata['appointment_id']);
+            $appointment->update([
+                'date' => $metadata['proposed_date'],
+                'start_time' => $metadata['proposed_start_time'],
+                'end_time' => $metadata['proposed_end_time'],
+            ]);
+            $metadata['status'] = 'accepted';
+        } else {
+            $metadata['status'] = 'declined';
+        }
+
+        $message->update(['metadata' => $metadata]);
+
+        // Send a notification message back
+        $responseContent = $action === 'accept'
+            ? 'Reschedule accepted'
+            : 'Reschedule declined';
+
+        $conversationService->sendTypedMessage($conversation, $user->id, $responseContent, 'text', []);
+
+        return response()->json([
+            'message' => new MessageResource($message->fresh()->load('sender')),
         ]);
     }
 

@@ -5,6 +5,7 @@ namespace App\Enums;
 class UserTypes
 {
     const USER = 'user';
+    const CLIENT = 'client';
     const ARTIST = 'artist';
     const STUDIO = 'studio';
 

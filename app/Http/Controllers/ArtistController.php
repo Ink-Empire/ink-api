@@ -6,6 +6,7 @@ use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\WorkingHoursResource;
 use App\Jobs\NotifyWishlistUsersOfBooksOpen;
+use App\Models\Appointment;
 use App\Models\Artist;
 use App\Models\ArtistAvailability;
 use App\Models\ArtistSettings;
@@ -313,7 +314,9 @@ class ArtistController extends Controller
                 [
                     'start_time' => $availability['start_time'],
                     'end_time' => $availability['end_time'],
-                    'is_day_off' => $availability['is_day_off']
+                    'consultation_start_time' => $availability['consultation_start_time'] ?? null,
+                    'consultation_end_time' => $availability['consultation_end_time'] ?? null,
+                    'is_day_off' => $availability['is_day_off'],
                 ]
             );
         }
@@ -353,6 +356,7 @@ class ArtistController extends Controller
                 'hourly_rate' => 0,
                 'deposit_amount' => 0,
                 'consultation_fee' => 0,
+                'consultation_duration' => 30,
                 'minimum_session' => null,
                 'watermark_enabled' => false,
                 'watermark_opacity' => 50,
@@ -372,6 +376,7 @@ class ArtistController extends Controller
             'hourly_rate',
             'deposit_amount',
             'consultation_fee',
+            'consultation_duration',
             'minimum_session',
             'watermark_enabled',
             'watermark_opacity',
@@ -414,6 +419,7 @@ class ArtistController extends Controller
             'hourly_rate',
             'deposit_amount',
             'consultation_fee',
+            'consultation_duration',
             'minimum_session',
             'watermark_image_id',
             'watermark_opacity',
@@ -435,6 +441,20 @@ class ArtistController extends Controller
         $existingSettings = ArtistSettings::where('artist_id', $artist->id)->first();
         $wasBooksClosed = !$existingSettings || !$existingSettings->books_open;
         $isOpeningBooks = !empty($settingsData['books_open']) && $wasBooksClosed;
+
+        // Require at least one non-day-off availability row before opening books
+        if (!empty($settingsData['books_open'])) {
+            $hasAvailability = ArtistAvailability::where('artist_id', $artist->id)
+                ->where('is_day_off', false)
+                ->exists();
+
+            if (!$hasAvailability) {
+                return response()->json([
+                    'error' => 'Please set your available hours before opening your books.',
+                    'requires_availability' => true,
+                ], 422);
+            }
+        }
 
         // If books_open is being set to true, automatically enable accepts_appointments
         if (!empty($settingsData['books_open'])) {
@@ -507,6 +527,132 @@ class ArtistController extends Controller
         }
 
         return $artist;
+    }
+
+    /**
+     * Get available time slots for booking with an artist on a specific date.
+     */
+    public function getAvailableSlots(Request $request, $id): JsonResponse
+    {
+        $artist = ModelLookup::findArtist($id);
+
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        $user = $request->user();
+        if ($user && $user->isBlocked($artist->id)) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        $date = $request->query('date');
+        $type = $request->query('type', 'appointment');
+
+        if (!$date) {
+            return response()->json(['error' => 'Date is required'], 400);
+        }
+
+        $dateObj = Carbon::parse($date);
+        $dayOfWeek = $dateObj->dayOfWeek;
+
+        $availability = ArtistAvailability::where('artist_id', $artist->id)
+            ->where('day_of_week', $dayOfWeek)
+            ->first();
+
+        if (!$availability || $availability->is_day_off) {
+            return response()->json([
+                'date' => $date,
+                'working_hours' => null,
+                'consultation_window' => null,
+                'consultation_duration' => 30,
+                'slots' => [],
+            ]);
+        }
+
+        $settings = ArtistSettings::where('artist_id', $artist->id)->first();
+        $consultationDuration = $settings->consultation_duration ?? 30;
+
+        $startTime = Carbon::parse($availability->start_time);
+        $endTime = Carbon::parse($availability->end_time);
+        $consultStart = $availability->consultation_start_time ? Carbon::parse($availability->consultation_start_time) : null;
+        $consultEnd = $availability->consultation_end_time ? Carbon::parse($availability->consultation_end_time) : null;
+        $hasConsultWindow = $consultStart && $consultEnd;
+
+        // Get existing appointments for the date
+        $existingAppointments = Appointment::where('artist_id', $artist->id)
+            ->whereDate('date', $date)
+            ->whereIn('status', ['pending', 'booked'])
+            ->get();
+
+        // Generate candidate slots
+        $slots = [];
+        if ($type === 'consultation') {
+            $slotStart = $hasConsultWindow ? $consultStart->copy() : $startTime->copy();
+            $slotEnd = $hasConsultWindow ? $consultEnd->copy() : $endTime->copy();
+            $step = $consultationDuration;
+
+            while ($slotStart->copy()->addMinutes($step)->lte($slotEnd)) {
+                $slots[] = [
+                    'time' => $slotStart->format('H:i'),
+                    'end' => $slotStart->copy()->addMinutes($step)->format('H:i'),
+                ];
+                $slotStart->addMinutes($step);
+            }
+        } else {
+            // Appointment slots
+            $step = 30;
+            $cursor = $startTime->copy();
+
+            while ($cursor->lt($endTime)) {
+                // If consultation window exists, skip slots within it
+                if ($hasConsultWindow && $cursor->gte($consultStart) && $cursor->lt($consultEnd)) {
+                    $cursor->addMinutes($step);
+                    continue;
+                }
+                $slots[] = [
+                    'time' => $cursor->format('H:i'),
+                    'end' => $cursor->copy()->addMinutes($step)->format('H:i'),
+                ];
+                $cursor->addMinutes($step);
+            }
+        }
+
+        // Filter out slots that overlap existing appointments
+        $availableSlots = [];
+        foreach ($slots as $slot) {
+            $slotTime = Carbon::parse($slot['time']);
+            $slotEndTime = Carbon::parse($slot['end']);
+            $overlaps = false;
+
+            foreach ($existingAppointments as $apt) {
+                $aptStart = Carbon::parse($apt->start_time);
+                $aptEnd = $apt->end_time ? Carbon::parse($apt->end_time) : $aptStart->copy()->addHour();
+
+                // Overlap if slot's range intersects appointment's range
+                if ($slotTime->lt($aptEnd) && $slotEndTime->gt($aptStart)) {
+                    $overlaps = true;
+                    break;
+                }
+            }
+
+            if (!$overlaps) {
+                $availableSlots[] = $slot['time'];
+            }
+        }
+
+        return response()->json([
+            'date' => $date,
+            'working_hours' => [
+                'start' => $startTime->format('H:i'),
+                'end' => $endTime->format('H:i'),
+            ],
+            'consultation_window' => $hasConsultWindow ? [
+                'start' => $consultStart->format('H:i'),
+                'end' => $consultEnd->format('H:i'),
+            ] : null,
+            'consultation_duration' => $consultationDuration,
+            'slots' => $availableSlots,
+        ]);
     }
 
     /**

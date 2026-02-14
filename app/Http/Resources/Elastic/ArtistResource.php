@@ -76,8 +76,9 @@ class ArtistResource extends JsonResource
         }
 
         // Only expose non-sensitive booking availability settings
+        // Use model accessor for books_open so it checks availability rows
         return [
-            'books_open' => $settings->books_open ?? false,
+            'books_open' => $this->books_open,
             'accepts_walk_ins' => $settings->accepts_walk_ins ?? false,
             'accepts_consultations' => $settings->accepts_consultations ?? false,
             'accepts_appointments' => $settings->accepts_appointments ?? false,
