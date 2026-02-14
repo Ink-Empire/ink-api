@@ -19,6 +19,7 @@ use App\Util\ModelLookup;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -288,7 +289,11 @@ class ArtistController extends Controller
             return response()->json(['error' => 'Artist not found'], 404);
         }
 
-        $availability = ArtistAvailability::where('artist_id', $artist->id)->get();
+        $availability = Cache::remember(
+            "artist:{$artist->id}:working-hours",
+            3600, // 1 hour
+            fn () => ArtistAvailability::where('artist_id', $artist->id)->get()
+        );
 
         return WorkingHoursResource::collection($availability);
     }
@@ -312,6 +317,8 @@ class ArtistController extends Controller
                 ]
             );
         }
+
+        Cache::forget("artist:{$artist->id}:working-hours");
 
         return response()->json(['success' => true]);
     }
