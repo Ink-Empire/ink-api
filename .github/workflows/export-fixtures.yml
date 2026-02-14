@@ -1,16 +1,7 @@
 name: Export API Fixtures
 
 on:
-  push:
-    branches: [main, develop]
-    paths:
-      # Only run when API response structure might change
-      - 'app/Http/Controllers/**'
-      - 'app/Http/Resources/**'
-      - 'routes/**'
-      - 'tests/Feature/Contracts/**'
-      - 'database/migrations/**'
-  workflow_dispatch:  # Allow manual trigger
+  workflow_dispatch:  # Manual trigger only - automatic runs disabled
 
 env:
   S3_BUCKET: inked-in-images
