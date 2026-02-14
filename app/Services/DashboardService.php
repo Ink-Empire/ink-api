@@ -253,6 +253,16 @@ class DashboardService
      */
     public function getArtistUpcomingSchedule(User $artist, int $limit = 10): array
     {
+        $cacheKey = "artist:{$artist->id}:upcoming-schedule";
+        $cacheDuration = 300; // 5 minutes
+
+        return Cache::remember($cacheKey, $cacheDuration, function () use ($artist, $limit) {
+            return $this->fetchArtistUpcomingSchedule($artist, $limit);
+        });
+    }
+
+    private function fetchArtistUpcomingSchedule(User $artist, int $limit): array
+    {
         $appointments = Appointment::where('artist_id', $artist->id)
             ->where('status', 'booked')
             ->where('date', '>=', Carbon::now()->toDateString())
@@ -275,6 +285,7 @@ class DashboardService
 
             return [
                 'id' => $apt->id,
+                'date' => $apt->date,
                 'day' => $date->day,
                 'month' => $date->format('M'),
                 'time' => "{$startTime} – {$endTime}",

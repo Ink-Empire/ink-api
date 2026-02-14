@@ -19,6 +19,7 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Password;
+use Illuminate\Support\Facades\Storage;
 
 /**
  *
@@ -466,6 +467,18 @@ class UserController extends Controller
                     'owner_id' => null,
                     'is_claimed' => false,
                 ]);
+            }
+
+            // Delete profile image from S3 and database
+            if ($user->image_id && $user->image) {
+                $image = $user->image;
+                $user->update(['image_id' => null]);
+
+                if ($image->filename) {
+                    Storage::disk('s3')->delete($image->filename);
+                }
+
+                $image->delete();
             }
 
             // Delete the user
