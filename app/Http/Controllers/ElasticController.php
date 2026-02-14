@@ -251,6 +251,76 @@ class ElasticController
         }
     }
 
+    public function findOrphans(Request $request)
+    {
+        try {
+            $model = $request->get('model');
+            $instance = StringToModel::convert($model);
+            $indexName = $instance->getIndexConfigurator()->getName();
+            $modelClass = get_class($instance);
+
+            $countResponse = $this->elasticService->post("/{$indexName}/_count", [
+                'query' => ['match_all' => (object)[]]
+            ]);
+            $totalEs = $countResponse['count'] ?? 0;
+
+            $searchResponse = $this->elasticService->post("/{$indexName}/_search", [
+                '_source' => false,
+                'query' => ['match_all' => (object)[]],
+                'size' => $totalEs,
+            ]);
+
+            $esIds = collect($searchResponse['hits']['hits'] ?? [])->pluck('_id')->map(fn($id) => (int) $id)->toArray();
+
+            $existingIds = collect();
+            foreach (array_chunk($esIds, 1000) as $chunk) {
+                $found = $modelClass::whereIn('id', $chunk)->pluck('id');
+                $existingIds = $existingIds->merge($found);
+            }
+
+            $orphanIds = collect($esIds)->diff($existingIds)->values()->toArray();
+
+            return response()->json([
+                'es_total' => $totalEs,
+                'db_total' => $existingIds->count(),
+                'orphan_count' => count($orphanIds),
+                'orphan_ids' => $orphanIds,
+            ]);
+        } catch (Exception $e) {
+            Log::error("Failed to find orphans", [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return response()->json(['message' => 'Error finding orphans: ' . $e->getMessage()], 500);
+        }
+    }
+
+    public function deleteOrphans(Request $request)
+    {
+        try {
+            $model = $request->get('model');
+            $ids = $request->get('ids', []);
+            $instance = StringToModel::convert($model);
+            $indexName = $instance->getIndexConfigurator()->getName();
+
+            $response = $this->elasticService->post("/{$indexName}/_delete_by_query", [
+                'query' => ['ids' => ['values' => $ids]]
+            ]);
+
+            return response()->json([
+                'deleted' => $response['deleted'] ?? 0,
+            ]);
+        } catch (Exception $e) {
+            Log::error("Failed to delete orphans", [
+                'error' => $e->getMessage(),
+                'file' => $e->getFile(),
+                'line' => $e->getLine(),
+            ]);
+            return response()->json(['message' => 'Error deleting orphans: ' . $e->getMessage()], 500);
+        }
+    }
+
     private function getIdsFromQuery($wheres, $whereIns, $model)
     {
         $instance = StringToModel::convert($model);
