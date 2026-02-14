@@ -3,6 +3,7 @@
 namespace App\Console\Commands;
 
 use App\Models\Image;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
@@ -14,7 +15,9 @@ class CleanupOrphanedS3Files extends Command
                             {--dry-run : Show what would be deleted without actually deleting}
                             {--batch-size=100 : Number of S3 files to check per batch}
                             {--max-batches=10 : Maximum number of batches to process (0 for unlimited)}
-                            {--prefix= : Only check files with this prefix}
+                            {--env= : Environment prefix to process (e.g. local, dev, production)}
+                            {--min-age=24 : Minimum age in hours before a file can be deleted}
+                            {--delete-limit=50 : Maximum number of files to delete per run}
                             {--skip-bulk-uploads : Skip the bulk-uploads folder (handled by separate command)}';
 
     protected $description = 'Find and remove S3 files that are not referenced by any image in the database';
@@ -24,22 +27,34 @@ class CleanupOrphanedS3Files extends Command
         $dryRun = $this->option('dry-run');
         $batchSize = (int) $this->option('batch-size');
         $maxBatches = (int) $this->option('max-batches');
-        $prefix = $this->option('prefix') ?: '';
+        $env = $this->option('env');
+        $minAgeHours = (int) $this->option('min-age');
+        $deleteLimit = (int) $this->option('delete-limit');
         $skipBulkUploads = $this->option('skip-bulk-uploads');
+
+        if (!$env) {
+            $this->error('The --env option is required (e.g. --env=production)');
+
+            return Command::FAILURE;
+        }
+
+        $prefix = $env . '-';
+        $ageCutoff = Carbon::now()->subHours($minAgeHours);
 
         if ($dryRun) {
             $this->info('DRY RUN - No files will actually be deleted');
         }
 
         $this->info("Scanning S3 for orphaned files...");
+        $this->line("  Environment: {$env} (prefix: {$prefix})");
+        $this->line("  Min age: {$minAgeHours} hours (before " . $ageCutoff->toDateTimeString() . ')');
+        $this->line("  Delete limit: {$deleteLimit}");
         $this->line("  Batch size: {$batchSize}");
         $this->line("  Max batches: " . ($maxBatches === 0 ? 'unlimited' : $maxBatches));
-        if ($prefix) {
-            $this->line("  Prefix filter: {$prefix}");
-        }
         if ($skipBulkUploads) {
-            $this->line("  Skipping bulk-uploads folder");
+            $this->line("  Skipping bulk-uploads/ folder");
         }
+        $this->line("  Skipping fixtures/ folder");
 
         $s3 = Storage::disk('s3');
         $orphanedFiles = [];
@@ -76,13 +91,24 @@ class CleanupOrphanedS3Files extends Command
             foreach ($contents as $object) {
                 $key = $object['Key'];
 
+                // Skip directories
+                if (str_ends_with($key, '/')) {
+                    continue;
+                }
+
                 // Skip bulk-uploads folder if requested
                 if ($skipBulkUploads && str_starts_with($key, 'bulk-uploads/')) {
                     continue;
                 }
 
-                // Skip directories
-                if (str_ends_with($key, '/')) {
+                // Skip fixtures folder (CI test data)
+                if (str_starts_with($key, 'fixtures/')) {
+                    continue;
+                }
+
+                // Skip files newer than the minimum age (protects presigned URL uploads in progress)
+                $lastModified = Carbon::parse($object['LastModified']);
+                if ($lastModified->isAfter($ageCutoff)) {
                     continue;
                 }
 
@@ -128,12 +154,19 @@ class CleanupOrphanedS3Files extends Command
         $this->info("Found " . count($orphanedFiles) . " orphaned file(s) out of {$checkedCount} checked");
 
         if (!$dryRun) {
-            $this->info("Deleting orphaned files...");
+            $this->info("Deleting orphaned files (limit: {$deleteLimit})...");
 
             $deletedCount = 0;
             $failedCount = 0;
+            $skippedCount = 0;
 
             foreach ($orphanedFiles as $file) {
+                if ($deletedCount >= $deleteLimit) {
+                    $skippedCount = count($orphanedFiles) - $deletedCount - $failedCount;
+                    $this->warn("Delete limit of {$deleteLimit} reached. {$skippedCount} orphaned file(s) remaining.");
+                    break;
+                }
+
                 try {
                     $s3->delete($file);
                     $deletedCount++;
@@ -151,8 +184,11 @@ class CleanupOrphanedS3Files extends Command
             if ($failedCount > 0) {
                 $this->line("  Failed deletions: {$failedCount}");
             }
+            if ($skippedCount > 0) {
+                $this->line("  Remaining (hit delete limit): {$skippedCount}");
+            }
 
-            Log::info("CleanupOrphanedS3Files: Checked {$checkedCount} files, deleted {$deletedCount} orphaned files, {$failedCount} failures");
+            Log::info("CleanupOrphanedS3Files: Checked {$checkedCount} files, deleted {$deletedCount} orphaned files, {$failedCount} failures, {$skippedCount} remaining");
         } else {
             $this->newLine();
             $this->info("DRY RUN Summary:");
