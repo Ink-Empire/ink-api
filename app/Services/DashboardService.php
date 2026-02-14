@@ -285,7 +285,7 @@ class DashboardService
 
             return [
                 'id' => $apt->id,
-                'date' => $apt->date,
+                'date' => $date->format('Y-m-d'),
                 'day' => $date->day,
                 'month' => $date->format('M'),
                 'time' => "{$startTime} – {$endTime}",
