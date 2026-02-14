@@ -15,6 +15,8 @@ class WorkingHoursResource extends JsonResource
             'day_name' => $this->day_name,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
+            'consultation_start_time' => $this->consultation_start_time,
+            'consultation_end_time' => $this->consultation_end_time,
             'is_day_off' => $this->is_day_off,
         ];
     }

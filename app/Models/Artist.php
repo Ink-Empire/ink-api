@@ -88,7 +88,13 @@ class Artist extends User
 
     public function getBooksOpenAttribute()
     {
-        return $this->settings?->books_open ?? false;
+        if (!($this->settings?->books_open ?? false)) {
+            return false;
+        }
+
+        return $this->working_hours()
+            ->where('is_day_off', false)
+            ->exists();
     }
 
     /*

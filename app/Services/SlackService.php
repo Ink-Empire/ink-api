@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\UserTypes;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -53,7 +54,14 @@ class SlackService
             return false;
         }
 
-        $userType = $user->type_id === \App\Enums\UserTypes::ARTIST_TYPE_ID ? 'Artist' : 'Client';
+        //switch based on id
+        $userType = match ($user->type_id) {
+            1 => UserTypes::CLIENT,
+            2 => UserTypes::ARTIST,
+            3 => UserTypes::STUDIO,
+            default => 'Unknown type',
+        };
+
         $timestamp = $user->created_at->format('M j, Y \a\t g:i A');
 
         $message = "New User Signup!\n"

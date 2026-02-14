@@ -230,7 +230,8 @@ class AuthController extends Controller
         // Check rate limiting
         $request->ensureIsNotRateLimited();
 
-        $user = User::with([
+        $identifier = $request->email;
+        $query = User::with([
             'ownedStudio',
             'verifiedStudios.image',
             'blockedUsers.image',
@@ -240,7 +241,13 @@ class AuthController extends Controller
             'tattoos',
             'type',
             'image',
-        ])->where('email', $request->email)->first();
+        ]);
+
+        if (str_contains($identifier, '@')) {
+            $user = $query->where('email', $identifier)->first();
+        } else {
+            $user = $query->where('username', $identifier)->first();
+        }
 
         if (!$user || !Hash::check($request->password, $user->password)) {
             RateLimiter::hit($request->throttleKey());

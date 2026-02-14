@@ -64,6 +64,7 @@ Route::prefix('api')->group(function () {
             Route::get('/{id}', [ArtistController::class, 'getById']);
             Route::get('/{id}/portfolio', [ArtistController::class, 'getPortfolio']);
             Route::get('/{id}/working-hours', [ArtistController::class, 'getAvailability']);
+            Route::get('/{id}/available-slots', [ArtistController::class, 'getAvailableSlots']);
         });
         Route::post('/{id}/view', [ArtistController::class, 'recordView']);
 
@@ -85,9 +86,12 @@ Route::prefix('api')->group(function () {
             Route::post('/create', [AppointmentController::class, 'store']);
             Route::post('/inbox', [AppointmentController::class, 'inbox']);
             Route::post('/history', [AppointmentController::class, 'history']);
+            Route::post('/invite', [AppointmentController::class, 'invite']);
+            Route::post('/event', [AppointmentController::class, 'createEvent']);
+            Route::post('/{id}/respond', [AppointmentController::class, 'respondToRequest']);
             Route::put('/{id}', [AppointmentController::class, 'update']);
             Route::get('/{id}', [AppointmentController::class, 'getById']);
-            Route::delete('/{id', [AppointmentController::class, 'delete']);
+            Route::delete('/{id}', [AppointmentController::class, 'delete']);
         });
 
         // Conversations / Messages
@@ -107,6 +111,9 @@ Route::prefix('api')->group(function () {
             Route::post('/{id}/messages/deposit-request', [ConversationController::class, 'sendDepositRequest']);
             Route::post('/{id}/messages/design-share', [ConversationController::class, 'sendDesignShare']);
             Route::post('/{id}/messages/price-quote', [ConversationController::class, 'sendPriceQuote']);
+            Route::post('/{id}/messages/cancellation', [ConversationController::class, 'sendCancellationRequest']);
+            Route::post('/{id}/messages/reschedule', [ConversationController::class, 'sendRescheduleRequest']);
+            Route::put('/{id}/messages/{messageId}/respond', [ConversationController::class, 'respondToReschedule']);
         });
 
         // Client Dashboard

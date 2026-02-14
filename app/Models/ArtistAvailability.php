@@ -13,6 +13,8 @@ class ArtistAvailability extends Model
         'day_of_week',
         'start_time',
         'end_time',
+        'consultation_start_time',
+        'consultation_end_time',
         'is_day_off',
     ];
 

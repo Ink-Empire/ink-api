@@ -139,7 +139,7 @@ class AppointmentController extends Controller
         $data = $request->validate([
             'title' => 'required|string',
             'start_time' => 'required',
-            'end_time' => 'required',
+            'end_time' => 'nullable',
             'all_day' => 'boolean',
             'description' => 'nullable|string',
             'type' => 'required|string|in:tattoo,consultation',
@@ -152,7 +152,9 @@ class AppointmentController extends Controller
         $data['date'] = date('Y-m-d', strtotime($request->get('date')));
         //start_time and end_time should be in the format HH:MM:SS
         $data['start_time'] = date('H:i:s', strtotime($request->get('start_time')));
-        $data['end_time'] = date('H:i:s', strtotime($request->get('end_time')));
+        $data['end_time'] = $request->get('end_time')
+            ? date('H:i:s', strtotime($request->get('end_time')))
+            : null;
 
         $appointment = $artist->appointments()->create($data);
 
@@ -184,13 +186,13 @@ class AppointmentController extends Controller
             'content' => $messageContent,
             'message_type' => 'initial',
             'type' => 'booking_card',
-            'metadata' => [
+            'metadata' => array_filter([
                 'appointment_id' => $appointment->id,
                 'type' => $data['type'],
                 'date' => $data['date'],
                 'start_time' => $data['start_time'],
-                'end_time' => $data['end_time'],
-            ],
+                'end_time' => $data['end_time'] ?? null,
+            ]),
         ]);
 
         // Send email notification to the artist
