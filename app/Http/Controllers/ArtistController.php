@@ -21,7 +21,6 @@ use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Log;
 
 /**
  *
@@ -51,7 +50,15 @@ class ArtistController extends Controller
 
         $pagination = $this->paginationService->extractParams($params);
 
+        $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
+        $esSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
+            op: 'es.search',
+            description: 'Artist ES search',
+        ));
+
         $response = $this->artistService->search($params);
+
+        $esSpan?->finish();
 
         // Remove PII for unauthenticated users
         $sanitizedResponse = $request->user()
@@ -74,16 +81,27 @@ class ArtistController extends Controller
     private function getArtistDetail(Request $request, array $params): JsonResponse
     {
         $identifier = $params['slug'] ?? $params['id'];
+        $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
 
         // Check blocked users (single DB query for auth users, none for guests)
         $user = $request->user();
         $blockedIds = [];
         if ($user) {
+            $blockSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
+                op: 'db.query',
+                description: 'Get blocked user IDs',
+            ));
             $blockedIds = $user->getAllBlockedIds();
+            $blockSpan?->finish();
         }
 
         // Fetch artist from ES (pure ES, no DB)
+        $esArtistSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
+            op: 'es.get',
+            description: 'Fetch artist by ID/slug from ES',
+        ));
         $artist = $this->artistService->getById($identifier);
+        $esArtistSpan?->finish();
 
         if (!$artist) {
             return response()->json(['error' => 'Artist not found'], 404);
@@ -95,7 +113,13 @@ class ArtistController extends Controller
         }
 
         // Fetch first page of tattoos from ES
+        $esTattooSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
+            op: 'es.search',
+            description: 'Fetch artist tattoos from ES',
+        ));
         $tattoos = $this->tattooService->getByArtistId($identifier, $params);
+        $esTattooSpan?->finish();
+
         $tattooData = $tattoos['response'] ?? [];
         if ($tattooData instanceof \Illuminate\Support\Collection) {
             $tattooData = $tattooData->values()->toArray();
