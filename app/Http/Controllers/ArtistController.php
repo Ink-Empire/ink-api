@@ -50,14 +50,19 @@ class ArtistController extends Controller
 
         $pagination = $this->paginationService->extractParams($params);
 
-        $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
-        $esSpan = $parentSpan?->startChild(
-            \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Artist ES search')
-        );
+        $cacheKey = 'es:artists:search:' . md5(json_encode($params));
+        $response = Cache::remember($cacheKey, 120, function () use ($params) {
+            $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
+            $esSpan = $parentSpan?->startChild(
+                \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Artist ES search')
+            );
 
-        $response = $this->artistService->search($params);
+            $response = $this->artistService->search($params);
 
-        $esSpan?->finish();
+            $esSpan?->finish();
+
+            return $response;
+        });
 
         // Remove PII for unauthenticated users
         $sanitizedResponse = $request->user()
@@ -93,12 +98,33 @@ class ArtistController extends Controller
             $blockSpan?->finish();
         }
 
-        // Fetch artist from ES (pure ES, no DB)
-        $esArtistSpan = $parentSpan?->startChild(
-            \Sentry\Tracing\SpanContext::make()->setOp('es.get')->setDescription('Fetch artist by ID/slug from ES')
-        );
-        $artist = $this->artistService->getById($identifier);
-        $esArtistSpan?->finish();
+        // Cache combined artist + tattoos (before PII sanitization)
+        $cacheKey = 'es:artist:detail:' . $identifier;
+        $artist = Cache::remember($cacheKey, 300, function () use ($identifier, $params, $parentSpan) {
+            $esArtistSpan = $parentSpan?->startChild(
+                \Sentry\Tracing\SpanContext::make()->setOp('es.get')->setDescription('Fetch artist by ID/slug from ES')
+            );
+            $artist = $this->artistService->getById($identifier);
+            $esArtistSpan?->finish();
+
+            if (!$artist) {
+                return null;
+            }
+
+            $esTattooSpan = $parentSpan?->startChild(
+                \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Fetch artist tattoos from ES')
+            );
+            $tattoos = $this->tattooService->getByArtistId($identifier, $params);
+            $esTattooSpan?->finish();
+
+            $tattooData = $tattoos['response'] ?? [];
+            if ($tattooData instanceof \Illuminate\Support\Collection) {
+                $tattooData = $tattooData->values()->toArray();
+            }
+            $artist['tattoos'] = $tattooData;
+
+            return $artist;
+        });
 
         if (!$artist) {
             return response()->json(['error' => 'Artist not found'], 404);
@@ -108,19 +134,6 @@ class ArtistController extends Controller
         if ($artistId && in_array($artistId, $blockedIds)) {
             return response()->json(['error' => 'Artist not found'], 404);
         }
-
-        // Fetch first page of tattoos from ES
-        $esTattooSpan = $parentSpan?->startChild(
-            \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Fetch artist tattoos from ES')
-        );
-        $tattoos = $this->tattooService->getByArtistId($identifier, $params);
-        $esTattooSpan?->finish();
-
-        $tattooData = $tattoos['response'] ?? [];
-        if ($tattooData instanceof \Illuminate\Support\Collection) {
-            $tattooData = $tattooData->values()->toArray();
-        }
-        $artist['tattoos'] = $tattooData;
 
         // Sanitize PII for unauthenticated users
         if (!$user) {
@@ -200,7 +213,10 @@ class ArtistController extends Controller
         $params = $request->all();
         $pagination = $this->paginationService->extractParams($params);
 
-        $tattoos = $this->tattooService->getByArtistId($id, $params);
+        $cacheKey = "es:artist:portfolio:{$id}:page:{$pagination['page']}:per_page:{$pagination['per_page']}";
+        $tattoos = Cache::remember($cacheKey, 300, function () use ($id, $params) {
+            return $this->tattooService->getByArtistId($id, $params);
+        });
 
         $tattooData = $tattoos['response'] ?? [];
         if ($tattooData instanceof \Illuminate\Support\Collection) {
@@ -537,6 +553,10 @@ class ArtistController extends Controller
         // Refresh the settings relationship so searchable() gets fresh data
         $artist->load('settings');
         $artist->searchable();
+
+        // Clear cached ES data for this artist
+        Cache::forget("es:artist:detail:{$artist->slug}");
+        Cache::forget("es:artist:detail:{$artist->id}");
 
         // Load watermark image for response
         $settings->load('watermarkImage');
