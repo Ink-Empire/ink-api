@@ -51,10 +51,9 @@ class ArtistController extends Controller
         $pagination = $this->paginationService->extractParams($params);
 
         $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
-        $esSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
-            op: 'es.search',
-            description: 'Artist ES search',
-        ));
+        $esSpan = $parentSpan?->startChild(
+            \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Artist ES search')
+        );
 
         $response = $this->artistService->search($params);
 
@@ -87,19 +86,17 @@ class ArtistController extends Controller
         $user = $request->user();
         $blockedIds = [];
         if ($user) {
-            $blockSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
-                op: 'db.query',
-                description: 'Get blocked user IDs',
-            ));
+            $blockSpan = $parentSpan?->startChild(
+                \Sentry\Tracing\SpanContext::make()->setOp('db.query')->setDescription('Get blocked user IDs')
+            );
             $blockedIds = $user->getAllBlockedIds();
             $blockSpan?->finish();
         }
 
         // Fetch artist from ES (pure ES, no DB)
-        $esArtistSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
-            op: 'es.get',
-            description: 'Fetch artist by ID/slug from ES',
-        ));
+        $esArtistSpan = $parentSpan?->startChild(
+            \Sentry\Tracing\SpanContext::make()->setOp('es.get')->setDescription('Fetch artist by ID/slug from ES')
+        );
         $artist = $this->artistService->getById($identifier);
         $esArtistSpan?->finish();
 
@@ -113,10 +110,9 @@ class ArtistController extends Controller
         }
 
         // Fetch first page of tattoos from ES
-        $esTattooSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
-            op: 'es.search',
-            description: 'Fetch artist tattoos from ES',
-        ));
+        $esTattooSpan = $parentSpan?->startChild(
+            \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Fetch artist tattoos from ES')
+        );
         $tattoos = $this->tattooService->getByArtistId($identifier, $params);
         $esTattooSpan?->finish();
 
