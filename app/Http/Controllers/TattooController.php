@@ -77,11 +77,17 @@ class TattooController extends Controller
         $params = $request->all();
         $pagination = $this->paginationService->extractParams($params);
 
+        $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
+        $esSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
+            op: 'es.search',
+            description: 'Tattoo ES search',
+        ));
+
         $response = $this->tattooService->search($params);
 
-        //if response.items is empty, re-do search without distance filters and return an error message
+        $esSpan?->finish();
+
         if (count($response["response"]) == 0) {
-            $response = $this->tattooService->search($params);
             $response['none_found'] = "No results found for your search, here are some suggestions: \n" .
                 "1. Try searching for a different tattoo style or artist.\n" .
                 "2. Check your spelling and try again.\n" .
