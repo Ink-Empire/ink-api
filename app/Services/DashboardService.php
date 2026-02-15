@@ -293,6 +293,8 @@ class DashboardService
                 'clientName' => $clientName,
                 'clientInitials' => $initials,
                 'type' => $apt->type ?? 'appointment',
+                'client_id' => $apt->client_id,
+                'status' => $apt->status,
             ];
         })->toArray();
     }
