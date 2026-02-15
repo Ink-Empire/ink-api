@@ -43,6 +43,12 @@ class ArtistController extends Controller
     public function search(Request $request): JsonResponse
     {
         $params = $request->all();
+
+        // Route to detail mode if slug or id param is present
+        if (isset($params['slug']) || isset($params['id'])) {
+            return $this->getArtistDetail($request, $params);
+        }
+
         $pagination = $this->paginationService->extractParams($params);
 
         $response = $this->artistService->search($params);
@@ -59,6 +65,49 @@ class ArtistController extends Controller
             'response' => $sanitizedResponse,
             ...$paginationMeta,
         ]);
+    }
+
+    /**
+     * Get a single artist detail from ES with tattoos.
+     * 0 DB queries for guests, 1 DB query for authenticated users (block check).
+     */
+    private function getArtistDetail(Request $request, array $params): JsonResponse
+    {
+        $identifier = $params['slug'] ?? $params['id'];
+
+        // Check blocked users (single DB query for auth users, none for guests)
+        $user = $request->user();
+        $blockedIds = [];
+        if ($user) {
+            $blockedIds = $user->getAllBlockedIds();
+        }
+
+        // Fetch artist from ES (pure ES, no DB)
+        $artist = $this->artistService->getById($identifier);
+
+        if (!$artist) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        $artistId = $artist['id'] ?? null;
+        if ($artistId && in_array($artistId, $blockedIds)) {
+            return response()->json(['error' => 'Artist not found'], 404);
+        }
+
+        // Fetch first page of tattoos from ES
+        $tattoos = $this->tattooService->getByArtistId($identifier, $params);
+        $tattooData = $tattoos['response'] ?? [];
+        if ($tattooData instanceof \Illuminate\Support\Collection) {
+            $tattooData = $tattooData->values()->toArray();
+        }
+        $artist['tattoos'] = $tattooData;
+
+        // Sanitize PII for unauthenticated users
+        if (!$user) {
+            $artist = $this->sanitizeSingleArtist($artist);
+        }
+
+        return $this->returnResponse('artist', $artist);
     }
 
 
@@ -124,16 +173,10 @@ class ArtistController extends Controller
 
     /**
      * Get an artist's tattoo portfolio with pagination.
-     * Accepts artist ID or slug.
+     * Accepts artist ID or slug. Pure ES, no DB queries.
      */
     public function getPortfolio(Request $request, $id): JsonResponse
     {
-        $artistModel = ModelLookup::findArtist($id);
-
-        if (!$artistModel) {
-            return response()->json(['error' => 'Artist not found'], 404);
-        }
-
         $params = $request->all();
         $pagination = $this->paginationService->extractParams($params);
 

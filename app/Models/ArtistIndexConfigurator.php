@@ -139,6 +139,11 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'accepts_consultations' => Datatypes::BOOLEAN,
             'accepts_appointments' => Datatypes::BOOLEAN,
             'accepts_deposits' => Datatypes::BOOLEAN,
+            'hourly_rate' => Datatypes::INTEGER,
+            'deposit_amount' => Datatypes::INTEGER,
+            'consultation_fee' => Datatypes::INTEGER,
+            'consultation_duration' => Datatypes::INTEGER,
+            'minimum_session' => Datatypes::INTEGER,
         ]
     ];
 
