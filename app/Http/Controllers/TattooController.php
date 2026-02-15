@@ -20,6 +20,7 @@ use App\Services\SearchImpressionService;
 use App\Services\PaginationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 
 class TattooController extends Controller
 {
@@ -58,7 +59,10 @@ class TattooController extends Controller
      */
     public function getById(Request $request, $id): JsonResponse
     {
-        $tattoo = $this->tattooService->getById($id);
+        $cacheKey = "es:tattoo:{$id}";
+        $tattoo = Cache::remember($cacheKey, 600, function () use ($id) {
+            return $this->tattooService->getById($id);
+        });
 
         // Check if blocked - tattoo from Elasticsearch is an array
         $user = $request->user();
@@ -77,14 +81,19 @@ class TattooController extends Controller
         $params = $request->all();
         $pagination = $this->paginationService->extractParams($params);
 
-        $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
-        $esSpan = $parentSpan?->startChild(
-            \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Tattoo ES search')
-        );
+        $cacheKey = 'es:tattoos:search:' . md5(json_encode($params));
+        $response = Cache::remember($cacheKey, 120, function () use ($params) {
+            $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
+            $esSpan = $parentSpan?->startChild(
+                \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Tattoo ES search')
+            );
 
-        $response = $this->tattooService->search($params);
+            $response = $this->tattooService->search($params);
 
-        $esSpan?->finish();
+            $esSpan?->finish();
+
+            return $response;
+        });
 
         if (count($response["response"]) == 0) {
             $response['none_found'] = "No results found for your search, here are some suggestions: \n" .
@@ -331,6 +340,7 @@ class TattooController extends Controller
                 // Dispatch background jobs for AI tags and ES indexing
                 GenerateAiTagsJob::dispatch($tattoo->id, $userSelectedTagIds);
                 IndexTattooJob::dispatch($tattoo->id);
+                Cache::forget("es:tattoo:{$tattoo->id}");
 
                 $tattoo->refresh();
                 $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
@@ -453,6 +463,7 @@ class TattooController extends Controller
             \Log::info("updated tattoo", ['tattoo' => $tattoo->id]);
 
             IndexTattooJob::dispatch($tattoo->id);
+            Cache::forget("es:tattoo:{$tattoo->id}");
 
             $tattoo->refresh();
             $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
@@ -533,6 +544,7 @@ class TattooController extends Controller
 
             // Remove from Elasticsearch index
             $tattoo->unsearchable();
+            Cache::forget("es:tattoo:{$id}");
 
             // Get all images associated with this tattoo
             $images = $tattoo->images;
