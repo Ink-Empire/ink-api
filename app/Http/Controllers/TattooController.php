@@ -78,10 +78,9 @@ class TattooController extends Controller
         $pagination = $this->paginationService->extractParams($params);
 
         $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
-        $esSpan = $parentSpan?->startChild(new \Sentry\Tracing\SpanContext(
-            op: 'es.search',
-            description: 'Tattoo ES search',
-        ));
+        $esSpan = $parentSpan?->startChild(
+            \Sentry\Tracing\SpanContext::make()->setOp('es.search')->setDescription('Tattoo ES search')
+        );
 
         $response = $this->tattooService->search($params);
 
