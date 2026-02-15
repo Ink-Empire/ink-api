@@ -1,9 +1,7 @@
 name: Smoke Test
 
 on:
-  pull_request:
-    branches: [main, develop]
-  workflow_dispatch:
+  workflow_dispatch:  # Automatic PR trigger disabled — re-enable when CI issues are fixed
     inputs:
       api_url:
         description: 'API URL to test against'

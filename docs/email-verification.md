@@ -160,10 +160,12 @@ User taps "Create Account"
 - Welcome email is sent via `SendWelcomeNotification` job (queued)
 
 **Studio Accounts (type_id=3):**
-- Pending studio data stored in `AsyncStorage` (RN) or `localStorage` (web) during registration
-- After verification, the pending data is processed
-- If `existingStudioId` present: `POST /api/studios/{id}/claim` (claims Google Places studio)
-- Otherwise: `POST /api/studios` (creates new studio)
+- `AuthController::register()` creates/claims the studio record during registration (before verification)
+- The studio exists but has no `image_id` yet at this point
+- During registration, after the temp token is returned, the frontend uploads the studio image to S3 and stores the `uploadedImageId` in `localStorage` (web) or handles it in-app (RN)
+- After verification, `dashboard.tsx` reads `pendingStudioData` from `localStorage` and links the image:
+  - If studio already exists (normal case): calls `POST /studios/{id}/image` with the `uploadedImageId`
+  - If studio doesn't exist (edge case): calls `POST /studios` with `image_id` in payload
 - See `docs/flows/studio-registration-management.md` for full flow
 
 ### Already Verified

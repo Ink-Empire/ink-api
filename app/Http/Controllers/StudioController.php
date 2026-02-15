@@ -8,6 +8,7 @@ use App\Http\Resources\Dashboard\StudioArtistDashboardResource;
 use App\Http\Resources\Dashboard\WorkingHoursDashboardResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
+use App\Models\Address;
 use App\Models\StudioAvailability;
 use App\Models\Studio;
 use App\Models\StudioAnnouncement;
@@ -128,10 +129,11 @@ class StudioController extends Controller
             'location_lat_long' => 'nullable|string',
             'email' => 'nullable|email',
             'phone' => 'nullable|string',
+            'image_id' => 'nullable|exists:images,id',
         ]);
 
         // Update the studio with the authenticated user as owner and mark as claimed
-        $studio->update([
+        $updateData = [
             'owner_id' => $request->user()->id,
             'name' => $request->input('name') ?: $studio->name,
             'slug' => $request->input('slug') ?: $studio->slug,
@@ -141,7 +143,13 @@ class StudioController extends Controller
             'email' => $request->input('email') ?: $studio->email,
             'phone' => $request->input('phone') ?: $studio->phone,
             'is_claimed' => true,
-        ]);
+        ];
+
+        if ($request->input('image_id')) {
+            $updateData['image_id'] = $request->input('image_id');
+        }
+
+        $studio->update($updateData);
 
         return response()->json([
             'studio' => new StudioResource($studio->fresh()),
@@ -201,6 +209,7 @@ class StudioController extends Controller
                 'location_lat_long' => $data['location_lat_long'] ?? null,
                 'address_id' => $address->id ?? null,
                 'owner_id' => $data['owner_id'] ?? null,
+                'image_id' => $data['image_id'] ?? null,
                 'is_claimed' => true, // Studios created via registration are claimed
             ]);
 
@@ -243,7 +252,7 @@ class StudioController extends Controller
                 $studio->address->update($addressData);
             } else {
                 // Create new address
-                $address = \App\Models\Address::create($addressData);
+                $address = Address::create($addressData);
                 $studio->address_id = $address->id;
             }
         }
