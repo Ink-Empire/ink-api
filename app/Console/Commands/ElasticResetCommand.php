@@ -17,6 +17,7 @@ class ElasticResetCommand extends Command
     protected $modelMap = [
         'Artist' => 'App\\Models\\Artist',
         'Tattoo' => 'App\\Models\\Tattoo',
+        'Studio' => 'App\\Models\\Studio',
     ];
 
     public function handle()
