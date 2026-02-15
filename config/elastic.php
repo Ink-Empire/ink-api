@@ -17,6 +17,7 @@ return [
         'tattoos_index' => env('ELASTICSEARCH_TATTOOS_INDEX', 'tattoos'),
         'username' => env('ELASTICSEARCH_USERNAME'),
         'password' => env('ELASTICSEARCH_PASSWORD'),
+        'api_key' => env('ELASTICSEARCH_API_KEY'),
         'timeout_in_seconds' => env('ELASTICSEARCH_TIMEOUT', 30),
         'connect_timeout_in_seconds' => env('ELASTICSEARCH_CONNECT_TIMEOUT', 10),
         'retries' => 2,
