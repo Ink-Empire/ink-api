@@ -2430,12 +2430,12 @@
             "source": {
                 "type": "git",
                 "url": "https://github.com/ccennis/larelastic.git",
-                "reference": "6a87d9179f40f3e7cf6ef89b6b328db4b979cc5a"
+                "reference": "dc81d47ea47751e9df37265abc34f953199a3aff"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ccennis/larelastic/zipball/6a87d9179f40f3e7cf6ef89b6b328db4b979cc5a",
-                "reference": "6a87d9179f40f3e7cf6ef89b6b328db4b979cc5a",
+                "url": "https://api.github.com/repos/ccennis/larelastic/zipball/dc81d47ea47751e9df37265abc34f953199a3aff",
+                "reference": "dc81d47ea47751e9df37265abc34f953199a3aff",
                 "shasum": ""
             },
             "require": {
@@ -2464,7 +2464,7 @@
                 "source": "https://github.com/ccennis/larelastic/tree/master",
                 "issues": "https://github.com/ccennis/larelastic/issues"
             },
-            "time": "2026-02-15T19:58:00+00:00"
+            "time": "2026-02-15T21:01:30+00:00"
         },
         {
             "name": "intervention/gif",

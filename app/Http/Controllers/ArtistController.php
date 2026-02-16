@@ -402,6 +402,10 @@ class ArtistController extends Controller
 
         Cache::forget("artist:{$artist->id}:working-hours");
 
+        $artist->searchable();
+        Cache::forget("es:artist:detail:{$artist->slug}");
+        Cache::forget("es:artist:detail:{$artist->id}");
+
         return response()->json(['success' => true]);
     }
 
