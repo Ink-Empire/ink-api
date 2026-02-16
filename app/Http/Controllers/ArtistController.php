@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\WorkingHoursResource;
+use App\Jobs\IndexArtistJob;
 use App\Jobs\NotifyWishlistUsersOfBooksOpen;
 use App\Models\Appointment;
 use App\Models\Artist;
@@ -402,9 +403,7 @@ class ArtistController extends Controller
 
         Cache::forget("artist:{$artist->id}:working-hours");
 
-        $artist->searchable();
-        Cache::forget("es:artist:detail:{$artist->slug}");
-        Cache::forget("es:artist:detail:{$artist->id}");
+        IndexArtistJob::dispatch($artist->id);
 
         return response()->json(['success' => true]);
     }
