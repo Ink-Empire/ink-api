@@ -9,15 +9,19 @@ use Illuminate\Support\Facades\Log;
 class SlackService
 {
     protected ?string $webhookUrl;
+    protected ?string $supportWebhookUrl;
 
     public function __construct()
     {
         $this->webhookUrl = config('services.slack.webhook_url');
+        $this->supportWebhookUrl = config('services.slack.support_webhook_url');
     }
 
-    public function send(string $message, array $blocks = []): bool
+    public function send(string $message, array $blocks = [], ?string $webhookUrl = null): bool
     {
-        if (empty($this->webhookUrl)) {
+        $url = $webhookUrl ?? $this->webhookUrl;
+
+        if (empty($url)) {
             Log::warning('Slack webhook URL not configured');
             return false;
         }
@@ -29,7 +33,7 @@ class SlackService
                 $payload['blocks'] = $blocks;
             }
 
-            $response = Http::post($this->webhookUrl, $payload);
+            $response = Http::post($url, $payload);
 
             if (!$response->successful()) {
                 Log::error('Slack notification failed', [
@@ -73,5 +77,24 @@ class SlackService
             . "*Signed up:* {$timestamp}";
 
         return $this->send($message);
+    }
+
+    public function notifySupportRequest(\App\Models\User $user): bool
+    {
+        if (app()->environment() !== 'production') {
+            return false;
+        }
+
+        $timestamp = now()->format('M j, Y \a\t g:i A');
+
+        $message = "New Support Request\n"
+            . "━━━━━━━━━━━━━━━━━━\n"
+            . "*From:* {$user->name}\n"
+            . "*Email:* {$user->email}\n"
+            . "*Username:* {$user->username}\n"
+            . "*Time:* {$timestamp}\n"
+            . "Check the inbox for info@getinked.in to respond.";
+
+        return $this->send($message, [], $this->supportWebhookUrl);
     }
 }

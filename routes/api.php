@@ -26,6 +26,7 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\SocialMediaLinkController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\SupportController;
 
 /*
 |--------------------------------------------------------------------------
@@ -188,6 +189,9 @@ Route::middleware('auth:sanctum')->group(function () {
     // Notification preference routes
     Route::get('/notification-preferences', [NotificationPreferenceController::class, 'index']);
     Route::put('/notification-preferences', [NotificationPreferenceController::class, 'update']);
+
+    // Support contact route
+    Route::get('/support/contact', [SupportController::class, 'getContact']);
 
     // Tattoo lead routes (for users looking for tattoos)
     Route::prefix('leads')->group(function () {
