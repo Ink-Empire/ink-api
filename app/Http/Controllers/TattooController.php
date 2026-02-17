@@ -27,7 +27,7 @@ class TattooController extends Controller
     private $filters = [];
     private $search;
 
-    const RELATIONSHIPS = [
+    public const RELATIONSHIPS = [
         'styles' => Style::class,
     ];
 
@@ -39,7 +39,8 @@ class TattooController extends Controller
         protected GooglePlacesService $googlePlacesService,
         protected SearchImpressionService $impressionService,
         protected PaginationService $paginationService
-    ) {}
+    ) {
+    }
 
     /**
      * @param $id
@@ -277,8 +278,8 @@ class TattooController extends Controller
                 $images = $this->tattooService->upload($files, $user);
             }
 
-            if(count($images) > 0) {
-               $primaryImage = $images[0];
+            if (count($images) > 0) {
+                $primaryImage = $images[0];
 
                 // Handle style IDs
                 $styleIds = [];
@@ -588,8 +589,12 @@ class TattooController extends Controller
                 'images_deleted' => $deletedImageCount
             ]);
 
-            // Re-index the artist to update their tattoo count
-            Artist::find($user->id)?->searchable();
+            // Re-index the artist and bust cached portfolio/detail pages
+            $artist = Artist::find($user->id);
+            if ($artist) {
+                $artist->searchable();
+                \App\Jobs\IndexTattooJob::bustArtistCaches($artist->id, $artist->slug);
+            }
 
             return response()->json([
                 'success' => true,
@@ -631,7 +636,7 @@ class TattooController extends Controller
                 'primary_image' => $tattoo->primary_image?->uri,
                 'tags' => $tattoo->tags->pluck('name')->toArray(),
                 'primary_style' => $tattoo->primary_style?->name,
-                'styles' => $tattoo->styles->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
+                'styles' => $tattoo->styles->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
                 'style_ids' => $tattoo->styles->pluck('id')->toArray(),
                 'created_at' => $tattoo->created_at,
             ],
@@ -655,7 +660,8 @@ class TattooController extends Controller
         }
 
         if ($request->has('placement')) {
-            $tattoo->placement = $request->input('placement');;
+            $tattoo->placement = $request->input('placement');
+            ;
             $tattoo->save();
         }
 
@@ -670,7 +676,7 @@ class TattooController extends Controller
             $tagNamesInput = $request->input('tag_names', '');
             $tagNames = array_filter(
                 array_map('trim', explode(',', $tagNamesInput)),
-                fn($name) => strlen($name) >= 2
+                fn ($name) => strlen($name) >= 2
             );
 
             $allTags = collect();
@@ -723,7 +729,7 @@ class TattooController extends Controller
                 'primary_image' => $tattoo->primary_image?->uri,
                 'tags' => $tattoo->tags->pluck('name')->toArray(),
                 'primary_style' => $tattoo->primary_style?->name,
-                'styles' => $tattoo->styles->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
+                'styles' => $tattoo->styles->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
                 'style_ids' => $tattoo->styles->pluck('id')->toArray(),
                 'created_at' => $tattoo->created_at,
             ],
@@ -786,7 +792,7 @@ class TattooController extends Controller
         $tattoos = $this->paginationService->applyToQuery($query, $pagination['offset'], $pagination['per_page'])->get();
 
         return response()->json([
-            'data' => $tattoos->map(fn($t) => [
+            'data' => $tattoos->map(fn ($t) => [
                 'id' => $t->id,
                 'title' => $t->title,
                 'description' => $t->description,
@@ -795,7 +801,7 @@ class TattooController extends Controller
                 'primary_image' => $t->primary_image?->uri,
                 'tags' => $t->tags->pluck('name')->toArray(),
                 'primary_style' => $t->primary_style?->name,
-                'styles' => $t->styles->map(fn($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
+                'styles' => $t->styles->map(fn ($s) => ['id' => $s->id, 'name' => $s->name])->toArray(),
                 'created_at' => $t->created_at,
             ]),
             'total' => $total,
