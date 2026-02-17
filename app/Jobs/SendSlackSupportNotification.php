@@ -17,7 +17,8 @@ class SendSlackSupportNotification implements ShouldQueue
     public int $tries = 2;
 
     public function __construct(
-        public int $userId
+        public int $userId,
+        public ?string $message = null
     ) {}
 
     public function handle(SlackService $slackService): void
@@ -28,6 +29,6 @@ class SendSlackSupportNotification implements ShouldQueue
             return;
         }
 
-        $slackService->notifySupportRequest($user);
+        $slackService->notifySupportRequest($user, $this->message);
     }
 }
