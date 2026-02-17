@@ -403,9 +403,21 @@ class ArtistController extends Controller
 
         Cache::forget("artist:{$artist->id}:working-hours");
 
+        $settings = ArtistSettings::where('artist_id', $artist->id)->first();
+        $hasAvailableHours = collect($availabilityArray)->contains(fn ($a) => !$a['is_day_off']);
+
+        $booksClosed = false;
+        if ($settings && $settings->books_open && !$hasAvailableHours) {
+            $settings->update(['books_open' => false]);
+            $booksClosed = true;
+        }
+
         IndexArtistJob::dispatch($artist->id);
 
-        return response()->json(['success' => true]);
+        return response()->json([
+            'success' => true,
+            'books_closed' => $booksClosed,
+        ]);
     }
 
     /**
