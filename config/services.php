@@ -43,7 +43,7 @@ return [
     ],
 
     'slack' => [
-        'webhook_url' => env('SLACK_WEBHOOK_URL'),
+        'webhook_url' => env('SLACK_NEW_CONTACT_WEBHOOK_URL'),
         'support_webhook_url' => env('SLACK_SUPPORT_WEBHOOK_URL'),
     ],
 

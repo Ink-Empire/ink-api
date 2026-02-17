@@ -79,7 +79,7 @@ class SlackService
         return $this->send($message);
     }
 
-    public function notifySupportRequest(\App\Models\User $user): bool
+    public function notifySupportRequest(\App\Models\User $user, ?string $messageContent = null): bool
     {
         if (app()->environment() !== 'production') {
             return false;
@@ -92,8 +92,13 @@ class SlackService
             . "*From:* {$user->name}\n"
             . "*Email:* {$user->email}\n"
             . "*Username:* {$user->username}\n"
-            . "*Time:* {$timestamp}\n"
-            . "Check the inbox for info@getinked.in to respond.";
+            . "*Time:* {$timestamp}\n";
+
+        if ($messageContent) {
+            $message .= "*Message:* {$messageContent}\n";
+        }
+
+        $message .= "Check the inbox for info@getinked.in to respond.";
 
         return $this->send($message, [], $this->supportWebhookUrl);
     }

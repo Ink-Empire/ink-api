@@ -190,8 +190,9 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/notification-preferences', [NotificationPreferenceController::class, 'index']);
     Route::put('/notification-preferences', [NotificationPreferenceController::class, 'update']);
 
-    // Support contact route
+    // Support contact routes
     Route::get('/support/contact', [SupportController::class, 'getContact']);
+    Route::post('/support/message', [SupportController::class, 'sendMessage']);
 
     // Tattoo lead routes (for users looking for tattoos)
     Route::prefix('leads')->group(function () {
