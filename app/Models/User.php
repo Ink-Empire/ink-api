@@ -472,7 +472,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function deviceTokens()
     {
-        return $this->hasMany(DeviceToken::class);
+        return $this->hasMany(DeviceToken::class, 'user_id');
     }
 
     public function notificationPreferences()
