@@ -9,7 +9,6 @@ use App\Models\Appointment;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\User;
-use App\Jobs\SendSlackSupportNotification;
 use App\Services\ConversationService;
 use App\Services\WatermarkService;
 use Illuminate\Database\Eloquent\Builder;
@@ -153,14 +152,6 @@ class ConversationController extends Controller
                 'content' => $request->initial_message,
                 'type' => 'text',
             ]);
-        }
-
-        // Notify Slack if this is a new support conversation
-        if ($wasRecentlyCreated) {
-            $supportUser = User::where('email', 'info@getinked.in')->first();
-            if ($supportUser && $participantId === $supportUser->id) {
-                SendSlackSupportNotification::dispatch($user->id);
-            }
         }
 
         $conversation->load(['users', 'appointment']);

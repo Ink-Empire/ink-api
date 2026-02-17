@@ -3,11 +3,13 @@
 namespace App\Services;
 
 use App\Enums\UserTypes;
+use App\Jobs\SendSlackSupportNotification;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Image;
 use App\Models\Message;
 use App\Models\MessageDeletion;
+use App\Models\User;
 use App\Notifications\NewMessageNotification;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Support\Facades\Cache;
@@ -135,12 +137,18 @@ class ConversationService
 
             if ($otherParticipant) {
                 try {
-                    $otherParticipant->notify(new NewMessageNotification($message, \App\Models\User::find($senderId)));
+                    $otherParticipant->notify(new NewMessageNotification($message, User::find($senderId)));
                 } catch (\Exception $e) {
                     \Log::warning('Failed to send new message notification', [
                         'recipient_id' => $otherParticipant->id,
                         'error' => $e->getMessage(),
                     ]);
+                }
+
+                // Slack notification when someone messages the support account
+                $supportUser = User::where('email', 'info@getinked.in')->first();
+                if ($supportUser && $otherParticipant->id === $supportUser->id) {
+                    SendSlackSupportNotification::dispatch($senderId);
                 }
             }
 
