@@ -19,8 +19,12 @@ class AppointmentResource extends JsonResource
 //            'end' => Timezone::convertToLocal($this->end),
             'start' => $this->getISODateTime($this->date, $this->start_time),
             'end' => $this->getISODateTime($this->date, $this->end_time),
+            'date' => $this->date instanceof \DateTimeInterface
+                ? $this->date->format('Y-m-d')
+                : ($this->date ? date('Y-m-d', strtotime($this->date)) : null),
             'allDay' => $this->all_day,
             'client_id' => $this->client_id,
+            'status' => $this->status,
             'extendedProps' => [
                 'status' => $this->status,
                 'description' => $this->description,
