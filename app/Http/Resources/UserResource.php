@@ -28,6 +28,9 @@ class UserResource extends JsonResource
         // Get primary studio for backwards compatibility
         $primaryStudio = $verifiedStudios->firstWhere('pivot.is_primary', true)
             ?? $verifiedStudios->first();
+        if ($primaryStudio) {
+            $primaryStudio->load('address');
+        }
         $primaryStudioData = $primaryStudio ? [
             'id' => $primaryStudio->id,
             'name' => $primaryStudio->name,
@@ -36,6 +39,11 @@ class UserResource extends JsonResource
                 'id' => $primaryStudio->image->id,
                 'uri' => $primaryStudio->image->uri,
             ] : null,
+            'address' => $primaryStudio->address?->address1,
+            'city' => $primaryStudio->address?->city,
+            'state' => $primaryStudio->address?->state,
+            'postal_code' => $primaryStudio->address?->postal_code,
+            'country' => $primaryStudio->address?->country_code,
         ] : null;
 
         $data = [
@@ -73,6 +81,15 @@ class UserResource extends JsonResource
             $data['location_lat_long'] = $this->location_lat_long;
             $data['is_admin'] = (bool) $this->is_admin;
             $data['owned_studio_id'] = $this->ownedStudio?->id;
+            $data['owned_studio'] = $this->ownedStudio ? [
+                'id' => $this->ownedStudio->id,
+                'name' => $this->ownedStudio->name,
+                'slug' => $this->ownedStudio->slug,
+                'image' => $this->ownedStudio->image ? [
+                    'id' => $this->ownedStudio->image->id,
+                    'uri' => $this->ownedStudio->image->uri,
+                ] : null,
+            ] : null;
             $data['is_email_verified'] = (bool) $this->is_email_verified;
             $data['email_verified_at'] = $this->email_verified_at;
         }
