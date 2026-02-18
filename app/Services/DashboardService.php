@@ -269,7 +269,7 @@ class DashboardService
             ->orderBy('date')
             ->orderBy('start_time')
             ->limit($limit)
-            ->with('client')
+            ->with(['client', 'conversation'])
             ->get();
 
         return $appointments->map(function ($apt) {
@@ -294,6 +294,7 @@ class DashboardService
                 'clientInitials' => $initials,
                 'type' => $apt->type ?? 'appointment',
                 'client_id' => $apt->client_id,
+                'conversation_id' => $apt->conversation?->id,
                 'status' => $apt->status,
             ];
         })->toArray();

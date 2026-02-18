@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\UserTypes;
+use App\Jobs\SendSlackSupportNotification;
 use App\Models\Conversation;
 use App\Models\ConversationParticipant;
 use App\Models\Image;
@@ -144,6 +145,11 @@ class ConversationService
                     ]);
                 }
 
+                // Slack notification with message content when someone messages the support account
+                $supportUser = User::where('email', 'info@getinked.in')->first();
+                if ($supportUser && $otherParticipant->id == $supportUser->id) {
+                    SendSlackSupportNotification::dispatch($senderId, $content);
+                }
             }
 
             return $message;
