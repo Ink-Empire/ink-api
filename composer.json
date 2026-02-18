@@ -32,6 +32,7 @@
         "openai-php/laravel": "^0.11.0",
         "predis/predis": "^2.2",
         "psr/http-message": "^1.0",
+        "pusher/pusher-php-server": "^7.2",
         "resend/resend-laravel": "^1.1",
         "sentry/sentry-laravel": "^4.20",
         "spatie/laravel-notification-log": "^1.3",

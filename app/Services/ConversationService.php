@@ -12,6 +12,8 @@ use App\Models\MessageDeletion;
 use App\Models\User;
 use App\Notifications\NewMessageNotification;
 use Illuminate\Database\Eloquent\Builder;
+use App\Events\ConversationUpdated;
+use App\Events\MessageSent;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
@@ -150,7 +152,17 @@ class ConversationService
                 if ($supportUser && $otherParticipant->id == $supportUser->id) {
                     SendSlackSupportNotification::dispatch($senderId, $content);
                 }
+
+                $unreadCount = $this->getUnreadCount($otherParticipant->id);
+                broadcast(new ConversationUpdated(
+                    $conversation->id,
+                    $message,
+                    $otherParticipant->id,
+                    $unreadCount
+                ))->toOthers();
             }
+
+            broadcast(new MessageSent($message->load('sender', 'attachments.image')))->toOthers();
 
             return $message;
         });
@@ -174,6 +186,18 @@ class ConversationService
 
         $conversation->touch();
         Cache::forget("unread_count:{$otherParticipant?->id}");
+
+        broadcast(new MessageSent($message->load('sender', 'attachments.image')))->toOthers();
+
+        if ($otherParticipant) {
+            $unreadCount = $this->getUnreadCount($otherParticipant->id);
+            broadcast(new ConversationUpdated(
+                $conversation->id,
+                $message,
+                $otherParticipant->id,
+                $unreadCount
+            ))->toOthers();
+        }
 
         return $message;
     }
