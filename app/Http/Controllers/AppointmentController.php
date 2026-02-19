@@ -178,6 +178,31 @@ class AppointmentController extends Controller
             $messageContent .= ": " . $data['description'];
         }
 
+        // Format time for display
+        $startFormatted = date('g:i A', strtotime($data['start_time']));
+        $timeDisplay = $startFormatted;
+        $durationDisplay = null;
+        if (!empty($data['end_time'])) {
+            $endFormatted = date('g:i A', strtotime($data['end_time']));
+            $timeDisplay = $startFormatted . ' - ' . $endFormatted;
+            $startMinutes = (int) date('H', strtotime($data['start_time'])) * 60 + (int) date('i', strtotime($data['start_time']));
+            $endMinutes = (int) date('H', strtotime($data['end_time'])) * 60 + (int) date('i', strtotime($data['end_time']));
+            $diffMinutes = $endMinutes - $startMinutes;
+            if ($diffMinutes >= 60) {
+                $hours = floor($diffMinutes / 60);
+                $mins = $diffMinutes % 60;
+                $durationDisplay = $hours . ' hour' . ($hours > 1 ? 's' : '') . ($mins > 0 ? ' ' . $mins . ' min' : '');
+            } else {
+                $durationDisplay = $diffMinutes . ' min';
+            }
+        }
+
+        // Format date for display
+        $dateDisplay = date('D, M j, Y', strtotime($data['date']));
+
+        // Get artist deposit amount if set
+        $depositAmount = $artist->settings?->deposit_amount ?? null;
+
         Message::create([
             'conversation_id' => $conversation->id,
             'appointment_id' => $appointment->id,
@@ -189,9 +214,10 @@ class AppointmentController extends Controller
             'metadata' => array_filter([
                 'appointment_id' => $appointment->id,
                 'type' => $data['type'],
-                'date' => $data['date'],
-                'start_time' => $data['start_time'],
-                'end_time' => $data['end_time'] ?? null,
+                'date' => $dateDisplay,
+                'time' => $timeDisplay,
+                'duration' => $durationDisplay,
+                'deposit' => $depositAmount ? '$' . number_format($depositAmount, 0) : null,
             ]),
         ]);
 
@@ -300,16 +326,29 @@ class AppointmentController extends Controller
                 \Log::error('Failed to send booking accepted notification: ' . $e->getMessage());
             }
 
-            // Add a system message to the conversation
+            // Add system message to the conversation
             $conversation = Conversation::where('appointment_id', $appointment->id)->first();
             if ($conversation) {
+                $depositAmount = $user->settings?->deposit_amount ?? null;
+                $dateStr = $appointment->date instanceof \DateTimeInterface
+                    ? $appointment->date->format('Y-m-d')
+                    : $appointment->date;
+
+                $content = $depositAmount
+                    ? 'Booking request accepted. The artist will arrange payment of their deposit with you.'
+                    : 'Booking request accepted.';
+
                 Message::create([
                     'conversation_id' => $conversation->id,
                     'appointment_id' => $appointment->id,
                     'sender_id' => $user->id,
                     'recipient_id' => $appointment->client_id,
-                    'content' => 'Booking request accepted',
+                    'content' => $content,
                     'type' => 'system',
+                    'metadata' => [
+                        'artist_id' => $user->id,
+                        'calendar_link' => '/calendar?date=' . $dateStr,
+                    ],
                 ]);
             }
 

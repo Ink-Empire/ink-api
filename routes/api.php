@@ -139,6 +139,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Appointment routes
     Route::prefix('appointments')->group(function () {
+        Route::post('/create', [AppointmentController::class, 'store']);
         Route::post('/inbox', [AppointmentController::class, 'inbox']);
         Route::post('/history', [AppointmentController::class, 'history']);
         Route::post('/invite', [AppointmentController::class, 'invite']);
