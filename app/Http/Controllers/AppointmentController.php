@@ -159,10 +159,12 @@ class AppointmentController extends Controller
         $appointment = $artist->appointments()->create($data);
 
         // Find existing conversation between client and artist, or create one
+        // Map appointment type to conversation type ('tattoo' -> 'booking')
+        $conversationType = $data['type'] === 'tattoo' ? 'booking' : $data['type'];
         $conversation = $conversationService->findOrCreate(
             $data['client_id'],
             $artist->id,
-            $data['type'],
+            $conversationType,
             $appointment->id
         );
 
@@ -334,7 +336,7 @@ class AppointmentController extends Controller
                     ? $appointment->date->format('Y-m-d')
                     : $appointment->date;
 
-                $content = $depositAmount
+                $content = ($depositAmount && $depositAmount > 0)
                     ? 'Booking request accepted. The artist will arrange payment of their deposit with you.'
                     : 'Booking request accepted.';
 
