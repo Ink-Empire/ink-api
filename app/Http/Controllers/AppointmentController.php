@@ -336,19 +336,22 @@ class AppointmentController extends Controller
                     ? $appointment->date->format('Y-m-d')
                     : $appointment->date;
 
-                $content = ($depositAmount && $depositAmount > 0)
+                $clientContent = ($depositAmount && $depositAmount > 0)
                     ? 'Booking request accepted. The artist will arrange payment of their deposit with you.'
                     : 'Booking request accepted.';
+
+                $artistContent = 'Booking request accepted. This has been added to your calendar.';
 
                 Message::create([
                     'conversation_id' => $conversation->id,
                     'appointment_id' => $appointment->id,
                     'sender_id' => $user->id,
                     'recipient_id' => $appointment->client_id,
-                    'content' => $content,
+                    'content' => $clientContent,
                     'type' => 'system',
                     'metadata' => [
                         'artist_id' => $user->id,
+                        'artist_content' => $artistContent,
                         'calendar_link' => '/calendar?date=' . $dateStr,
                     ],
                 ]);
