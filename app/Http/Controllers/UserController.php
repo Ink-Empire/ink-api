@@ -418,16 +418,22 @@ class UserController extends Controller
         \DB::beginTransaction();
 
         try {
-            // If user is an artist, remove from Elasticsearch
+            // If user is an artist, remove from Elasticsearch (non-blocking)
             if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
-                $artist = Artist::find($user->id);
-                if ($artist) {
-                    $artist->unsearchable();
-                }
+                try {
+                    $artist = Artist::find($user->id);
+                    if ($artist) {
+                        $artist->unsearchable();
+                    }
 
-                // Clear all tattoos from elastic index
-                $tattooIndex = config('elastic.client.tattoos_index', 'tattoos');
-                $this->elasticService->deleteByQuery('artist_id', (string) $user->id, $tattooIndex);
+                    $tattooIndex = config('elastic.client.tattoos_index', 'tattoos');
+                    $this->elasticService->deleteByQuery('artist_id', (string) $user->id, $tattooIndex);
+                } catch (\Exception $e) {
+                    \Log::warning('Failed to remove user from Elasticsearch during deletion', [
+                        'user_id' => $user->id,
+                        'error' => $e->getMessage(),
+                    ]);
+                }
             }
 
             // Revoke all API tokens
