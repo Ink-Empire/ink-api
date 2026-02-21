@@ -289,7 +289,7 @@ class DashboardService
                 'day' => $date->day,
                 'month' => $date->format('M'),
                 'time' => "{$startTime} – {$endTime}",
-                'title' => $apt->title ?? 'Appointment',
+                'title' => $this->formatAppointmentTitle($apt),
                 'clientName' => $clientName,
                 'clientInitials' => $initials,
                 'type' => $apt->type ?? 'appointment',
@@ -298,6 +298,14 @@ class DashboardService
                 'status' => $apt->status,
             ];
         })->toArray();
+    }
+
+    private function formatAppointmentTitle($appointment): string
+    {
+        $type = $appointment->type === 'consultation' ? 'Consultation' : 'Appointment';
+        $clientName = $appointment->client?->name ?? 'Unknown Client';
+
+        return "Tattoo {$type} with {$clientName}";
     }
 
     // ==================== Client Dashboard Methods ====================

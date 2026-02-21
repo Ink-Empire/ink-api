@@ -247,7 +247,10 @@ class AppointmentController extends Controller
             \Log::error('Failed to dispatch Google Calendar sync: ' . $e->getMessage());
         }
 
-        return new AppointmentResource($appointment);
+        $response = (new AppointmentResource($appointment))->toArray($request);
+        $response['conversation_id'] = $conversation->id;
+
+        return response()->json($response);
     }
 
     public function update(Request $request, $id)

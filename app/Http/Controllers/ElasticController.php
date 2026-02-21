@@ -216,9 +216,9 @@ class ElasticController
             // Flush the index first to remove documents that no longer exist in DB
             if ($flush) {
                 Log::info("Flushing index for {$model} before reindex");
-                Artisan::call('scout:flush', [
-                    'model' => $class,
-                ]);
+                $instance = new $class;
+                $engine = app(\Laravel\Scout\EngineManager::class)->engine();
+                $engine->flush($instance);
             }
 
             // Import all documents from the database
