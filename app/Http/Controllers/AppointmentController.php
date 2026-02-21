@@ -216,6 +216,7 @@ class AppointmentController extends Controller
             'metadata' => array_filter([
                 'appointment_id' => $appointment->id,
                 'type' => $data['type'],
+                'status' => 'pending',
                 'date' => $dateDisplay,
                 'time' => $timeDisplay,
                 'duration' => $durationDisplay,
@@ -331,9 +332,20 @@ class AppointmentController extends Controller
                 \Log::error('Failed to send booking accepted notification: ' . $e->getMessage());
             }
 
-            // Add system message to the conversation
+            // Update the booking_card message status
             $conversation = Conversation::where('appointment_id', $appointment->id)->first();
             if ($conversation) {
+                $bookingMessage = Message::where('conversation_id', $conversation->id)
+                    ->where('type', 'booking_card')
+                    ->where('appointment_id', $appointment->id)
+                    ->first();
+                if ($bookingMessage) {
+                    $meta = $bookingMessage->metadata ?? [];
+                    $meta['status'] = 'accepted';
+                    $bookingMessage->metadata = $meta;
+                    $bookingMessage->save();
+                }
+
                 $depositAmount = $user->settings?->deposit_amount ?? null;
                 $dateStr = $appointment->date instanceof \DateTimeInterface
                     ? $appointment->date->format('Y-m-d')
@@ -394,9 +406,20 @@ class AppointmentController extends Controller
                 \Log::error('Failed to send booking declined notification: ' . $e->getMessage());
             }
 
-            // Add a system message to the conversation
+            // Update the booking_card message status and add system message
             $conversation = Conversation::where('appointment_id', $appointment->id)->first();
             if ($conversation) {
+                $bookingMessage = Message::where('conversation_id', $conversation->id)
+                    ->where('type', 'booking_card')
+                    ->where('appointment_id', $appointment->id)
+                    ->first();
+                if ($bookingMessage) {
+                    $meta = $bookingMessage->metadata ?? [];
+                    $meta['status'] = 'declined';
+                    $bookingMessage->metadata = $meta;
+                    $bookingMessage->save();
+                }
+
                 $content = 'Booking request declined';
                 if (!empty($data['reason'])) {
                     $content .= ': ' . $data['reason'];

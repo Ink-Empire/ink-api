@@ -749,6 +749,7 @@ class ArtistController extends Controller
                 'end' => $consultEnd->format('H:i'),
             ] : null,
             'consultation_duration' => $consultationDuration,
+            'deposit_amount' => $artist->settings?->deposit_amount ?? null,
             'slots' => $availableSlots,
         ]);
     }
