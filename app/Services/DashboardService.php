@@ -251,7 +251,7 @@ class DashboardService
     /**
      * Get upcoming schedule for an artist.
      */
-    public function getArtistUpcomingSchedule(User $artist, int $limit = 10): array
+    public function getArtistUpcomingSchedule(User $artist, int $limit = 50): array
     {
         $cacheKey = "artist:{$artist->id}:upcoming-schedule";
         $cacheDuration = 300; // 5 minutes
