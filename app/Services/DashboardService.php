@@ -264,7 +264,7 @@ class DashboardService
     private function fetchArtistUpcomingSchedule(User $artist, int $limit): array
     {
         $appointments = Appointment::where('artist_id', $artist->id)
-            ->where('status', 'booked')
+            ->whereIn('status', ['booked', 'cancelled'])
             ->where('date', '>=', Carbon::now()->toDateString())
             ->orderBy('date')
             ->orderBy('start_time')

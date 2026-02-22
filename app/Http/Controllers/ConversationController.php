@@ -392,6 +392,18 @@ class ConversationController extends Controller
         // Cancel the appointment
         $appointment->update(['status' => 'cancelled']);
 
+        // Update the original booking card message status to 'cancelled'
+        $bookingMessage = $conversation->messages()
+            ->where('type', 'booking_card')
+            ->whereJsonContains('metadata->appointment_id', (int) $request->appointment_id)
+            ->first();
+
+        if ($bookingMessage) {
+            $metadata = $bookingMessage->metadata ?? [];
+            $metadata['status'] = 'cancelled';
+            $bookingMessage->update(['metadata' => $metadata]);
+        }
+
         $content = $request->reason
             ? "Appointment cancelled: {$request->reason}"
             : 'Appointment cancelled';
@@ -399,6 +411,10 @@ class ConversationController extends Controller
         $message = $conversationService->sendTypedMessage($conversation, $user->id, $content, 'cancellation', [
             'appointment_id' => $request->appointment_id,
             'reason' => $request->reason,
+            'date' => $appointment->date?->toDateString(),
+            'start_time' => $appointment->start_time,
+            'end_time' => $appointment->end_time,
+            'title' => $appointment->title,
         ]);
 
         return response()->json([
