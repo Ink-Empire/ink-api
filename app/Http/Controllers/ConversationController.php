@@ -14,6 +14,7 @@ use App\Services\WatermarkService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ConversationController extends Controller
@@ -392,6 +393,10 @@ class ConversationController extends Controller
         // Cancel the appointment
         $appointment->update(['status' => 'cancelled']);
 
+        // Clear artist schedule cache
+        Cache::forget("artist:{$appointment->artist_id}:upcoming-schedule");
+        Cache::forget("artist:{$appointment->artist_id}:dashboard-stats");
+
         // Update the original booking card message status to 'cancelled'
         $bookingMessage = $conversation->messages()
             ->where('type', 'booking_card')
@@ -499,9 +504,21 @@ class ConversationController extends Controller
                 'start_time' => $metadata['proposed_start_time'],
                 'end_time' => $metadata['proposed_end_time'],
             ]);
+
+            // Clear artist schedule cache
+            Cache::forget("artist:{$appointment->artist_id}:upcoming-schedule");
+            Cache::forget("artist:{$appointment->artist_id}:dashboard-stats");
+
             $metadata['status'] = 'accepted';
         } else {
             $metadata['status'] = 'declined';
+
+            $appointment = Appointment::find($metadata['appointment_id']);
+            if ($appointment) {
+                $appointment->update(['status' => 'pending']);
+                Cache::forget("artist:{$appointment->artist_id}:upcoming-schedule");
+                Cache::forget("artist:{$appointment->artist_id}:dashboard-stats");
+            }
         }
 
         $message->update(['metadata' => $metadata]);
