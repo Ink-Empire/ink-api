@@ -384,9 +384,9 @@ class ConversationController extends Controller
 
         $appointment = Appointment::findOrFail($request->appointment_id);
 
-        // Verify the user is the artist on this appointment
-        if ($appointment->artist_id !== $user->id) {
-            return response()->json(['error' => 'Only the artist can cancel this appointment'], 403);
+        // Verify the user is the artist or client on this appointment
+        if ($appointment->artist_id !== $user->id && $appointment->client_id !== $user->id) {
+            return response()->json(['error' => 'You are not authorized to cancel this appointment'], 403);
         }
 
         // Cancel the appointment
@@ -424,8 +424,8 @@ class ConversationController extends Controller
 
         $appointment = Appointment::findOrFail($request->appointment_id);
 
-        if ($appointment->artist_id !== $user->id) {
-            return response()->json(['error' => 'Only the artist can request a reschedule'], 403);
+        if ($appointment->artist_id !== $user->id && $appointment->client_id !== $user->id) {
+            return response()->json(['error' => 'You are not authorized to reschedule this appointment'], 403);
         }
 
         $content = $request->reason
