@@ -17,6 +17,7 @@ use App\Notifications\BookingAcceptedNotification;
 use App\Services\ConversationService;
 use App\Util\ModelLookup;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class AppointmentController extends Controller
@@ -370,6 +371,9 @@ class AppointmentController extends Controller
                         'calendar_link' => '/calendar?date=' . $dateStr,
                     ],
                 ]);
+
+                $conversation->touch();
+                Cache::forget("unread_count:{$appointment->client_id}");
             }
 
             return response()->json([
@@ -432,6 +436,9 @@ class AppointmentController extends Controller
                     'content' => $content,
                     'type' => 'system',
                 ]);
+
+                $conversation->touch();
+                Cache::forget("unread_count:{$appointment->client_id}");
             }
 
             return response()->json([
