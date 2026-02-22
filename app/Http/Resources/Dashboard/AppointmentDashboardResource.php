@@ -48,6 +48,7 @@ class AppointmentDashboardResource extends JsonResource
                     ),
                 ]
             ),
+            'conversation_id' => $this->conversation?->id ?? $this->fallback_conversation_id ?? null,
             'studio' => $this->when(
                 $this->relationLoaded('studio') && $this->studio,
                 fn () => new BriefStudioResource($this->studio)

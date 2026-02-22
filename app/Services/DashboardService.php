@@ -272,6 +272,8 @@ class DashboardService
             ->with(['client', 'conversation'])
             ->get();
 
+        // TODO: Refactor to use Eloquent relationship or scope on Conversation model
+        // instead of raw DB join (e.g. Conversation::forParticipants($artistId, $clientIds))
         // Batch-load conversation IDs by client: single query for all the artist's conversations
         $clientIds = $appointments->pluck('client_id')->filter()->unique()->values();
         $conversationsByClient = [];
@@ -337,11 +339,30 @@ class DashboardService
         // Upcoming appointments (next 5, sorted by date) - always fresh
         $appointments = $user->appointmentsWithStatus('booked')
             ->where('date', '>=', now()->toDateString())
-            ->with(['artist.image', 'studio'])
+            ->with(['artist.image', 'studio', 'conversation'])
             ->orderBy('date')
             ->orderBy('start_time')
             ->take(5)
             ->get();
+
+        // Batch-load conversation IDs by artist for appointments missing a direct conversation
+        $artistIds = $appointments->pluck('artist_id')->filter()->unique()->values();
+        $conversationsByArtist = [];
+        if ($artistIds->isNotEmpty()) {
+            $conversationsByArtist = DB::table('conversation_participants as cp1')
+                ->join('conversation_participants as cp2', 'cp1.conversation_id', '=', 'cp2.conversation_id')
+                ->where('cp1.user_id', $user->id)
+                ->whereIn('cp2.user_id', $artistIds)
+                ->pluck('cp1.conversation_id', 'cp2.user_id')
+                ->toArray();
+        }
+
+        // Attach fallback conversation_id to each appointment
+        $appointments->each(function ($apt) use ($conversationsByArtist) {
+            if (!$apt->conversation?->id && $apt->artist_id) {
+                $apt->fallback_conversation_id = $conversationsByArtist[$apt->artist_id] ?? null;
+            }
+        });
 
         // Recent conversations (last 3) - always fresh
         $conversations = Conversation::forUser($user->id)
