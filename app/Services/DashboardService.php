@@ -272,7 +272,19 @@ class DashboardService
             ->with(['client', 'conversation'])
             ->get();
 
-        return $appointments->map(function ($apt) {
+        // Batch-load conversation IDs by client: single query for all the artist's conversations
+        $clientIds = $appointments->pluck('client_id')->filter()->unique()->values();
+        $conversationsByClient = [];
+        if ($clientIds->isNotEmpty()) {
+            $conversationsByClient = DB::table('conversation_participants as cp1')
+                ->join('conversation_participants as cp2', 'cp1.conversation_id', '=', 'cp2.conversation_id')
+                ->where('cp1.user_id', $artist->id)
+                ->whereIn('cp2.user_id', $clientIds)
+                ->pluck('cp1.conversation_id', 'cp2.user_id')
+                ->toArray();
+        }
+
+        return $appointments->map(function ($apt) use ($conversationsByClient) {
             $date = Carbon::parse($apt->date);
             $startTime = Carbon::parse($apt->start_time)->format('g:i A');
             $endTime = Carbon::parse($apt->end_time)->format('g:i A');
@@ -282,6 +294,9 @@ class DashboardService
             $initials = count($nameParts) >= 2
                 ? strtoupper($nameParts[0][0] . $nameParts[1][0])
                 : strtoupper(substr($clientName, 0, 2));
+
+            $conversationId = $apt->conversation?->id
+                ?? ($apt->client_id ? ($conversationsByClient[$apt->client_id] ?? null) : null);
 
             return [
                 'id' => $apt->id,
@@ -294,8 +309,10 @@ class DashboardService
                 'clientInitials' => $initials,
                 'type' => $apt->type ?? 'appointment',
                 'client_id' => $apt->client_id,
-                'conversation_id' => $apt->conversation?->id,
+                'conversation_id' => $conversationId,
                 'status' => $apt->status,
+                'start_time' => $apt->start_time ? Carbon::parse($apt->start_time)->format('H:i') : null,
+                'end_time' => $apt->end_time ? Carbon::parse($apt->end_time)->format('H:i') : null,
             ];
         })->toArray();
     }
