@@ -3,7 +3,6 @@
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Elasticsearch\ClientBuilder;
 use App\Services\ElasticsearchService;
 use Exception;
 
@@ -46,7 +45,7 @@ class TestElasticsearchConnection extends Command
             $startTime = microtime(true);
             
             // Test cluster health
-            $response = $service->getClient()->cluster()->health();
+            $response = $service->getClient()->cluster()->health()->asArray();
             
             $endTime = microtime(true);
             $duration = round(($endTime - $startTime) * 1000, 2);

@@ -227,7 +227,7 @@ class ElasticsearchEngine extends Engine
 
         ray($payload)->blue();
 
-        return Elastic::search($payload);
+        return Elastic::search($payload)->asArray();
     }
 
     /**

@@ -2,7 +2,8 @@
 
 namespace App\Services;
 
-use Elasticsearch\ClientBuilder;
+use Elastic\Elasticsearch\ClientBuilder;
+use Elastic\Elasticsearch\Exception\ClientResponseException;
 use Illuminate\Support\Facades\Log;
 
 class ElasticsearchService
@@ -29,78 +30,75 @@ class ElasticsearchService
     {
         $host = config('elastic.client.host');
         $region = config('services.aws.region', 'us-east-1');
-        
+
         // Use AWS credentials
         $provider = \Aws\Credentials\CredentialProvider::defaultProvider();
         $credentials = $provider()->wait();
-        
+
+        $httpClient = $this->createAwsHttpClient($credentials, $region);
+
         $clientBuilder = ClientBuilder::create()
             ->setHosts(['https://' . $host])
-            ->setHandler($this->createAwsHandler($credentials, $region));
-            
+            ->setHttpClient($httpClient);
+
         if ($timeout = config('elastic.client.timeout_in_seconds')) {
-            $clientBuilder->setConnectionParams([
+            $clientBuilder->setHttpClientOptions([
                 'timeout' => $timeout,
                 'connect_timeout' => config('elastic.client.connect_timeout_in_seconds', 10)
             ]);
         }
-        
+
         $this->client = $clientBuilder->build();
     }
     
     private function initializeStandardClient()
     {
         $hosts = config('elastic.client.hosts');
-        
+
         $clientBuilder = ClientBuilder::create()
             ->setHosts($hosts);
-            
+
+        $httpOptions = [];
+
         if ($timeout = config('elastic.client.timeout_in_seconds')) {
-            $clientBuilder->setConnectionParams([
-                'timeout' => $timeout,
-                'connect_timeout' => config('elastic.client.connect_timeout_in_seconds', 10)
-            ]);
+            $httpOptions['timeout'] = $timeout;
         }
-        
+
         if (config('elastic.client.username') && config('elastic.client.password')) {
-            $clientBuilder->setSSLVerification(false);
+            $httpOptions['verify'] = false;
         }
-        
+
+        if (!empty($httpOptions)) {
+            $clientBuilder->setHttpClientOptions($httpOptions);
+        }
+
+        // API key auth (Elastic Cloud Serverless)
+        $apiKey = config('elastic.client.api_key');
+        if (!empty($apiKey)) {
+            $decoded = base64_decode($apiKey);
+            [$id, $key] = explode(':', $decoded, 2);
+            $clientBuilder->setApiKey($id, $key);
+        }
+
         $this->client = $clientBuilder->build();
     }
     
-    private function createAwsHandler($credentials, $region)
+    private function createAwsHttpClient($credentials, $region)
     {
-        return function (array $request) use ($credentials, $region) {
-            $signer = new \Aws\Signature\SignatureV4('es', $region);
-            $guzzleClient = new \GuzzleHttp\Client();
-            
-            $psrRequest = new \GuzzleHttp\Psr7\Request(
-                $request['http_method'],
-                $request['uri'],
-                $request['headers'] ?? [],
-                $request['body'] ?? ''
-            );
-            
-            $signedRequest = $signer->signRequest($psrRequest, $credentials);
-            
-            try {
-                $response = $guzzleClient->send($signedRequest, [
-                    'timeout' => config('elastic.client.timeout_in_seconds', 30),
-                    'connect_timeout' => config('elastic.client.connect_timeout_in_seconds', 10)
-                ]);
-                
-                return [
-                    'status' => $response->getStatusCode(),
-                    'reason' => $response->getReasonPhrase(),
-                    'body' => (string) $response->getBody(),
-                    'headers' => $response->getHeaders(),
-                ];
-            } catch (\Exception $e) {
-                Log::error('AWS OpenSearch request failed: ' . $e->getMessage());
-                throw $e;
+        $signer = new \Aws\Signature\SignatureV4('es', $region);
+
+        $stack = \GuzzleHttp\HandlerStack::create();
+        $stack->push(\GuzzleHttp\Middleware::mapRequest(
+            function (\Psr\Http\Message\RequestInterface $request) use ($signer, $credentials) {
+                return $signer->signRequest($request, $credentials);
             }
-        };
+        ));
+
+        return new \GuzzleHttp\Client([
+            'handler' => $stack,
+            'timeout' => config('elastic.client.timeout_in_seconds', 30),
+            'connect_timeout' => config('elastic.client.connect_timeout_in_seconds', 10),
+        ]);
     }
 
     public function createIndex($indexName = null)
@@ -126,7 +124,7 @@ class ElasticsearchService
         ];
 
         try {
-            return $this->client->indices()->create($params);
+            return $this->client->indices()->create($params)->asArray();
         } catch (\Exception $e) {
             Log::error('Failed to create Elasticsearch index: ' . $e->getMessage());
             throw $e;
@@ -140,7 +138,7 @@ class ElasticsearchService
         $params = ['index' => $index];
 
         try {
-            return $this->client->indices()->delete($params);
+            return $this->client->indices()->delete($params)->asArray();
         } catch (\Exception $e) {
             Log::error('Failed to delete Elasticsearch index: ' . $e->getMessage());
             throw $e;
@@ -154,7 +152,7 @@ class ElasticsearchService
         $params = ['index' => $index];
 
         try {
-            return $this->client->indices()->exists($params);
+            return $this->client->indices()->exists($params)->asBool();
         } catch (\Exception $e) {
             Log::error('Failed to check if Elasticsearch index exists: ' . $e->getMessage());
             throw $e;
@@ -172,7 +170,7 @@ class ElasticsearchService
         ];
 
         try {
-            return $this->client->index($params);
+            return $this->client->index($params)->asArray();
         } catch (\Exception $e) {
             Log::error('Failed to add document to Elasticsearch: ' . $e->getMessage());
             throw $e;
@@ -192,7 +190,7 @@ class ElasticsearchService
         ];
 
         try {
-            return $this->client->update($params);
+            return $this->client->update($params)->asArray();
         } catch (\Exception $e) {
             Log::error('Failed to update document in Elasticsearch: ' . $e->getMessage());
             throw $e;
@@ -209,7 +207,7 @@ class ElasticsearchService
         ];
 
         try {
-            return $this->client->delete($params);
+            return $this->client->delete($params)->asArray();
         } catch (\Exception $e) {
             Log::error('Failed to delete document from Elasticsearch: ' . $e->getMessage());
             throw $e;
@@ -228,7 +226,7 @@ class ElasticsearchService
         ];
 
         try {
-            return $this->client->search($params);
+            return $this->client->search($params)->asArray();
         } catch (\Exception $e) {
             Log::error('Failed to search Elasticsearch: ' . $e->getMessage());
             throw $e;
@@ -252,7 +250,7 @@ class ElasticsearchService
         }
 
         try {
-            $response = $this->client->bulk($params);
+            $response = $this->client->bulk($params)->asArray();
             
             // Check for bulk indexing errors
             if (isset($response['errors']) && $response['errors']) {

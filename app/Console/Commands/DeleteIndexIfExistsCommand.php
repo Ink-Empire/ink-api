@@ -30,7 +30,7 @@ class DeleteIndexIfExistsCommand extends ElasticIndexDropCommand
 
         $index = $model->getIndexConfigurator()->getName();
 
-        return Elastic::indices()->exists(['index' => $index]);
+        return Elastic::indices()->exists(['index' => $index])->asBool();
     }
 
 

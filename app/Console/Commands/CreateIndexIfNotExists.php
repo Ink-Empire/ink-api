@@ -20,7 +20,7 @@ class CreateIndexIfNotExists extends ElasticIndexCreateCommand
 
         $index = $model->getIndexConfigurator()->getName();
 
-        return Elastic::indices()->exists(['index' => $index]);
+        return Elastic::indices()->exists(['index' => $index])->asBool();
     }
 
     public function handle()

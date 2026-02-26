@@ -5,7 +5,6 @@ namespace App\Console\Commands;
 use App\Services\ElasticService;
 use App\Util\StringToModel;
 use Illuminate\Console\Command;
-use Larelastic\Elastic\Facades\Elastic;
 
 class RebuildElasticItem extends Command
 {
