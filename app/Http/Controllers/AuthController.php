@@ -239,6 +239,7 @@ class AuthController extends Controller
             'socialMediaLinks',
             'artists',
             'tattoos',
+            'studios',
             'type',
             'image',
         ]);

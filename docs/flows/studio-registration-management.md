@@ -233,7 +233,7 @@ Endpoint: `GET /api/studios/{id}/dashboard-stats`
 | Page Views | `ProfileView` model | Views this week vs last week |
 | Bookings | `Appointment` model | Bookings for studio artists |
 | Inquiries | `Conversation` model | Messages to studio artists |
-| Artists Count | `users_studios` pivot | Artists linked to studio |
+| Artists Count | `artists_studios` pivot | Artists linked to studio |
 
 ### Dashboard Editing
 
@@ -301,7 +301,7 @@ if ($hasAddressData) {
 
 ### Artist-Studio Relationship
 
-The `users_studios` pivot table tracks artist affiliations with verification status:
+The `artists_studios` pivot table tracks artist affiliations with verification status:
 
 | Column | Type | Description |
 |--------|------|-------------|
@@ -318,12 +318,12 @@ flowchart TD
     A[Artist Claims Studio] --> B{How?}
     B --> |Registration| C[Artist registers with studio_id]
     B --> |Studio Adds| D[Studio adds by username/email]
-    C --> E[Added to users_studios with is_verified=false]
+    C --> E[Added to artists_studios with is_verified=false]
     D --> E
     E --> F[Appears in 'Artists to Verify' panel]
     F --> G{Studio Action}
     G --> |Verify| H[is_verified=true, verified_at=now]
-    G --> |Reject| I[Removed from users_studios]
+    G --> |Reject| I[Removed from artists_studios]
     H --> J[Artist shows as verified in studio]
 ```
 
@@ -331,7 +331,7 @@ flowchart TD
 
 When an artist registers and selects a studio during signup:
 1. `studio_id` is saved on the user record
-2. Artist is automatically added to `users_studios` pivot with `is_verified = false`
+2. Artist is automatically added to `artists_studios` pivot with `is_verified = false`
 3. Studio owner sees them in the "Artists to Verify" dashboard panel
 
 ### Add Artist
@@ -367,7 +367,7 @@ Reverts artist to pending status. Sets `is_verified = false` and `verified_at = 
 
 Endpoint: `DELETE /api/studios/{id}/artists/{userId}`
 
-Completely removes artist from studio (removes from `users_studios` pivot).
+Completely removes artist from studio (removes from `artists_studios` pivot).
 
 ### Get Artists
 
@@ -394,7 +394,7 @@ Route: `/studios/[slug]`
 |---------|-------------|-------------|
 | Header | Studio record | Name, location, rating, about |
 | Portfolio | Studio artists' tattoos | Grid of work |
-| Artists | `users_studios` pivot | List of studio artists |
+| Artists | `artists_studios` pivot | List of studio artists |
 | Hours | `studio_availability` table | Weekly schedule |
 | Location | `address` relation | Full address with Google Maps link |
 | Contact | Studio record | Phone, email, website, social |
@@ -409,7 +409,7 @@ Route: `/studios/[slug]`
 | `images` | Image records (uri points to S3) |
 | `addresses` | Physical addresses |
 | `studio_availability` | Weekly working hours (studio_id, day_of_week 0-6, start_time, end_time, is_day_off) |
-| `users_studios` | Artist-studio relationships with verification (user_id, studio_id, is_verified, verified_at, initiated_by) |
+| `artists_studios` | Artist-studio relationships with verification (user_id, studio_id, is_verified, verified_at, initiated_by) |
 | `studio_announcements` | Studio announcements |
 | `profile_views` | Polymorphic view tracking |
 

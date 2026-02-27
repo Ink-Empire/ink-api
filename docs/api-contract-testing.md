@@ -482,7 +482,7 @@ For artist detail by ID, use `?db=true` query parameter to bypass Elasticsearch 
 
 ### Artist Factory Errors with studio_id
 
-The `Artist` model uses a pivot table (`users_studios`) for studio relationships, not a direct `studio_id` column. When creating test artists with studio associations:
+The `Artist` model uses a pivot table (`artists_studios`) for studio relationships, not a direct `studio_id` column. When creating test artists with studio associations:
 
 ```php
 // WRONG - studio_id doesn't exist on users table

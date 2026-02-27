@@ -4,6 +4,7 @@ namespace App\Models;
 
 use Illuminate\Contracts\Auth\MustVerifyEmail;
 use App\Enums\UserTypes;
+use App\Models\Studio;
 use App\Notifications\VerifyEmailNotification;
 use App\Notifications\ResetPasswordNotification;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -143,6 +144,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(User::class, 'users_artists', 'user_id', 'artist_id');
     }
 
+    public function studios()
+    {
+        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id');
+    }
+
     /**
      * Artists on the user's wishlist (for booking notifications).
      */
@@ -173,7 +179,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function primaryStudio()
     {
-        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+        return $this->belongsToMany(Studio::class, 'artists_studios', 'user_id', 'studio_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->wherePivot('is_verified', true)
             ->wherePivot('is_primary', true)
@@ -203,11 +209,11 @@ class User extends Authenticatable implements MustVerifyEmail
     }
 
     /**
-     * Studios this user is affiliated with (via users_studios pivot table).
+     * Studios this artist is affiliated with (via artists_studios pivot table).
      */
     public function affiliatedStudios()
     {
-        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+        return $this->belongsToMany(Studio::class, 'artists_studios', 'user_id', 'studio_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->withTimestamps();
     }
@@ -217,7 +223,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function verifiedStudios()
     {
-        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+        return $this->belongsToMany(Studio::class, 'artists_studios', 'user_id', 'studio_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->wherePivot('is_verified', true)
             ->withTimestamps();
@@ -228,7 +234,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function pendingStudioInvitations()
     {
-        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+        return $this->belongsToMany(Studio::class, 'artists_studios', 'user_id', 'studio_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->wherePivot('is_verified', false)
             ->wherePivot('initiated_by', 'studio')
@@ -240,7 +246,7 @@ class User extends Authenticatable implements MustVerifyEmail
      */
     public function pendingStudioRequests()
     {
-        return $this->belongsToMany(Studio::class, 'users_studios', 'user_id', 'studio_id')
+        return $this->belongsToMany(Studio::class, 'artists_studios', 'user_id', 'studio_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by', 'is_primary')
             ->wherePivot('is_verified', false)
             ->wherePivot('initiated_by', 'artist')

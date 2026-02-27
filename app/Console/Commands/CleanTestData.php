@@ -199,7 +199,7 @@ class CleanTestData extends Command
             Tattoo::query()->delete();
             $this->line('  ✓ Deleted tattoos');
 
-            // 5. Delete studios (this will cascade to studios_styles, users_studios, business_hours)
+            // 5. Delete studios (this will cascade to studios_styles, artists_studios, business_hours)
             $stats['studios'] = Studio::count();
             Studio::query()->delete();
             $this->line('  ✓ Deleted studios');
@@ -249,6 +249,7 @@ class CleanTestData extends Command
         $pivotTables = [
             'users_tattoos',
             'users_studios',
+            'artists_studios',
             'users_artists',
             'users_styles',
             'studios_styles',

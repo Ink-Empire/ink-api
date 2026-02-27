@@ -48,6 +48,7 @@ class UserController extends Controller
             'socialMediaLinks',
             'artists',
             'tattoos',
+            'studios',
             'type',
             'image',
         ]);
