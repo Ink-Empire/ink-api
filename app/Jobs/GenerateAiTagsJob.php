@@ -46,17 +46,14 @@ class GenerateAiTagsJob implements ShouldQueue
         }
 
         try {
-            // Generate AI tags
-            $allAiTags = $tagService->generateTagsForTattoo($tattoo);
+            // Generate AI tag suggestions (does NOT auto-attach to tattoo)
+            $suggestedTags = $tagService->generateTagsForTattoo($tattoo);
 
-            Log::info("GenerateAiTagsJob: AI tags generated", [
+            Log::info("GenerateAiTagsJob: AI tag suggestions generated", [
                 'tattoo_id' => $this->tattooId,
-                'total_ai_tags' => count($allAiTags),
-                'tags' => array_map(fn($t) => $t->name ?? $t, $allAiTags)
+                'total_suggestions' => count($suggestedTags),
+                'tags' => array_map(fn($t) => $t->name ?? $t, $suggestedTags)
             ]);
-
-            // Re-index the tattoo and artist after tags are added
-            IndexTattooJob::dispatch($tattoo->id);
 
             Log::info("GenerateAiTagsJob: Completed successfully", [
                 'tattoo_id' => $this->tattooId
