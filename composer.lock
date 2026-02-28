@@ -2363,20 +2363,20 @@
         },
         {
             "name": "ink-empire/elastic",
-            "version": "2.0.1",
+            "version": "2.0.2",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ccennis/larelastic.git",
-                "reference": "35f5041e28ca9ee82774b59ad31f9c7cdd32dc28"
+                "reference": "b07929c05b31dec808725ab7e98f8e72c5c78e67"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ccennis/larelastic/zipball/35f5041e28ca9ee82774b59ad31f9c7cdd32dc28",
-                "reference": "35f5041e28ca9ee82774b59ad31f9c7cdd32dc28",
+                "url": "https://api.github.com/repos/ccennis/larelastic/zipball/b07929c05b31dec808725ab7e98f8e72c5c78e67",
+                "reference": "b07929c05b31dec808725ab7e98f8e72c5c78e67",
                 "shasum": ""
             },
             "require": {
-                "elasticsearch/elasticsearch": "^7.17 || ^8.0",
+                "elasticsearch/elasticsearch": "^8.0",
                 "laravel/scout": "^10.0",
                 "php": "^8.2"
             },
@@ -2397,10 +2397,10 @@
             },
             "description": "Generic Wrapper for elasticsearch and indexing",
             "support": {
-                "source": "https://github.com/ccennis/larelastic/tree/v2.0.1",
+                "source": "https://github.com/ccennis/larelastic/tree/v2.0.2",
                 "issues": "https://github.com/ccennis/larelastic/issues"
             },
-            "time": "2026-02-28T01:22:07+00:00"
+            "time": "2026-02-28T02:07:32+00:00"
         },
         {
             "name": "intervention/gif",
