@@ -44,7 +44,6 @@ class ElasticsearchService
         if ($timeout = config('elastic.client.timeout_in_seconds')) {
             $clientBuilder->setHttpClientOptions([
                 'timeout' => $timeout,
-                'connect_timeout' => config('elastic.client.connect_timeout_in_seconds', 10)
             ]);
         }
 

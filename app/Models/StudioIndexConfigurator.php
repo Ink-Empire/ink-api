@@ -167,6 +167,6 @@ class StudioIndexConfigurator extends IndexConfigurator
 
     public function getName()
     {
-        return config('elastic.client.artists_index', 'artists');
+        return config('elastic.client.studios_index', 'studios');
     }
 }

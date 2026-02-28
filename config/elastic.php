@@ -14,6 +14,7 @@ return [
         'base_url' => env('ELASTICSEARCH_HOST') . ":" . env('ELASTICSEARCH_PORT', 443),
         'index' => env('ELASTICSEARCH_INDEX', 'tattoos'),
         'artists_index' => env('ELASTICSEARCH_ARTISTS_INDEX', 'artists'),
+        'studios_index' => env('ELASTICSEARCH_STUDIOS_INDEX', 'studios'),
         'tattoos_index' => env('ELASTICSEARCH_TATTOOS_INDEX', 'tattoos'),
         'username' => env('ELASTICSEARCH_USERNAME'),
         'password' => env('ELASTICSEARCH_PASSWORD'),
