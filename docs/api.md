@@ -93,6 +93,10 @@ The SearchService is the core component for creating and executing search querie
 - `PUT /api/artists/appointments/{id}`: Update an appointment (requires authentication)
 - `DELETE /api/artists/appointments/{id}`: Delete an appointment (requires authentication)
 
+### Users
+
+- `POST /api/users/search`: Search for client users by name or username (public access). Lightweight DB query fallback for when artist search returns no results. Requires `searchString` (min 2 chars). Returns up to 20 results via `BriefUserResource`.
+
 ### Styles
 
 - `GET /api/styles`: List all available tattoo styles
@@ -120,6 +124,8 @@ The search functionality supports various parameters for filtering results:
 - `studio_id`: Filter tattoos by studio
 - `saved_tattoos`: Only show tattoos saved by the user
 - `saved_artists`: Only show tattoos by artists saved by the user
+
+Tattoo text search queries against: `description`, `artist_name`, `studio_name`, `uploader_name`, and `uploader_username`.
 
 Note: To get tattoos for a specific artist, use `GET /api/artists/{id}` which returns tattoos embedded in the response. The `POST /api/tattoos` search endpoint does not support filtering by `artist_id`.
 

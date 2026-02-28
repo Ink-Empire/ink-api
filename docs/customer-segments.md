@@ -19,6 +19,8 @@ This document outlines the primary customer segments for Inked In and the key ne
 - Geographic search capabilities
 - In-app consultation scheduling
 - Review systems and artist verification
+- Upload tattoos to their profile and tag the artist who did the work
+- Public user profile page showing their uploaded tattoos
 
 ## Experienced Collectors
 
@@ -35,8 +37,9 @@ This document outlines the primary customer segments for Inked In and the key ne
 - Advanced filtering by style, technique, and specialty
 - Calendar synchronization and appointment notifications
 - "Bucket list" artist tracking with availability alerts
-- Personal collection gallery
+- Personal collection gallery with uploaded tattoos and artist attribution
 - Secure artist-client messaging system
+- Discoverable via user search when artist search returns no results
 
 ## Tattoo Artists
 

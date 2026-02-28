@@ -4,13 +4,20 @@ This document outlines the complete tattoo upload flow, including image processi
 
 ## Overview
 
-When an artist uploads a tattoo, the system:
+Both artists and clients can upload tattoos. When a tattoo is uploaded, the system:
 1. Uploads and processes images
 2. Creates the tattoo record with metadata
 3. Attaches user-selected tags
 4. Dispatches `GenerateAiTagsJob` for async AI tag generation
 5. Dispatches `IndexTattooJob` for async Elasticsearch indexing
 6. Returns the tattoo immediately (AI tags and search indexing happen in background)
+
+### Client Uploads vs Artist Uploads
+
+- **Artist uploads**: `approval_status` = APPROVED, `is_visible` = true, tattoo appears in search immediately after indexing.
+- **Client uploads**: If the client tags an artist, `approval_status` = PENDING (artist must approve). If no artist is tagged, `approval_status` = USER_ONLY. `is_visible` = false until approved.
+- The uploader's name, username, and slug are indexed in Elasticsearch (`uploader_name`, `uploader_username`, `uploader_slug`) so tattoos are discoverable by searching for the uploader.
+- On the tattoo detail page, if the uploader is different from the artist, an "Uploaded by {username}" attribution links to the uploader's profile.
 
 ## Upload Flow
 

@@ -251,6 +251,7 @@ Two primary index configurators define the structure of the search indices:
    - Maps tattoo data including metadata, styles, and images
    - Includes nested objects for related entities (artist, studio, styles)
    - Configures text analyzers for natural language search
+   - Includes uploader fields (`uploader_name`, `uploader_username`, `uploader_slug`) for client-uploaded tattoos
 
 Both configurators define:
 
@@ -270,7 +271,7 @@ Both configurators define:
 
 The search capabilities are primarily implemented in the `SearchService` class, which offers:
 
-- **Text Search** - Find tattoos and artists by keywords in descriptions, names, etc.
+- **Text Search** - Find tattoos and artists by keywords in descriptions, names, uploader usernames, etc.
 - **Style-Based Search** - Filter results by tattoo styles
 - **Location-Based Search** - Find nearby artists and studios using geo distance queries
 - **Relational Filtering** - Filter by related entities (e.g., tattoos by a specific artist)
@@ -278,9 +279,13 @@ The search capabilities are primarily implemented in the `SearchService` class, 
 
 Key search methods:
 
-- `search_tattoo()` - Search for tattoos with comprehensive filters
+- `search_tattoo()` - Search for tattoos with comprehensive filters (searches description, artist_name, studio_name, uploader_name, uploader_username)
 - `search_artist()` - Search for artists with location and style filters
 - `initialUserResults()` - Generate personalized search results for a user
+
+### Client User Search Fallback
+
+Artists and tattoos are searchable via Elasticsearch. Client users are not indexed in ES. When an artist search returns no results, the frontend automatically falls back to a lightweight database query (`POST /api/users/search`) that searches client users by name and username. This provides basic discoverability for non-artist users without the overhead of maintaining a separate ES index.
 
 ## Maintenance and Operations
 
