@@ -44,6 +44,10 @@ class IndexTattooJob implements ShouldQueue
         Cache::forget("es:tattoo:{$this->tattooId}");
         Log::info("IndexTattooJob: Indexed tattoo", ['tattoo_id' => $this->tattooId]);
 
+        if ($tattoo->uploaded_by_user_id) {
+            self::bustUserTattooCaches($tattoo->uploaded_by_user_id);
+        }
+
         if ($this->reindexArtist && $tattoo->artist_id) {
             $artist = Artist::find($tattoo->artist_id);
             if ($artist) {
@@ -81,6 +85,19 @@ class IndexTattooJob implements ShouldQueue
                 }
             } while ($cursor !== '0');
         }
+    }
+
+    public static function bustUserTattooCaches(int $userId): void
+    {
+        $prefix = config('cache.prefix');
+        $pattern = "{$prefix}:es:user:{$userId}:tattoos:*";
+        $cursor = '0';
+        do {
+            [$cursor, $keys] = Redis::scan($cursor, ['match' => $pattern, 'count' => 100]);
+            if (!empty($keys)) {
+                Redis::del(...$keys);
+            }
+        } while ($cursor !== '0');
     }
 
     public function backoff(): array

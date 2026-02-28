@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\ArtistTattooApprovalStatus;
 use App\Http\Resources\Elastic\TattooIndexResource;
 use Fico7489\Laravel\Pivot\Traits\PivotEventTrait;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -25,6 +26,13 @@ class Tattoo extends Model
         'primary_style_id',
         'primary_subject_id',
         'primary_image_id',
+        'uploaded_by_user_id',
+        'approval_status',
+        'is_visible',
+    ];
+
+    protected $casts = [
+        'is_visible' => 'boolean',
     ];
 
     protected array $searchableRelations = [
@@ -35,6 +43,7 @@ class Tattoo extends Model
         'primary_style',
         'primary_image',
         'styles',
+        'uploader',
     ];
 
     protected static function booted()
@@ -45,6 +54,11 @@ class Tattoo extends Model
     public function artist()
     {
         return $this->belongsTo(Artist::class)->with(['settings']);
+    }
+
+    public function uploader()
+    {
+        return $this->belongsTo(User::class, 'uploaded_by_user_id');
     }
 
     public function studio()
@@ -103,6 +117,16 @@ class Tattoo extends Model
     public function getIsFeaturedAttribute()
     {
         return (bool) ($this->attributes['is_featured'] ?? false);
+    }
+
+    public function scopeVisible($query)
+    {
+        return $query->where('is_visible', true);
+    }
+
+    public function scopePendingForArtist($query, $artistId)
+    {
+        return $query->where('artist_id', $artistId)->where('approval_status', ArtistTattooApprovalStatus::PENDING);
     }
 
     /*

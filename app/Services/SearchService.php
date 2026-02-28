@@ -152,6 +152,10 @@ abstract class SearchService
      */
     protected function applyCommonFilters()
     {
+        if ($this->searchContext === SearchContext::TATTOO) {
+            $this->search->whereNot('is_visible', false);
+        }
+
         // Handle demo mode filtering:
         if (isset($this->filters['is_demo']) && $this->filters['is_demo']) {
             // Demo mode: show only demo data

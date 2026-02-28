@@ -4,6 +4,7 @@ namespace App\Http\Resources\Elastic;
 
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\StyleResource;
+use App\Enums\ArtistTattooApprovalStatus;
 use Illuminate\Http\Resources\Json\JsonResource;
 
 /**
@@ -47,8 +48,14 @@ class TattooIndexResource extends JsonResource
             'tags' => $this->getTags(),
             'is_featured' => (bool) $this->is_featured,
             'is_demo' => (bool) $this->is_demo,
+            'is_visible' => (bool) $this->is_visible,
             'saved_count' => (int) ($this->saved_count ?? 0),
             'created_at' => $this->created_at?->toIso8601String(),
+            'uploaded_by_user_id' => $this->uploaded_by_user_id,
+            'uploader_name' => $this->uploader?->name ?? '',
+            'uploader_slug' => $this->uploader?->slug ?? '',
+            'approval_status' => $this->approval_status ?? ArtistTattooApprovalStatus::APPROVED,
+            'is_user_upload' => $this->uploaded_by_user_id !== null && $this->uploaded_by_user_id !== $this->artist_id,
         ];
     }
 

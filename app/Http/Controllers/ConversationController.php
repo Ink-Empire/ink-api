@@ -592,12 +592,17 @@ class ConversationController extends Controller
         $currentUser = $request->user();
         $likeQuery = '%' . $query . '%';
 
-        $users = User::with('image')
+        $usersQuery = User::with('image')
             ->where('id', '!=', $currentUser->id)
             ->where(fn ($q) => $q->where('username', 'like', $likeQuery)
                 ->orWhere('email', 'like', $likeQuery)
-                ->orWhere('name', 'like', $likeQuery))
-            ->limit(10)
+                ->orWhere('name', 'like', $likeQuery));
+
+        if ($request->has('type')) {
+            $usersQuery->where('type_id', $request->input('type'));
+        }
+
+        $users = $usersQuery->limit(10)
             ->get()
             ->map(fn ($user) => [
                 'id' => $user->id,

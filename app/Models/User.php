@@ -139,6 +139,11 @@ class User extends Authenticatable implements MustVerifyEmail
         return $this->belongsToMany(Tattoo::class, 'users_tattoos', 'user_id', 'tattoo_id');
     }
 
+    public function uploadedTattoos()
+    {
+        return $this->hasMany(Tattoo::class, 'uploaded_by_user_id');
+    }
+
     public function artists()
     {
         return $this->belongsToMany(User::class, 'users_artists', 'user_id', 'artist_id');

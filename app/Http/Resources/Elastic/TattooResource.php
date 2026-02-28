@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Elastic;
 
+use App\Enums\ArtistTattooApprovalStatus;
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\StudioResource;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -28,7 +29,13 @@ class TattooResource extends JsonResource
                 'images' => $this->images ?? [],
                 'styles' => $this->styles ?? [],
                 'tags' => $this->tags ?? [],
-                'is_featured' => (int)$this->is_featured
+                'is_featured' => (int)$this->is_featured,
+                'uploaded_by_user_id' => $this->uploaded_by_user_id ?? null,
+                'uploader_name' => $this->uploader?->name ?? '',
+                'uploader_slug' => $this->uploader?->slug ?? '',
+                'approval_status' => $this->approval_status ?? ArtistTattooApprovalStatus::APPROVED,
+                'is_visible' => (bool) ($this->is_visible ?? true),
+                'is_user_upload' => $this->uploaded_by_user_id !== null && $this->uploaded_by_user_id !== $this->artist?->id,
             ];
         } catch (\Exception $e) {
             \Log::error([

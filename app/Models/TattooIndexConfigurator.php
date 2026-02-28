@@ -177,6 +177,7 @@ class TattooIndexConfigurator extends IndexConfigurator
             'artist_books_open' => Datatypes::BOOLEAN,
             'is_featured' => Datatypes::BOOLEAN,
             'is_demo' => Datatypes::BOOLEAN,
+            'is_visible' => Datatypes::BOOLEAN,
             'saved_count' => Datatypes::INTEGER,
             'created_at' => self::DATE,
 
@@ -184,6 +185,12 @@ class TattooIndexConfigurator extends IndexConfigurator
                 'type' => 'keyword',
                 'normalizer' => 'tags_normalizer'
             ],
+
+            'uploaded_by_user_id' => Datatypes::KEYWORD,
+            'uploader_name' => Datatypes::TEXT,
+            'uploader_slug' => Datatypes::KEYWORD,
+            'approval_status' => Datatypes::KEYWORD,
+            'is_user_upload' => Datatypes::BOOLEAN,
         ]
     ];
 

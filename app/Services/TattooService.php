@@ -2,6 +2,8 @@
 
 namespace App\Services;
 
+use App\Enums\ArtistTattooApprovalStatus;
+use App\Enums\UserTypes;
 use App\Exceptions\TattooNotFoundException;
 use App\Models\Tattoo;
 use App\Models\User;
@@ -88,6 +90,46 @@ class TattooService extends SearchService
     }
 
     /**
+     * Create a tattoo record for either a client or artist upload.
+     */
+    public function createTattoo(User $user, array $data): Tattoo
+    {
+        $isClient = $user->type_id === UserTypes::CLIENT_TYPE_ID;
+
+        if ($isClient) {
+            $taggedArtistId = $data['tagged_artist_id'] ?? null;
+            $approvalStatus = $taggedArtistId
+                ? ArtistTattooApprovalStatus::PENDING
+                : ArtistTattooApprovalStatus::USER_ONLY;
+
+            return Tattoo::create([
+                'artist_id' => $taggedArtistId,
+                'uploaded_by_user_id' => $user->id,
+                'approval_status' => $approvalStatus,
+                'is_visible' => false,
+                'primary_image_id' => $data['primary_image_id'],
+                'title' => $data['title'] ?? null,
+                'description' => $data['description'] ?? null,
+                'primary_style_id' => $data['primary_style_id'] ?? null,
+            ]);
+        }
+
+        return Tattoo::create([
+            'artist_id' => $user->id,
+            'uploaded_by_user_id' => $user->id,
+            'approval_status' => ArtistTattooApprovalStatus::APPROVED,
+            'is_visible' => true,
+            'primary_image_id' => $data['primary_image_id'],
+            'studio_id' => $user->primary_studio?->id,
+            'title' => $data['title'] ?? null,
+            'description' => $data['description'] ?? null,
+            'placement' => $data['placement'] ?? null,
+            'duration' => $data['duration'] ?? null,
+            'primary_style_id' => $data['primary_style_id'] ?? null,
+        ]);
+    }
+
+    /**
      * @param int $id
      * @param string $model
      * @return void|Tattoo
@@ -141,6 +183,8 @@ class TattooService extends SearchService
         $this->filters = $params;
         $this->initializeSearch();
 
+        $this->search->whereNot('is_visible', false);
+
         // Filter by artist_id or artist.slug
         if (!is_numeric($artistId)) {
             // It's a slug - query nested artist.slug field
@@ -168,6 +212,7 @@ class TattooService extends SearchService
         }
 
         $this->initializeSearch();
+        $this->search->whereNot('is_visible', false);
         $this->search->where('id', 'in', $ids);
 
         return $this->search->get();

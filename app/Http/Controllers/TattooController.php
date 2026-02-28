@@ -2,7 +2,10 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ArtistTattooApprovalStatus;
+use App\Enums\UserTypes;
 use App\Http\Resources\Elastic\TattooResource;
+use App\Http\Resources\PendingTattooResource;
 use App\Jobs\GenerateAiTagsJob;
 use App\Jobs\IndexTattooJob;
 use App\Models\Artist;
@@ -11,6 +14,9 @@ use App\Models\Style;
 use App\Models\Tag;
 use App\Models\Tattoo;
 use App\Models\User;
+use App\Notifications\ArtistTaggedNotification;
+use App\Notifications\TattooApprovedNotification;
+use App\Notifications\TattooRejectedNotification;
 use App\Services\ImageService;
 use App\Services\TattooService;
 use App\Services\TagService;
@@ -64,6 +70,18 @@ class TattooController extends Controller
         $tattoo = Cache::remember($cacheKey, 600, function () use ($id) {
             return $this->tattooService->getById($id);
         });
+
+        // Fallback to DB for tattoos not in ES (pending/user_only)
+        if (!$tattoo) {
+            $dbTattoo = Tattoo::with(['primary_image', 'images', 'styles', 'artist', 'studio', 'primary_style', 'tags', 'uploader'])
+                ->find($id);
+
+            if ($dbTattoo) {
+                return $this->returnResponse('tattoo', new TattooResource($dbTattoo));
+            }
+
+            return $this->returnErrorResponse('Tattoo not found', 'Tattoo not found', 404);
+        }
 
         // Check if blocked - tattoo from Elasticsearch is an array
         $user = $request->user();
@@ -228,14 +246,6 @@ class TattooController extends Controller
         try {
             $user = $request->user();
 
-            // Log authenticated user for debugging auth issues
-            \Log::info("Tattoo create - authenticated user", [
-                'user_id' => $user?->id,
-                'user_email' => $user?->email,
-                'token_id' => $request->user()?->currentAccessToken()?->id ?? 'session',
-                'auth_header' => $request->hasHeader('Authorization') ? 'present' : 'missing',
-            ]);
-
             if (!$user) {
                 return $this->returnErrorResponse("Unauthorized", "You must be logged in to create a tattoo", 401);
             }
@@ -250,7 +260,7 @@ class TattooController extends Controller
                 }
                 if (is_array($imageIds) && !empty($imageIds)) {
                     // Fetch the Image records
-                    $images = \App\Models\Image::whereIn('id', $imageIds)->get()->all();
+                    $images = Image::whereIn('id', $imageIds)->get()->all();
                     \Log::info("Using pre-uploaded images", [
                         'image_ids' => $imageIds,
                         'found' => count($images)
@@ -282,7 +292,6 @@ class TattooController extends Controller
             if (count($images) > 0) {
                 $primaryImage = $images[0];
 
-                // Handle style IDs
                 $styleIds = [];
                 if ($request->has('style_ids')) {
                     $styleIds = json_decode($request->input('style_ids'), true);
@@ -295,10 +304,9 @@ class TattooController extends Controller
                 $primaryStyleId = $request->input('primary_style_id')
                     ?: (!empty($styleIds) ? $styleIds[0] : null);
 
-                $tattoo = Tattoo::create([
-                    'artist_id' => $user->id,
+                $tattoo = $this->tattooService->createTattoo($user, [
+                    'tagged_artist_id' => $request->input('tagged_artist_id'),
                     'primary_image_id' => $primaryImage->id,
-                    'studio_id' => $user->primary_studio?->id,
                     'title' => $request->input('title'),
                     'description' => $request->input('description'),
                     'placement' => $request->input('placement'),
@@ -339,6 +347,14 @@ class TattooController extends Controller
                     }
                 }
 
+                // Notify tagged artist if this is a client upload
+                if ($tattoo->approval_status === ArtistTattooApprovalStatus::PENDING && $tattoo->artist_id) {
+                    $taggedArtist = User::find($tattoo->artist_id);
+                    if ($taggedArtist) {
+                        $taggedArtist->notify(new ArtistTaggedNotification($tattoo, $user));
+                    }
+                }
+
                 // Dispatch background jobs for AI tags and ES indexing
                 GenerateAiTagsJob::dispatch($tattoo->id, $userSelectedTagIds);
                 IndexTattooJob::dispatch($tattoo->id);
@@ -375,7 +391,7 @@ class TattooController extends Controller
             }
 
             // Verify the user owns this tattoo
-            if ($tattoo->artist_id !== $user->id) {
+            if ($tattoo->artist_id !== $user->id && $tattoo->uploaded_by_user_id !== $user->id) {
                 return $this->returnErrorResponse('You can only update your own tattoos', 403);
             }
 
@@ -538,7 +554,7 @@ class TattooController extends Controller
             }
 
             // Verify the user owns this tattoo
-            if ($tattoo->artist_id !== $user->id) {
+            if ($tattoo->artist_id !== $user->id && $tattoo->uploaded_by_user_id !== $user->id) {
                 return $this->returnErrorResponse('You can only delete your own tattoos', 403);
             }
 
@@ -613,6 +629,79 @@ class TattooController extends Controller
 
             return $this->returnErrorResponse($e->getMessage());
         }
+    }
+
+    /**
+     * Get pending tattoo approvals for the authenticated artist.
+     */
+    public function pendingApprovals(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        if ($user->type_id !== UserTypes::ARTIST_TYPE_ID) {
+            return $this->returnErrorResponse('Only artists can view pending approvals', 403);
+        }
+
+        $tattoos = Tattoo::with(['primary_image', 'images', 'styles', 'uploader', 'uploader.image'])
+            ->pendingForArtist($user->id)
+            ->orderBy('created_at', 'desc')
+            ->get();
+
+        return $this->returnResponse('tattoos', PendingTattooResource::collection($tattoos));
+    }
+
+    /**
+     * Approve or reject a tattoo tag request.
+     */
+    public function respondToTagRequest(Request $request, $id): JsonResponse
+    {
+        $user = $request->user();
+        $tattoo = Tattoo::with(['uploader'])->find($id);
+
+        if (!$tattoo) {
+            return $this->returnErrorResponse('Tattoo not found', 404);
+        }
+
+        if ($tattoo->artist_id !== $user->id) {
+            return $this->returnErrorResponse('You can only respond to tattoos tagged to you', 403);
+        }
+
+        if ($tattoo->approval_status !== ArtistTattooApprovalStatus::PENDING) {
+            return $this->returnErrorResponse('This tattoo is not pending approval');
+        }
+
+        $action = $request->input('action');
+
+        if ($action === 'approve') {
+            $tattoo->approval_status = ArtistTattooApprovalStatus::APPROVED;
+            $tattoo->is_visible = true;
+            $tattoo->save();
+
+            IndexTattooJob::dispatch($tattoo->id);
+            Cache::forget("es:tattoo:{$tattoo->id}");
+
+            if ($tattoo->uploader) {
+                $tattoo->uploader->notify(new TattooApprovedNotification($tattoo, $user));
+            }
+
+            return response()->json(['success' => true, 'message' => 'Tattoo approved']);
+        } elseif ($action === 'reject') {
+            $tattoo->artist_id = null;
+            $tattoo->approval_status = ArtistTattooApprovalStatus::USER_ONLY;
+            $tattoo->is_visible = false;
+            $tattoo->save();
+
+            IndexTattooJob::dispatch($tattoo->id);
+            Cache::forget("es:tattoo:{$tattoo->id}");
+
+            if ($tattoo->uploader) {
+                $tattoo->uploader->notify(new TattooRejectedNotification($tattoo, $user));
+            }
+
+            return response()->json(['success' => true, 'message' => 'Tag rejected']);
+        }
+
+        return $this->returnErrorResponse('Invalid action. Use "approve" or "reject".');
     }
 
     /**

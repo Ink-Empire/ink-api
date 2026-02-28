@@ -26,6 +26,7 @@ use App\Http\Controllers\FeedbackController;
 use App\Http\Controllers\SocialMediaLinkController;
 use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationPreferenceController;
+use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\SupportController;
 
 /*
@@ -70,6 +71,10 @@ Route::get('/unsubscribe', [SubscriptionController::class, 'unsubscribe'])->name
 
 // Feedback submission (public)
 Route::post('/feedback', [FeedbackController::class, 'submit']);
+
+// Public user profile routes
+Route::get('/users/{slug}/profile', [UserProfileController::class, 'getProfile']);
+Route::get('/users/{slug}/tattoos', [UserProfileController::class, 'getUploadedTattoos']);
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);
@@ -136,6 +141,8 @@ Route::middleware('auth:sanctum')->group(function () {
     // Tattoo management (authenticated)
     // Note: PUT /tattoos/{id} and PUT /tattoos/{id}/featured are in web.php
     Route::delete('/tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'destroy']);
+    Route::get('/tattoos/pending-approvals', [\App\Http\Controllers\TattooController::class, 'pendingApprovals']);
+    Route::post('/tattoos/{id}/approve', [\App\Http\Controllers\TattooController::class, 'respondToTagRequest']);
 
     // Appointment routes
     Route::prefix('appointments')->group(function () {

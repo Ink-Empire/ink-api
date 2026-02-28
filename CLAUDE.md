@@ -40,6 +40,12 @@ Map search from user input through Elasticsearch, filters, notBlockedBy scope, a
 - **Git Flow**: Create branches from develop, request code review before merging
 - Don't automatically perform any git operations; I'll handle git and version control
 
+## Enums & Constants
+- **Always use enums** for status values, types, and other string constants — never use raw strings
+- Enums live in `app/Enums/` (e.g., `ArtistTattooApprovalStatus`, `AppointmentStatus`, `UserTypes`)
+- When adding a new status or type value, add it to the relevant enum first, then reference the constant
+- Controllers should be thin — business logic belongs in Services (`app/Services/`)
+
 ## API Response Guidelines
 - **Always use Laravel Resources** - never return hardcoded response arrays
 - Use `$this->returnResponse('key', new SomeResource($model))` pattern
