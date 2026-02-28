@@ -20,7 +20,7 @@ All tattoos are indexed in Elasticsearch regardless of `is_visible`. Search quer
 
 ```mermaid
 sequenceDiagram
-    participant C as Client (React Native)
+    participant C as Client (React Native / Next.js)
     participant API as Laravel API
     participant DB as Database
     participant ES as Elasticsearch
@@ -111,6 +111,21 @@ flowchart TD
 - **UI**: FlatList of pending tattoos with thumbnail, uploader name, title, date, and approve/reject buttons with confirmation dialogs
 - **Optimistic updates**: `removeTattoo()` removes from local state immediately on action
 
+### Frontend: PendingApprovalsDialog (Next.js)
+
+- **Stat Card**: "Approve Tags" stat card in the artist dashboard stats row (`pages/dashboard.tsx`), shows pending count
+- **Dialog**: `components/dashboard/PendingApprovalsCard.tsx` exports `PendingApprovalsDialog` (MUI Dialog, full-screen on mobile)
+- **Hook**: `nextjs/hooks/usePendingApprovals.ts` (wraps `tattooService.getPendingApprovals()`)
+- **UI**: Each pending tattoo shows Decline/Accept buttons at top, full-width image, uploader name + avatar, description, and date
+- **Optimistic updates**: `removeTattoo()` removes from local state; dialog auto-closes when last item is resolved
+
+### Frontend: Client Upload Wizard (Next.js)
+
+- **Component**: `nextjs/components/ClientUploadWizard.tsx` (3-step MUI Dialog wizard)
+- **Dashboard button**: "Upload Tattoo" button in `ClientDashboardContent.tsx` header
+- **Service**: `tattooService.clientUpload()` POSTs to `/tattoos/create` with `{ image_ids, title?, description?, tagged_artist_id? }`
+- **Steps**: Images (drag-drop, max 5) -> Details (title, description, artist search) -> Review (visibility info, publish)
+
 ## Notifications
 
 | Event | Notification Class | Recipient | Email Subject | Push Title |
@@ -126,6 +141,7 @@ flowchart TD
 - Results cached for 5 minutes with key pattern `es:user:{id}:tattoos:p{page}:pp{perPage}`
 - Cache busted by `IndexTattooJob` when a tattoo's `uploaded_by_user_id` is set
 - Pending tattoos show "(pending)" inline next to the artist name on `TattooDetailScreen`
+- Client-uploaded tattoos show an "Uploaded by" box on the tattoo detail view (both platforms) with the uploader's name and their description displayed as a quoted comment inside a bordered card
 
 ## Elasticsearch Indexing
 

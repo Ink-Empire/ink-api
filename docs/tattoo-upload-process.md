@@ -25,7 +25,7 @@ Both artists and clients can upload tattoos. When a tattoo is uploaded, the syst
 
 **Endpoint:** `POST /api/tattoos/create`
 
-**Request (multipart/form-data):**
+**Artist Upload Request (multipart/form-data):**
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `files` | File[] | Yes | Up to 5 image files |
@@ -33,6 +33,14 @@ Both artists and clients can upload tattoos. When a tattoo is uploaded, the syst
 | `primary_style_id` | int | Yes | Primary tattoo style |
 | `additional_style_ids` | JSON array | No | Additional style IDs |
 | `tag_ids` | JSON array | No | User-selected tag IDs |
+
+**Client Upload Request (JSON):**
+| Field | Type | Required | Description |
+|-------|------|----------|-------------|
+| `image_ids` | int[] | Yes | IDs of images pre-uploaded via S3 presigned URLs |
+| `title` | string | No | Tattoo name |
+| `description` | string | No | Story or context from the client |
+| `tagged_artist_id` | int | No | Artist to tag (triggers approval workflow) |
 
 ### Step 2: Image Processing
 
@@ -192,9 +200,17 @@ For existing tattoos without tags:
 - `app/Jobs/IndexTattooJob.php` - Async ES indexing (standard for all tattoo index operations)
 - `app/Jobs/GenerateAiTagsJob.php` - Async AI tag generation
 
-**Frontend:**
-- `components/TattooCreateForm.tsx` - Upload form with AI modal
-- `components/TagsAutocomplete.tsx` - Tag selection component
+**Frontend (Next.js):**
+- `nextjs/components/TattooCreateWizard.tsx` - Artist upload wizard (styles, tags, placement)
+- `nextjs/components/ClientUploadWizard.tsx` - Client upload wizard (simplified: images, title, description, optional artist tag)
+- `nextjs/services/tattooService.ts` - `clientUpload()` for client uploads, `create()` for artist uploads
+- `nextjs/components/TattooModal.tsx` - Tattoo detail view (shows "Uploaded by" comment box for client uploads)
+- `nextjs/components/dashboard/PendingApprovalsCard.tsx` - Artist approval dialog
+
+**Frontend (React Native):**
+- `reactnative/app/screens/ClientUploadScreen.tsx` - Client upload wizard
+- `reactnative/app/screens/TattooDetailScreen.tsx` - Tattoo detail view (shows "Uploaded by" comment box for client uploads)
+- `reactnative/app/screens/PendingApprovalsScreen.tsx` - Artist approval screen
 
 **Routes:**
 - `routes/api.php` - API route definitions
