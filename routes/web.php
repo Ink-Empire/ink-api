@@ -8,6 +8,7 @@ use App\Http\Controllers\ElasticController;
 use App\Http\Controllers\ImageController;
 use App\Http\Controllers\TattooController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\UserSearchController;
 use App\Http\Controllers\StudioController;
 use App\Http\Controllers\TagController;
 use Illuminate\Support\Facades\Route;
@@ -38,6 +39,9 @@ Route::prefix('api')->group(function () {
 
     // Unclaimed studios endpoint (loaded async, separate from search)
     Route::post('/unclaimed-studios', [TattooController::class, 'unclaimedStudios']);
+
+    // Lightweight client user search (DB fallback when artist ES returns no results)
+    Route::post('/users/search', [UserSearchController::class, 'search']);
 
     Route::middleware('auth:sanctum')->group(function () {
         Route::group(['prefix' => 'users'], function () {

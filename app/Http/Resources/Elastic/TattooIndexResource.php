@@ -54,6 +54,7 @@ class TattooIndexResource extends JsonResource
             'uploaded_by_user_id' => $this->uploaded_by_user_id,
             'uploader_name' => $this->uploader?->name ?? '',
             'uploader_slug' => $this->uploader?->slug ?? '',
+            'uploader_username' => $this->uploader?->username ?? '',
             'approval_status' => $this->approval_status ?? ArtistTattooApprovalStatus::APPROVED,
             'is_user_upload' => $this->uploaded_by_user_id !== null && $this->uploaded_by_user_id !== $this->artist_id,
         ];

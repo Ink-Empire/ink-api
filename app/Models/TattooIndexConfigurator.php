@@ -188,6 +188,7 @@ class TattooIndexConfigurator extends IndexConfigurator
 
             'uploaded_by_user_id' => Datatypes::KEYWORD,
             'uploader_name' => Datatypes::TEXT,
+            'uploader_username' => Datatypes::TEXT,
             'uploader_slug' => Datatypes::KEYWORD,
             'approval_status' => Datatypes::KEYWORD,
             'is_user_upload' => Datatypes::BOOLEAN,
