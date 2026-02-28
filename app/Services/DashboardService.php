@@ -252,7 +252,7 @@ class DashboardService
     /**
      * Get upcoming schedule for an artist.
      */
-    public function getArtistUpcomingSchedule(User $artist, int $limit = 10): array
+    public function getArtistUpcomingSchedule(User $artist, int $limit = 50): array
     {
         $cacheKey = "artist:{$artist->id}:upcoming-schedule";
         $cacheDuration = 300; // 5 minutes
@@ -265,15 +265,29 @@ class DashboardService
     private function fetchArtistUpcomingSchedule(User $artist, int $limit): array
     {
         $appointments = Appointment::where('artist_id', $artist->id)
-            ->where('status', 'booked')
+            ->whereIn('status', ['booked', 'cancelled'])
             ->where('date', '>=', Carbon::now()->toDateString())
             ->orderBy('date')
             ->orderBy('start_time')
             ->limit($limit)
-            ->with('client')
+            ->with(['client', 'conversation'])
             ->get();
 
-        return $appointments->map(function ($apt) {
+        // TODO: Refactor to use Eloquent relationship or scope on Conversation model
+        // instead of raw DB join (e.g. Conversation::forParticipants($artistId, $clientIds))
+        // Batch-load conversation IDs by client: single query for all the artist's conversations
+        $clientIds = $appointments->pluck('client_id')->filter()->unique()->values();
+        $conversationsByClient = [];
+        if ($clientIds->isNotEmpty()) {
+            $conversationsByClient = DB::table('conversation_participants as cp1')
+                ->join('conversation_participants as cp2', 'cp1.conversation_id', '=', 'cp2.conversation_id')
+                ->where('cp1.user_id', $artist->id)
+                ->whereIn('cp2.user_id', $clientIds)
+                ->pluck('cp1.conversation_id', 'cp2.user_id')
+                ->toArray();
+        }
+
+        return $appointments->map(function ($apt) use ($conversationsByClient) {
             $date = Carbon::parse($apt->date);
             $startTime = Carbon::parse($apt->start_time)->format('g:i A');
             $endTime = Carbon::parse($apt->end_time)->format('g:i A');
@@ -284,20 +298,34 @@ class DashboardService
                 ? strtoupper($nameParts[0][0] . $nameParts[1][0])
                 : strtoupper(substr($clientName, 0, 2));
 
+            $conversationId = $apt->conversation?->id
+                ?? ($apt->client_id ? ($conversationsByClient[$apt->client_id] ?? null) : null);
+
             return [
                 'id' => $apt->id,
                 'date' => $date->format('Y-m-d'),
                 'day' => $date->day,
                 'month' => $date->format('M'),
                 'time' => "{$startTime} – {$endTime}",
-                'title' => $apt->title ?? 'Appointment',
+                'title' => $this->formatAppointmentTitle($apt),
                 'clientName' => $clientName,
                 'clientInitials' => $initials,
                 'type' => $apt->type ?? 'appointment',
                 'client_id' => $apt->client_id,
+                'conversation_id' => $conversationId,
                 'status' => $apt->status,
+                'start_time' => $apt->start_time ? Carbon::parse($apt->start_time)->format('H:i') : null,
+                'end_time' => $apt->end_time ? Carbon::parse($apt->end_time)->format('H:i') : null,
             ];
         })->toArray();
+    }
+
+    private function formatAppointmentTitle($appointment): string
+    {
+        $type = $appointment->type === 'consultation' ? 'Consultation' : 'Appointment';
+        $clientName = $appointment->client?->name ?? 'Unknown Client';
+
+        return "Tattoo {$type} with {$clientName}";
     }
 
     // ==================== Client Dashboard Methods ====================
@@ -312,11 +340,30 @@ class DashboardService
         // Upcoming appointments (next 5, sorted by date) - always fresh
         $appointments = $user->appointmentsWithStatus('booked')
             ->where('date', '>=', now()->toDateString())
-            ->with(['artist.image', 'studio'])
+            ->with(['artist.image', 'studio', 'conversation'])
             ->orderBy('date')
             ->orderBy('start_time')
             ->take(5)
             ->get();
+
+        // Batch-load conversation IDs by artist for appointments missing a direct conversation
+        $artistIds = $appointments->pluck('artist_id')->filter()->unique()->values();
+        $conversationsByArtist = [];
+        if ($artistIds->isNotEmpty()) {
+            $conversationsByArtist = DB::table('conversation_participants as cp1')
+                ->join('conversation_participants as cp2', 'cp1.conversation_id', '=', 'cp2.conversation_id')
+                ->where('cp1.user_id', $user->id)
+                ->whereIn('cp2.user_id', $artistIds)
+                ->pluck('cp1.conversation_id', 'cp2.user_id')
+                ->toArray();
+        }
+
+        // Attach fallback conversation_id to each appointment
+        $appointments->each(function ($apt) use ($conversationsByArtist) {
+            if (!$apt->conversation?->id && $apt->artist_id) {
+                $apt->fallback_conversation_id = $conversationsByArtist[$apt->artist_id] ?? null;
+            }
+        });
 
         // Recent conversations (last 3) - always fresh
         $conversations = Conversation::forUser($user->id)

@@ -17,6 +17,7 @@ use App\Notifications\BookingAcceptedNotification;
 use App\Services\ConversationService;
 use App\Util\ModelLookup;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Str;
 
 class AppointmentController extends Controller
@@ -159,10 +160,12 @@ class AppointmentController extends Controller
         $appointment = $artist->appointments()->create($data);
 
         // Find existing conversation between client and artist, or create one
+        // Map appointment type to conversation type ('tattoo' -> 'booking')
+        $conversationType = $data['type'] === 'tattoo' ? 'booking' : $data['type'];
         $conversation = $conversationService->findOrCreate(
             $data['client_id'],
             $artist->id,
-            $data['type'],
+            $conversationType,
             $appointment->id
         );
 
@@ -178,6 +181,31 @@ class AppointmentController extends Controller
             $messageContent .= ": " . $data['description'];
         }
 
+        // Format time for display
+        $startFormatted = date('g:i A', strtotime($data['start_time']));
+        $timeDisplay = $startFormatted;
+        $durationDisplay = null;
+        if (!empty($data['end_time'])) {
+            $endFormatted = date('g:i A', strtotime($data['end_time']));
+            $timeDisplay = $startFormatted . ' - ' . $endFormatted;
+            $startMinutes = (int) date('H', strtotime($data['start_time'])) * 60 + (int) date('i', strtotime($data['start_time']));
+            $endMinutes = (int) date('H', strtotime($data['end_time'])) * 60 + (int) date('i', strtotime($data['end_time']));
+            $diffMinutes = $endMinutes - $startMinutes;
+            if ($diffMinutes >= 60) {
+                $hours = floor($diffMinutes / 60);
+                $mins = $diffMinutes % 60;
+                $durationDisplay = $hours . ' hour' . ($hours > 1 ? 's' : '') . ($mins > 0 ? ' ' . $mins . ' min' : '');
+            } else {
+                $durationDisplay = $diffMinutes . ' min';
+            }
+        }
+
+        // Format date for display
+        $dateDisplay = date('D, M j, Y', strtotime($data['date']));
+
+        // Get artist deposit amount if set
+        $depositAmount = $artist->settings?->deposit_amount ?? null;
+
         Message::create([
             'conversation_id' => $conversation->id,
             'appointment_id' => $appointment->id,
@@ -189,9 +217,11 @@ class AppointmentController extends Controller
             'metadata' => array_filter([
                 'appointment_id' => $appointment->id,
                 'type' => $data['type'],
-                'date' => $data['date'],
-                'start_time' => $data['start_time'],
-                'end_time' => $data['end_time'] ?? null,
+                'status' => 'pending',
+                'date' => $dateDisplay,
+                'time' => $timeDisplay,
+                'duration' => $durationDisplay,
+                'deposit' => $depositAmount ? '$' . number_format($depositAmount, 0) : null,
             ]),
         ]);
 
@@ -219,7 +249,10 @@ class AppointmentController extends Controller
             \Log::error('Failed to dispatch Google Calendar sync: ' . $e->getMessage());
         }
 
-        return new AppointmentResource($appointment);
+        $response = (new AppointmentResource($appointment))->toArray($request);
+        $response['conversation_id'] = $conversation->id;
+
+        return response()->json($response);
     }
 
     public function update(Request $request, $id)
@@ -300,17 +333,47 @@ class AppointmentController extends Controller
                 \Log::error('Failed to send booking accepted notification: ' . $e->getMessage());
             }
 
-            // Add a system message to the conversation
+            // Update the booking_card message status
             $conversation = Conversation::where('appointment_id', $appointment->id)->first();
             if ($conversation) {
+                $bookingMessage = Message::where('conversation_id', $conversation->id)
+                    ->where('type', 'booking_card')
+                    ->where('appointment_id', $appointment->id)
+                    ->first();
+                if ($bookingMessage) {
+                    $meta = $bookingMessage->metadata ?? [];
+                    $meta['status'] = 'accepted';
+                    $bookingMessage->metadata = $meta;
+                    $bookingMessage->save();
+                }
+
+                $depositAmount = $user->settings?->deposit_amount ?? null;
+                $dateStr = $appointment->date instanceof \DateTimeInterface
+                    ? $appointment->date->format('Y-m-d')
+                    : $appointment->date;
+
+                $clientContent = ($depositAmount && $depositAmount > 0)
+                    ? 'Booking request accepted. The artist will arrange payment of their deposit with you.'
+                    : 'Booking request accepted.';
+
+                $artistContent = 'Booking request accepted. This has been added to your calendar.';
+
                 Message::create([
                     'conversation_id' => $conversation->id,
                     'appointment_id' => $appointment->id,
                     'sender_id' => $user->id,
                     'recipient_id' => $appointment->client_id,
-                    'content' => 'Booking request accepted',
+                    'content' => $clientContent,
                     'type' => 'system',
+                    'metadata' => [
+                        'artist_id' => $user->id,
+                        'artist_content' => $artistContent,
+                        'calendar_link' => '/calendar?date=' . $dateStr,
+                    ],
                 ]);
+
+                $conversation->touch();
+                Cache::forget("unread_count:{$appointment->client_id}");
             }
 
             return response()->json([
@@ -347,9 +410,20 @@ class AppointmentController extends Controller
                 \Log::error('Failed to send booking declined notification: ' . $e->getMessage());
             }
 
-            // Add a system message to the conversation
+            // Update the booking_card message status and add system message
             $conversation = Conversation::where('appointment_id', $appointment->id)->first();
             if ($conversation) {
+                $bookingMessage = Message::where('conversation_id', $conversation->id)
+                    ->where('type', 'booking_card')
+                    ->where('appointment_id', $appointment->id)
+                    ->first();
+                if ($bookingMessage) {
+                    $meta = $bookingMessage->metadata ?? [];
+                    $meta['status'] = 'declined';
+                    $bookingMessage->metadata = $meta;
+                    $bookingMessage->save();
+                }
+
                 $content = 'Booking request declined';
                 if (!empty($data['reason'])) {
                     $content .= ': ' . $data['reason'];
@@ -362,6 +436,9 @@ class AppointmentController extends Controller
                     'content' => $content,
                     'type' => 'system',
                 ]);
+
+                $conversation->touch();
+                Cache::forget("unread_count:{$appointment->client_id}");
             }
 
             return response()->json([

@@ -15,6 +15,8 @@ class VerifyAppToken
     protected array $except = [
         'horizon',
         'horizon/*',
+        'telescope',
+        'telescope/*',
         'api/webhooks/*',
         'api/calendar/callback',
         'api/places/config',

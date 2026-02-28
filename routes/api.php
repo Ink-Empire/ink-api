@@ -139,6 +139,7 @@ Route::middleware('auth:sanctum')->group(function () {
 
     // Appointment routes
     Route::prefix('appointments')->group(function () {
+        Route::post('/create', [AppointmentController::class, 'store']);
         Route::post('/inbox', [AppointmentController::class, 'inbox']);
         Route::post('/history', [AppointmentController::class, 'history']);
         Route::post('/invite', [AppointmentController::class, 'invite']);
@@ -267,6 +268,14 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('tattoos', [\App\Http\Controllers\TattooController::class, 'adminIndex']);
     Route::get('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminShow']);
     Route::put('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminUpdate']);
+
+    // Demo data management
+    Route::get('demo-data/preview', [\App\Http\Controllers\Admin\DemoDataController::class, 'preview']);
+    Route::post('demo-data/purge', [\App\Http\Controllers\Admin\DemoDataController::class, 'purge']);
+
+    // Artisan command runner
+    Route::get('commands', [\App\Http\Controllers\Admin\ArtisanController::class, 'index']);
+    Route::post('commands/run', [\App\Http\Controllers\Admin\ArtisanController::class, 'run']);
 
     // Documentation
     Route::get('docs', [\App\Http\Controllers\Admin\DocsController::class, 'index']);

@@ -12,11 +12,23 @@ use Illuminate\Http\Resources\Json\JsonResource;
  */
 class AppointmentDashboardResource extends JsonResource
 {
+    private function formatTitle(): string
+    {
+        $type = $this->type === 'consultation' ? 'Consultation' : 'Appointment';
+        $artistName = $this->relationLoaded('artist') && $this->artist
+            ? $this->artist->name
+            : null;
+
+        return $artistName
+            ? "Tattoo {$type} with {$artistName}"
+            : "Tattoo {$type}";
+    }
+
     public function toArray($request): array
     {
         return [
             'id' => $this->id,
-            'title' => $this->title,
+            'title' => $this->formatTitle(),
             'date' => $this->date,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
@@ -36,6 +48,7 @@ class AppointmentDashboardResource extends JsonResource
                     ),
                 ]
             ),
+            'conversation_id' => $this->conversation?->id ?? $this->fallback_conversation_id ?? null,
             'studio' => $this->when(
                 $this->relationLoaded('studio') && $this->studio,
                 fn () => new BriefStudioResource($this->studio)

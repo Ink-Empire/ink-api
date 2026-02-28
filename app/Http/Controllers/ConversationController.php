@@ -14,6 +14,7 @@ use App\Services\WatermarkService;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 
 class ConversationController extends Controller
@@ -384,13 +385,29 @@ class ConversationController extends Controller
 
         $appointment = Appointment::findOrFail($request->appointment_id);
 
-        // Verify the user is the artist on this appointment
-        if ($appointment->artist_id !== $user->id) {
-            return response()->json(['error' => 'Only the artist can cancel this appointment'], 403);
+        // Verify the user is the artist or client on this appointment
+        if ($appointment->artist_id !== $user->id && $appointment->client_id !== $user->id) {
+            return response()->json(['error' => 'You are not authorized to cancel this appointment'], 403);
         }
 
         // Cancel the appointment
         $appointment->update(['status' => 'cancelled']);
+
+        // Clear artist schedule cache
+        Cache::forget("artist:{$appointment->artist_id}:upcoming-schedule");
+        Cache::forget("artist:{$appointment->artist_id}:dashboard-stats");
+
+        // Update the original booking card message status to 'cancelled'
+        $bookingMessage = $conversation->messages()
+            ->where('type', 'booking_card')
+            ->whereJsonContains('metadata->appointment_id', (int) $request->appointment_id)
+            ->first();
+
+        if ($bookingMessage) {
+            $metadata = $bookingMessage->metadata ?? [];
+            $metadata['status'] = 'cancelled';
+            $bookingMessage->update(['metadata' => $metadata]);
+        }
 
         $content = $request->reason
             ? "Appointment cancelled: {$request->reason}"
@@ -399,6 +416,10 @@ class ConversationController extends Controller
         $message = $conversationService->sendTypedMessage($conversation, $user->id, $content, 'cancellation', [
             'appointment_id' => $request->appointment_id,
             'reason' => $request->reason,
+            'date' => $appointment->date?->toDateString(),
+            'start_time' => $appointment->start_time,
+            'end_time' => $appointment->end_time,
+            'title' => $appointment->title,
         ]);
 
         return response()->json([
@@ -424,8 +445,8 @@ class ConversationController extends Controller
 
         $appointment = Appointment::findOrFail($request->appointment_id);
 
-        if ($appointment->artist_id !== $user->id) {
-            return response()->json(['error' => 'Only the artist can request a reschedule'], 403);
+        if ($appointment->artist_id !== $user->id && $appointment->client_id !== $user->id) {
+            return response()->json(['error' => 'You are not authorized to reschedule this appointment'], 403);
         }
 
         $content = $request->reason
@@ -483,9 +504,21 @@ class ConversationController extends Controller
                 'start_time' => $metadata['proposed_start_time'],
                 'end_time' => $metadata['proposed_end_time'],
             ]);
+
+            // Clear artist schedule cache
+            Cache::forget("artist:{$appointment->artist_id}:upcoming-schedule");
+            Cache::forget("artist:{$appointment->artist_id}:dashboard-stats");
+
             $metadata['status'] = 'accepted';
         } else {
             $metadata['status'] = 'declined';
+
+            $appointment = Appointment::find($metadata['appointment_id']);
+            if ($appointment) {
+                $appointment->update(['status' => 'pending']);
+                Cache::forget("artist:{$appointment->artist_id}:upcoming-schedule");
+                Cache::forget("artist:{$appointment->artist_id}:dashboard-stats");
+            }
         }
 
         $message->update(['metadata' => $metadata]);

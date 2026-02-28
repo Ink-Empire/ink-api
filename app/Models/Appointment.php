@@ -55,6 +55,11 @@ class Appointment extends Model
         return $this->belongsTo(Tattoo::class);
     }
 
+    public function conversation()
+    {
+        return $this->hasOne(Conversation::class);
+    }
+
     public function messages()
     {
         return $this->hasMany(Message::class);

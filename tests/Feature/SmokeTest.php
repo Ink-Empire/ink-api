@@ -4,7 +4,7 @@ namespace Tests\Feature;
 
 use App\Http\Middleware\VerifyAppToken;
 use App\Http\Middleware\VerifyCsrfToken;
-use Elasticsearch\Client;
+use Elastic\Elasticsearch\Client;
 use Tests\TestCase;
 
 /**

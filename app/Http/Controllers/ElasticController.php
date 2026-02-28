@@ -210,10 +210,7 @@ class ElasticController
         $model = $request->get('model');
         $class = 'App\\Models\\' . $model;
 
-        // Artists and Studios share the same index, so reindex both together
-        $models = ($model === 'Artist' || $model === 'Studio')
-            ? ['App\\Models\\Artist', 'App\\Models\\Studio']
-            : [$class];
+        $models = [$class];
 
         try {
             $imported = [];

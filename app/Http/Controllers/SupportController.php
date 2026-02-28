@@ -2,7 +2,6 @@
 
 namespace App\Http\Controllers;
 
-use App\Jobs\SendSlackSupportNotification;
 use App\Models\User;
 use App\Services\ConversationService;
 use Illuminate\Http\Request;
@@ -24,9 +23,6 @@ class SupportController extends Controller
 
         $sender = $request->user();
         $message = $request->input('message');
-
-        // Always fire Slack notification regardless of whether the support user exists
-        SendSlackSupportNotification::dispatch($sender->id, $message);
 
         // Try to create conversation and send message if the support user exists
         $supportUser = User::where('email', 'info@getinked.in')->first();

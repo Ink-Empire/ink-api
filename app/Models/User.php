@@ -483,7 +483,7 @@ class User extends Authenticatable implements MustVerifyEmail
 
     public function notificationPreferences()
     {
-        return $this->hasMany(NotificationPreference::class);
+        return $this->hasMany(NotificationPreference::class, 'user_id');
     }
 
     /**

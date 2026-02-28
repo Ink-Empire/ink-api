@@ -234,7 +234,7 @@ class StudioController extends Controller
         $studio = $this->studioService->getById($id);
 
         // Handle address fields - create or update Address record
-        $addressFields = ['address', 'address2', 'city', 'state', 'postal_code'];
+        $addressFields = ['address', 'address2', 'city', 'state', 'postal_code', 'country'];
         $hasAddressData = collect($addressFields)->contains(fn($field) => isset($data[$field]) && $data[$field] !== '');
 
         if ($hasAddressData) {
@@ -244,7 +244,7 @@ class StudioController extends Controller
                 'city' => $data['city'] ?? '',
                 'state' => $data['state'] ?? '',
                 'postal_code' => $data['postal_code'] ?? '',
-                'country_code' => 'US',
+                'country_code' => $data['country'] ?? 'US',
             ];
 
             if ($studio->address_id && $studio->address) {

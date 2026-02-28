@@ -30,6 +30,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // Refresh demo data dates so they always appear current
+        $schedule->command('demo:refresh-dates --force')
+            ->everyTwoWeeks()
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // Periodic sync for all calendars (backup for webhooks)
         // Syncs calendars that haven't been synced in the last 6 hours
         $schedule->call(function () {

@@ -15,6 +15,7 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use App\Util\JSON;
 use Larelastic\Elastic\Facades\Elastic;
+use Larelastic\Elastic\Payloads\RawPayload;
 
 class ElasticService
 {
@@ -47,7 +48,7 @@ class ElasticService
                 'body' =>  $query
             ];
 
-            $response = Elastic::count($params);
+            $response = Elastic::count($params)->asArray();
 
             if (isset($response['count'])) {
                 return $response['count'];
@@ -69,7 +70,7 @@ class ElasticService
                 'body' =>  $query
             ];
 
-            $response = Elastic::search($params);
+            $response = Elastic::search($params)->asArray();
 
             if (isset($response['hits']['hits']) && $response['hits']['total']['value'] > 0) {
                 return collect($response['hits']['hits']);
@@ -102,7 +103,7 @@ class ElasticService
                 ]
             ];
 
-            $response = Elastic::search($params);
+            $response = Elastic::search($params)->asArray();
 
             if(isset($response['hits']['hits']) && $response['hits']['total']['value'] > 0){
                 return collect($response['hits']['hits'])->first();
@@ -255,7 +256,7 @@ class ElasticService
     public function indexExists($index): bool
     {
         $params = ['index' => $index];
-        return Elastic::indices()->exists($params);
+        return Elastic::indices()->exists($params)->asBool();
     }
 
     public function deleteIndex($indexName, array $indices = [])
@@ -264,7 +265,7 @@ class ElasticService
             if (strpos($index, $indexName) !== false ||
                 strpos($index, 'kibana') !== false) {
                 $params = ['index' => $index];
-                if (Elastic::indices()->exists($params)) {
+                if (Elastic::indices()->exists($params)->asBool()) {
                     Log::info("deleting the " . $index . " index!");
                     Elastic::indices()->delete($params);
                 }
@@ -377,16 +378,13 @@ class ElasticService
         try {
             $sourceIndexConfigurator = $sourceModel->getIndexConfigurator();
             $targetIndex = $max_alias;
-            $targetType = $sourceModel->searchableAs();
             $mappings = array_merge_recursive(
                 $sourceIndexConfigurator->getDefaultMapping(),
                 $sourceIndexConfigurator->getMappings()
             );
             $payload = (new RawPayload())
                 ->set('index', $targetIndex)
-                ->set('type', $targetType)
-                ->set('include_type_name', 'true')
-                ->set('body.' . $targetType, $mappings)
+                ->set('body', $mappings)
                 ->get();
             Elastic::indices()->putMapping($payload);
         } catch (\Exception $e) {
@@ -542,7 +540,7 @@ class ElasticService
             ->set('name', $name)
             ->get();
 
-        return Elastic::indices()->existsAlias($payload);
+        return Elastic::indices()->existsAlias($payload)->asBool();
     }
 
     /**

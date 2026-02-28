@@ -9,11 +9,16 @@ use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Redis;
 
 class IndexTattooJob implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public int $tries = 3;
     public int $timeout = 60;
@@ -21,7 +26,8 @@ class IndexTattooJob implements ShouldQueue
     public function __construct(
         public int $tattooId,
         public bool $reindexArtist = true
-    ) {}
+    ) {
+    }
 
     public function handle(): void
     {
@@ -35,10 +41,45 @@ class IndexTattooJob implements ShouldQueue
         }
 
         $tattoo->searchable();
+        Cache::forget("es:tattoo:{$this->tattooId}");
         Log::info("IndexTattooJob: Indexed tattoo", ['tattoo_id' => $this->tattooId]);
 
         if ($this->reindexArtist && $tattoo->artist_id) {
-            Artist::find($tattoo->artist_id)?->searchable();
+            $artist = Artist::find($tattoo->artist_id);
+            if ($artist) {
+                $artist->searchable();
+                self::bustArtistCaches($artist->id, $artist->slug);
+            }
+        }
+    }
+
+    public static function bustArtistCaches(int $artistId, ?string $slug): void
+    {
+        Cache::forget("es:artist:detail:{$artistId}");
+        if ($slug) {
+            Cache::forget("es:artist:detail:{$slug}");
+        }
+        Cache::forget("artist:{$artistId}:dashboard-tattoos");
+
+        $prefix = config('cache.prefix');
+        $pattern = "{$prefix}:es:artist:portfolio:{$artistId}:*";
+        $cursor = '0';
+        do {
+            [$cursor, $keys] = Redis::scan($cursor, ['match' => $pattern, 'count' => 100]);
+            if (!empty($keys)) {
+                Redis::del(...$keys);
+            }
+        } while ($cursor !== '0');
+
+        if ($slug) {
+            $pattern = "{$prefix}:es:artist:portfolio:{$slug}:*";
+            $cursor = '0';
+            do {
+                [$cursor, $keys] = Redis::scan($cursor, ['match' => $pattern, 'count' => 100]);
+                if (!empty($keys)) {
+                    Redis::del(...$keys);
+                }
+            } while ($cursor !== '0');
         }
     }
 
