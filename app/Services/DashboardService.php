@@ -9,6 +9,7 @@ use App\Models\ArtistWishlist;
 use App\Models\Conversation;
 use App\Models\Message;
 use App\Models\ProfileView;
+use App\Models\Tattoo;
 use App\Models\Studio;
 use App\Models\StudioAvailability;
 use App\Models\User;
@@ -235,6 +236,8 @@ class DashboardService
                 ->where('viewable_id', $artist->id)
                 ->count();
 
+            $pendingApprovals = Tattoo::pendingForArtist($artist->id)->count();
+
             return [
                 'profile_views' => $viewsThisWeek,
                 'profile_views_total' => $profileViewsTotal,
@@ -245,6 +248,7 @@ class DashboardService
                 'upcoming_appointments' => $upcomingAppointments,
                 'appointments_trend' => ($appointmentsTrend >= 0 ? '+' : '') . $appointmentsTrend,
                 'unread_messages' => $unreadMessages,
+                'pending_approvals' => $pendingApprovals,
             ];
         });
     }
