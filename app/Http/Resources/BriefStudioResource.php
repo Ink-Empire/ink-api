@@ -13,6 +13,7 @@ class BriefStudioResource extends JsonResource
             'name' => $this->name,
             'slug' => $this->slug,
             'image' => $this->image ? new BriefImageResource($this->image) : null,
+            'location' => $this->location,
         ];
     }
 }

@@ -190,6 +190,34 @@ class DashboardController extends Controller
     }
 
     /**
+     * Get saved studios for the authenticated client.
+     */
+    public function getClientSavedStudios(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $savedStudios = $this->dashboardService->getClientSavedStudios($user);
+
+        return response()->json([
+            'studios' => \App\Http\Resources\BriefStudioResource::collection($savedStudios),
+        ]);
+    }
+
+    /**
+     * Get all bookings for the authenticated client (all statuses).
+     */
+    public function getClientBookings(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $appointments = $this->dashboardService->getClientBookings($user);
+
+        return response()->json([
+            'appointments' => \App\Http\Resources\Dashboard\AppointmentDashboardResource::collection($appointments),
+        ]);
+    }
+
+    /**
      * Get saved tattoos for the authenticated client.
      */
     public function getClientSavedTattoos(Request $request): JsonResponse

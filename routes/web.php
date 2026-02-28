@@ -121,6 +121,8 @@ Route::prefix('api')->group(function () {
             Route::get('/dashboard', [DashboardController::class, 'getClientDashboard']);
             Route::get('/favorites', [DashboardController::class, 'getClientFavorites']);
             Route::get('/saved-tattoos', [DashboardController::class, 'getClientSavedTattoos']);
+            Route::get('/saved-studios', [DashboardController::class, 'getClientSavedStudios']);
+            Route::get('/bookings', [DashboardController::class, 'getClientBookings']);
             Route::get('/wishlist', [DashboardController::class, 'getClientWishlist']);
             Route::post('/wishlist', [DashboardController::class, 'addToWishlist']);
             Route::put('/wishlist/{artistId}', [DashboardController::class, 'updateWishlistItem']);

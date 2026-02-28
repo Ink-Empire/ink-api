@@ -90,7 +90,7 @@ class Appointment extends Model
     public function scopeForClientWithStatus($query, $clientId, $status)
     {
         return $query->where('client_id', $clientId)
-            ->where('status', $status)
+            ->whereIn('status', is_array($status) ? $status : [$status])
             ->with(['client', 'artist']);
     }
 
