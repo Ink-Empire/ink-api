@@ -51,7 +51,8 @@ class ArtistController extends Controller
 
         $pagination = $this->paginationService->extractParams($params);
 
-        $cacheKey = 'es:artists:search:' . md5(json_encode($params));
+        $isDemo = $request->user()?->is_demo ? '1' : '0';
+        $cacheKey = 'es:artists:search:' . md5($isDemo . json_encode($params));
         $response = Cache::remember($cacheKey, 120, function () use ($params) {
             $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
             $esSpan = $parentSpan?->startChild(
@@ -214,7 +215,8 @@ class ArtistController extends Controller
         $params = $request->all();
         $pagination = $this->paginationService->extractParams($params);
 
-        $cacheKey = "es:artist:portfolio:{$id}:page:{$pagination['page']}:per_page:{$pagination['per_page']}";
+        $isDemo = $request->user()?->is_demo ? '1' : '0';
+        $cacheKey = "es:artist:portfolio:{$id}:demo:{$isDemo}:page:{$pagination['page']}:per_page:{$pagination['per_page']}";
         $tattoos = Cache::remember($cacheKey, 300, function () use ($id, $params) {
             return $this->tattooService->getByArtistId($id, $params);
         });

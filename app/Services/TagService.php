@@ -54,16 +54,16 @@ class TagService
 
             $uniqueTags = array_unique($allTags);
 
-            // Match AI-suggested tags to master list and attach to tattoo
-            $attachedTags = $this->attachTagsToTattoo($tattoo, $uniqueTags);
+            // Match AI-suggested tags to master list (do NOT auto-attach)
+            $matchedTags = $this->matchTagsToMasterList($tattoo, $uniqueTags);
 
-            Log::info("Generated tags for tattoo ID: {$tattoo->id}", [
-                'count' => count($attachedTags),
+            Log::info("Generated tag suggestions for tattoo ID: {$tattoo->id}", [
+                'count' => count($matchedTags),
                 'tags' => $uniqueTags,
-                'matched_tags' => array_map(fn($t) => $t->name, $attachedTags)
+                'matched_tags' => array_map(fn($t) => $t->name, $matchedTags)
             ]);
 
-            return $attachedTags;
+            return $matchedTags;
 
         } catch (Exception $e) {
             Log::error("Failed to generate tags for tattoo ID: {$tattoo->id}", [
@@ -166,22 +166,19 @@ class TagService
     }
 
     /**
-     * Attach tags to a tattoo by matching against master list
+     * Match tag names against master list without attaching to tattoo.
+     * Returns matched Tag models for the frontend to display as suggestions.
      */
-    public function attachTagsToTattoo(Tattoo $tattoo, array $tagNames): array
+    public function matchTagsToMasterList(Tattoo $tattoo, array $tagNames): array
     {
-        $attachedTags = [];
-        $tagIds = [];
+        $matchedTags = [];
 
         foreach ($tagNames as $tagName) {
-            // Try to find an exact match in the master list
             $tag = $this->findMatchingTag($tagName);
 
             if ($tag) {
-                $tagIds[] = $tag->id;
-                $attachedTags[] = $tag;
+                $matchedTags[] = $tag;
             } else {
-                // Log unmatched tags for potential admin review
                 Log::info("Unmatched AI tag suggestion", [
                     'tattoo_id' => $tattoo->id,
                     'suggested_tag' => $tagName
@@ -189,9 +186,34 @@ class TagService
             }
         }
 
-        // Sync tags to tattoo (replaces existing)
+        return $matchedTags;
+    }
+
+    /**
+     * Attach tags to a tattoo by matching against master list.
+     * Uses syncWithoutDetaching to preserve user-selected tags.
+     */
+    public function attachTagsToTattoo(Tattoo $tattoo, array $tagNames): array
+    {
+        $attachedTags = [];
+        $tagIds = [];
+
+        foreach ($tagNames as $tagName) {
+            $tag = $this->findMatchingTag($tagName);
+
+            if ($tag) {
+                $tagIds[] = $tag->id;
+                $attachedTags[] = $tag;
+            } else {
+                Log::info("Unmatched AI tag suggestion", [
+                    'tattoo_id' => $tattoo->id,
+                    'suggested_tag' => $tagName
+                ]);
+            }
+        }
+
         if (!empty($tagIds)) {
-            $tattoo->tags()->sync($tagIds);
+            $tattoo->tags()->syncWithoutDetaching($tagIds);
         }
 
         return $attachedTags;

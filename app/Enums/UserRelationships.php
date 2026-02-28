@@ -11,7 +11,8 @@ class UserRelationships
     const RELATIONSHIPS = [
         'style' => 'styles',
         'tattoo' => 'tattoos',
-        'artist' => 'artists'
+        'artist' => 'artists',
+        'studio' => 'studios'
     ];
 
     public static function getRelationship($relationship): ?string

@@ -40,7 +40,7 @@ describe('Leave Studio Affiliation', function () {
                 'message' => 'Studio affiliation removed',
             ]);
 
-        $this->assertDatabaseMissing('users_studios', [
+        $this->assertDatabaseMissing('artists_studios', [
             'user_id' => $this->artist->id,
             'studio_id' => $this->studio1->id,
         ]);
@@ -89,14 +89,14 @@ describe('Set Primary Studio', function () {
             ]);
 
         // Verify studio2 is now primary
-        $this->assertDatabaseHas('users_studios', [
+        $this->assertDatabaseHas('artists_studios', [
             'user_id' => $this->artist->id,
             'studio_id' => $this->studio2->id,
             'is_primary' => true,
         ]);
 
         // Verify studio1 is no longer primary
-        $this->assertDatabaseHas('users_studios', [
+        $this->assertDatabaseHas('artists_studios', [
             'user_id' => $this->artist->id,
             'studio_id' => $this->studio1->id,
             'is_primary' => false,
@@ -203,7 +203,7 @@ describe('Studio Invitations', function () {
         $response->assertOk()
             ->assertJson(['success' => true]);
 
-        $this->assertDatabaseHas('users_studios', [
+        $this->assertDatabaseHas('artists_studios', [
             'user_id' => $this->artist->id,
             'studio_id' => $this->studio1->id,
             'is_verified' => true,
@@ -226,7 +226,7 @@ describe('Studio Invitations', function () {
         $response->assertOk()
             ->assertJson(['success' => true]);
 
-        $this->assertDatabaseMissing('users_studios', [
+        $this->assertDatabaseMissing('artists_studios', [
             'user_id' => $this->artist->id,
             'studio_id' => $this->studio1->id,
         ]);

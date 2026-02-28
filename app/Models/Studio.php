@@ -68,7 +68,7 @@ class Studio extends Model
 
     public function artists()
     {
-        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+        return $this->belongsToMany(User::class, 'artists_studios', 'studio_id', 'user_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by')
             ->withTimestamps();
     }
@@ -78,7 +78,7 @@ class Studio extends Model
      */
     public function verifiedArtists()
     {
-        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+        return $this->belongsToMany(User::class, 'artists_studios', 'studio_id', 'user_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by')
             ->wherePivot('is_verified', true)
             ->withTimestamps();
@@ -89,7 +89,7 @@ class Studio extends Model
      */
     public function pendingArtists()
     {
-        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+        return $this->belongsToMany(User::class, 'artists_studios', 'studio_id', 'user_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by')
             ->wherePivot('is_verified', false)
             ->withTimestamps();
@@ -100,7 +100,7 @@ class Studio extends Model
      */
     public function pendingInvitations()
     {
-        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+        return $this->belongsToMany(User::class, 'artists_studios', 'studio_id', 'user_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by')
             ->wherePivot('is_verified', false)
             ->wherePivot('initiated_by', 'studio')
@@ -112,7 +112,7 @@ class Studio extends Model
      */
     public function pendingRequests()
     {
-        return $this->belongsToMany(User::class, 'users_studios', 'studio_id', 'user_id')
+        return $this->belongsToMany(User::class, 'artists_studios', 'studio_id', 'user_id')
             ->withPivot('is_verified', 'verified_at', 'initiated_by')
             ->wherePivot('is_verified', false)
             ->wherePivot('initiated_by', 'artist')

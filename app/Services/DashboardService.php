@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\AppointmentStatus;
 use App\Models\Appointment;
 use App\Models\Artist;
 use App\Models\ArtistWishlist;
@@ -438,6 +439,32 @@ class DashboardService
             ->notBlockedBy($user)
             ->with(['image', 'studio', 'styles', 'settings'])
             ->get();
+    }
+
+    /**
+     * Get all bookings for a client (all statuses).
+     */
+    public function getClientBookings(User $user)
+    {
+        return $user->appointmentsWithStatus([
+                AppointmentStatus::PENDING,
+                AppointmentStatus::BOOKED,
+                AppointmentStatus::COMPLETED,
+                AppointmentStatus::CANCELLED,
+            ])
+            ->with(['artist.image', 'studio'])
+            ->where('date', '>=', now()->subDays(30)->toDateString())
+            ->orderBy('date')
+            ->orderBy('start_time')
+            ->get();
+    }
+
+    /**
+     * Get saved studios for a client.
+     */
+    public function getClientSavedStudios(User $user)
+    {
+        return $user->studios()->with(['image'])->get();
     }
 
     /**

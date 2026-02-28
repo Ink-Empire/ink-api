@@ -19,9 +19,9 @@ class UsersStudiosSeeder extends Seeder
         $json = File::get("database/seed-data/users_studios.json");
         $users_studios = json_decode($json);
 
-        if (Schema::hasTable('users_studios')) {
+        if (Schema::hasTable('artists_studios')) {
             foreach ($users_studios as $key => $value) {
-                DB::table('users_studios')->insert(
+                DB::table('artists_studios')->insert(
                     ['user_id' => $value->user_id, 'studio_id' => $value->studio_id]
                 );
             }

@@ -17,6 +17,7 @@ class SelfUserResource extends JsonResource
      * - socialMediaLinks
      * - artists (for favorites)
      * - tattoos (for favorites)
+     * - studios (for favorites)
      * - type
      * - image
      */
@@ -52,7 +53,7 @@ class SelfUserResource extends JsonResource
             'favorites' => [
                 'artists' => $this->artists->pluck('id')->toArray(),
                 'tattoos' => $this->tattoos->pluck('id')->toArray(),
-                'studios' => [],
+                'studios' => $this->studios->pluck('id')->toArray(),
             ],
             'username' => $this->username,
             // Admin fields
