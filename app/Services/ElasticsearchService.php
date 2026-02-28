@@ -74,7 +74,8 @@ class ElasticsearchService
         // API key auth (Elastic Cloud Serverless)
         $apiKey = config('elastic.client.api_key');
         if (!empty($apiKey)) {
-            $clientBuilder->setApiKey($apiKey);
+            $safeKey = str_replace(['-', '_'], ['+', '/'], $apiKey);
+            $clientBuilder->setApiKey($safeKey);
         }
 
         $this->client = $clientBuilder->build();
