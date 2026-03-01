@@ -194,6 +194,11 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::post('/device-tokens', [DeviceTokenController::class, 'store']);
     Route::post('/device-tokens/unregister', [DeviceTokenController::class, 'destroy']);
 
+    // Notification inbox routes
+    Route::get('/notifications', [\App\Http\Controllers\Api\NotificationController::class, 'index']);
+    Route::get('/notifications/unread-count', [\App\Http\Controllers\Api\NotificationController::class, 'unreadCount']);
+    Route::post('/notifications/mark-read', [\App\Http\Controllers\Api\NotificationController::class, 'markRead']);
+
     // Notification preference routes
     Route::get('/notification-preferences', [NotificationPreferenceController::class, 'index']);
     Route::put('/notification-preferences', [NotificationPreferenceController::class, 'update']);

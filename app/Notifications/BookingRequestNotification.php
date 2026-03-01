@@ -29,8 +29,24 @@ class BookingRequestNotification extends Notification
     public function via(object $notifiable): array
     {
         $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', FcmChannel::class]);
+        $channels = $this->filterChannelsForPush($notifiable, $channels);
+        $channels[] = 'database';
 
-        return $this->filterChannelsForPush($notifiable, $channels);
+        return $channels;
+    }
+
+    public function toDatabase(object $notifiable): array
+    {
+        $clientName = $this->appointment->client?->name ?? 'A client';
+
+        return [
+            'type' => self::EVENT_TYPE,
+            'message' => "New booking request from {$clientName}",
+            'actor_name' => $clientName,
+            'actor_image' => $this->appointment->client?->image?->uri ?? null,
+            'entity_type' => 'appointment',
+            'entity_id' => $this->appointment->id,
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

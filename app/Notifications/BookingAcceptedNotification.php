@@ -26,8 +26,24 @@ class BookingAcceptedNotification extends Notification
     public function via(object $notifiable): array
     {
         $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', FcmChannel::class]);
+        $channels = $this->filterChannelsForPush($notifiable, $channels);
+        $channels[] = 'database';
 
-        return $this->filterChannelsForPush($notifiable, $channels);
+        return $channels;
+    }
+
+    public function toDatabase(object $notifiable): array
+    {
+        $artistName = $this->appointment->artist?->name ?? 'The artist';
+
+        return [
+            'type' => self::EVENT_TYPE,
+            'message' => "Booking accepted by {$artistName}",
+            'actor_name' => $artistName,
+            'actor_image' => $this->appointment->artist?->image?->uri ?? null,
+            'entity_type' => 'appointment',
+            'entity_id' => $this->appointment->id,
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage

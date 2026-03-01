@@ -27,8 +27,22 @@ class TattooApprovedNotification extends Notification
     public function via(object $notifiable): array
     {
         $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', FcmChannel::class]);
+        $channels = $this->filterChannelsForPush($notifiable, $channels);
+        $channels[] = 'database';
 
-        return $this->filterChannelsForPush($notifiable, $channels);
+        return $channels;
+    }
+
+    public function toDatabase(object $notifiable): array
+    {
+        return [
+            'type' => self::EVENT_TYPE,
+            'message' => "{$this->artist->name} approved your tattoo",
+            'actor_name' => $this->artist->name,
+            'actor_image' => $this->artist->image?->uri ?? null,
+            'entity_type' => 'tattoo',
+            'entity_id' => $this->tattoo->id,
+        ];
     }
 
     public function toMail(object $notifiable): MailMessage
