@@ -48,7 +48,8 @@ class UserProfileController extends Controller
         $params = $request->all();
         $pagination = $this->paginationService->extractParams($params);
 
-        $cacheKey = "es:user:{$user->id}:tattoos:p{$pagination['page']}:pp{$pagination['per_page']}";
+        $version = Cache::get("es:user:{$user->id}:tattoos:version", 0);
+        $cacheKey = "es:user:{$user->id}:tattoos:v{$version}:p{$pagination['page']}:pp{$pagination['per_page']}";
 
         $response = Cache::remember($cacheKey, 300, function () use ($user, $pagination) {
             $search = Tattoo::search();

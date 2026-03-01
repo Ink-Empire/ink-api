@@ -360,6 +360,7 @@ class TattooController extends Controller
                 GenerateAiTagsJob::dispatch($tattoo->id, $userSelectedTagIds);
                 IndexTattooJob::dispatch($tattoo->id);
                 Cache::forget("es:tattoo:{$tattoo->id}");
+                $this->bustUserTattooCache($user->id);
 
                 $tattoo->refresh();
                 $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
@@ -483,6 +484,7 @@ class TattooController extends Controller
 
             IndexTattooJob::dispatch($tattoo->id);
             Cache::forget("es:tattoo:{$tattoo->id}");
+            $this->bustUserTattooCache($tattoo->uploaded_by_user_id);
 
             $tattoo->refresh();
             $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
@@ -564,6 +566,7 @@ class TattooController extends Controller
             // Remove from Elasticsearch index
             $tattoo->unsearchable();
             Cache::forget("es:tattoo:{$id}");
+            $this->bustUserTattooCache($tattoo->uploaded_by_user_id);
 
             // Get all images associated with this tattoo
             $images = $tattoo->images;
@@ -678,11 +681,14 @@ class TattooController extends Controller
             $tattoo->is_visible = true;
             $tattoo->save();
 
-            IndexTattooJob::dispatch($tattoo->id);
+            $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
+            $tattoo->searchable();
             Cache::forget("es:tattoo:{$tattoo->id}");
+            IndexTattooJob::bustArtistCaches($user->id, $user->slug);
 
             if ($tattoo->uploader) {
                 $tattoo->uploader->notify(new TattooApprovedNotification($tattoo, $user));
+                $this->bustUserTattooCache($tattoo->uploader->id);
             }
 
             return response()->json(['success' => true, 'message' => 'Tattoo approved']);
@@ -692,17 +698,27 @@ class TattooController extends Controller
             $tattoo->is_visible = false;
             $tattoo->save();
 
-            IndexTattooJob::dispatch($tattoo->id);
+            $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
+            $tattoo->searchable();
             Cache::forget("es:tattoo:{$tattoo->id}");
+            IndexTattooJob::bustArtistCaches($user->id, $user->slug);
 
             if ($tattoo->uploader) {
                 $tattoo->uploader->notify(new TattooRejectedNotification($tattoo, $user));
+                $this->bustUserTattooCache($tattoo->uploader->id);
             }
 
             return response()->json(['success' => true, 'message' => 'Tag rejected']);
         }
 
         return $this->returnErrorResponse('Invalid action. Use "approve" or "reject".');
+    }
+
+    private function bustUserTattooCache(?int $userId): void
+    {
+        if ($userId) {
+            Cache::increment("es:user:{$userId}:tattoos:version");
+        }
     }
 
     /**
