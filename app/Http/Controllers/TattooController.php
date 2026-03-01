@@ -100,8 +100,9 @@ class TattooController extends Controller
         $params = $request->all();
         $pagination = $this->paginationService->extractParams($params);
 
-        $isDemo = $request->user()?->is_demo ? '1' : '0';
-        $cacheKey = 'es:tattoos:search:' . md5($isDemo . json_encode($params));
+        $isDemo = $request->user()?->is_demo ? true : false;
+        $params['is_demo'] = $isDemo;
+        $cacheKey = 'es:tattoos:search:' . md5(($isDemo ? '1' : '0') . json_encode($params));
         $response = Cache::remember($cacheKey, 120, function () use ($params) {
             $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
             $esSpan = $parentSpan?->startChild(
