@@ -434,7 +434,26 @@ class TattooController extends Controller
                 }
             }
 
-            // Handle new image uploads
+            // Handle image_ids from pre-uploaded images (S3 upload flow)
+            $imageIds = $request->input('image_ids');
+            if (!empty($imageIds) && is_array($imageIds)) {
+                $imageIds = array_filter($imageIds);
+                if (count($imageIds) > 0) {
+                    $tattoo->images()->sync($imageIds);
+
+                    // Update primary image if current one was removed
+                    if (!in_array($tattoo->primary_image_id, $imageIds)) {
+                        $tattoo->primary_image_id = $imageIds[0];
+                    }
+
+                    \Log::info("Synced images on tattoo", [
+                        'tattoo_id' => $tattoo->id,
+                        'image_ids' => $imageIds,
+                    ]);
+                }
+            }
+
+            // Handle new image uploads (multipart file upload flow)
             $files = $request->file('files');
             if (!empty($files)) {
                 if (!is_array($files)) {
