@@ -59,7 +59,7 @@ class GenerateAiTagsJob implements ShouldQueue
                 'tattoo_id' => $this->tattooId
             ]);
 
-        } catch (\Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("GenerateAiTagsJob: Failed to generate tags", [
                 'tattoo_id' => $this->tattooId,
                 'error' => $e->getMessage(),

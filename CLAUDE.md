@@ -40,6 +40,15 @@ Map search from user input through Elasticsearch, filters, notBlockedBy scope, a
 - **Git Flow**: Create branches from develop, request code review before merging
 - Don't automatically perform any git operations; I'll handle git and version control
 
+## Email & Notifications
+- **Always use Laravel Notifications** (`$user->notify()` or `Notification::route()`) — never use the `Mail` facade directly
+- For users on the platform: `$user->notify(new SomeNotification(...))`
+- For external recipients (e.g., artist invitations): `Notification::route('mail', $email)->notify(new SomeNotification(...))`
+- This ensures all outbound emails are logged in `notification_log_items` via `spatie/laravel-notification-log`
+- Notification classes live in `app/Notifications/`
+- Email templates (Blade views) live in `resources/views/mail/`
+- Use Mailbook (`/mailbook` route, local only) to preview email templates
+
 ## Enums & Constants
 - **Always use enums** for status values, types, and other string constants — never use raw strings
 - Enums live in `app/Enums/` (e.g., `ArtistTattooApprovalStatus`, `AppointmentStatus`, `UserTypes`)

@@ -33,9 +33,13 @@ class TattooResource extends JsonResource
                 'uploaded_by_user_id' => $this->uploaded_by_user_id ?? null,
                 'uploader_name' => $this->uploader?->name ?? '',
                 'uploader_slug' => $this->uploader?->slug ?? '',
+                'uploader_image_uri' => $this->uploader?->image?->uri ?? '',
                 'approval_status' => $this->approval_status ?? ArtistTattooApprovalStatus::APPROVED,
                 'is_visible' => (bool) ($this->is_visible ?? true),
                 'is_user_upload' => $this->uploaded_by_user_id !== null && $this->uploaded_by_user_id !== $this->artist?->id,
+                'attributed_artist_name' => $this->attributed_artist_name ?? '',
+                'attributed_studio_name' => $this->attributed_studio_name ?? '',
+                'attributed_location' => $this->attributed_location ?? '',
             ];
         } catch (\Exception $e) {
             \Log::error([

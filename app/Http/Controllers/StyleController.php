@@ -88,6 +88,46 @@ class StyleController extends Controller
         }
     }
 
+    /**
+     * Get AI style suggestions for images.
+     * Used during the upload flow to show suggestions while user is selecting styles.
+     */
+    public function suggestFromImages(Request $request)
+    {
+        $user = $request->user();
+
+        if (!$user) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Unauthorized',
+            ], 401);
+        }
+
+        $request->validate([
+            'image_urls' => 'required|array|min:1|max:10',
+            'image_urls.*' => 'required|string|url',
+        ]);
+
+        try {
+            $styles = $this->styleService->suggestStylesForImages($request->input('image_urls'));
+
+            return response()->json([
+                'success' => true,
+                'data' => array_map(fn($style) => [
+                    'id' => $style->id,
+                    'name' => $style->name,
+                    'is_ai_suggested' => true,
+                ], $styles),
+            ]);
+        } catch (\Exception $e) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Failed to analyze images: ' . $e->getMessage(),
+                'data' => [],
+            ], 500);
+        }
+    }
+
     public function delete($id)
     {
         try {

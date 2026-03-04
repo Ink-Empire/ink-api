@@ -14,6 +14,7 @@ use App\Models\Style;
 use App\Models\Tag;
 use App\Models\Tattoo;
 use App\Models\User;
+use App\Models\ArtistInvitation;
 use App\Notifications\ArtistTaggedNotification;
 use App\Notifications\TattooApprovedNotification;
 use App\Notifications\TattooRejectedNotification;
@@ -313,6 +314,9 @@ class TattooController extends Controller
                     'placement' => $request->input('placement'),
                     'duration' => $request->input('hours_to_complete'),
                     'primary_style_id' => $primaryStyleId,
+                    'attributed_artist_name' => $request->input('attributed_artist_name'),
+                    'attributed_studio_name' => $request->input('attributed_studio_name'),
+                    'attributed_location' => $request->input('attributed_location'),
                 ]);
 
                 // Attach ALL images to the pivot table (including the primary image)
@@ -354,6 +358,24 @@ class TattooController extends Controller
                     if ($taggedArtist) {
                         $taggedArtist->notify(new ArtistTaggedNotification($tattoo, $user));
                     }
+                }
+
+                // Create artist invitation if attributed artist + email provided
+                $artistInviteEmail = $request->input('artist_invite_email');
+                $attributedArtistName = $request->input('attributed_artist_name');
+                if ($attributedArtistName && $artistInviteEmail) {
+                    $invitation = ArtistInvitation::create([
+                        'tattoo_id' => $tattoo->id,
+                        'invited_by_user_id' => $user->id,
+                        'artist_name' => $attributedArtistName,
+                        'studio_name' => $request->input('attributed_studio_name'),
+                        'location' => $request->input('attributed_location'),
+                        'location_lat_long' => $request->input('attributed_location_lat_long'),
+                        'email' => $artistInviteEmail,
+                    ]);
+
+                    \Illuminate\Support\Facades\Notification::route('mail', $artistInviteEmail)
+                        ->notify(new \App\Notifications\ArtistInvitationNotification($invitation, $user));
                 }
 
                 // Dispatch background jobs for AI tags and ES indexing
@@ -665,12 +687,29 @@ class TattooController extends Controller
             return $this->returnErrorResponse('Only artists can view pending approvals', 403);
         }
 
-        $tattoos = Tattoo::with(['primary_image', 'images', 'styles', 'uploader', 'uploader.image'])
+        // Tattoos where artist was tagged via search (artist_id set, pending approval)
+        $taggedTattoos = Tattoo::with(['primary_image', 'images', 'styles', 'uploader', 'uploader.image'])
             ->pendingForArtist($user->id)
             ->orderBy('created_at', 'desc')
             ->get();
 
-        return $this->returnResponse('tattoos', PendingTattooResource::collection($tattoos));
+        // Tattoos from unclaimed email invitations matching this artist's email
+        $invitedTattooIds = ArtistInvitation::where('email', $user->email)
+            ->whereNull('claimed_at')
+            ->pluck('tattoo_id');
+
+        $invitedTattoos = collect();
+        if ($invitedTattooIds->isNotEmpty()) {
+            $invitedTattoos = Tattoo::with(['primary_image', 'images', 'styles', 'uploader', 'uploader.image'])
+                ->whereIn('id', $invitedTattooIds)
+                ->whereNull('artist_id')
+                ->orderBy('created_at', 'desc')
+                ->get();
+        }
+
+        $allTattoos = $taggedTattoos->merge($invitedTattoos)->unique('id');
+
+        return $this->returnResponse('tattoos', PendingTattooResource::collection($allTattoos));
     }
 
     /**
@@ -685,20 +724,43 @@ class TattooController extends Controller
             return $this->returnErrorResponse('Tattoo not found', 404);
         }
 
-        if ($tattoo->artist_id !== $user->id) {
-            return $this->returnErrorResponse('You can only respond to tattoos tagged to you', 403);
+        // Check authorization: either tagged directly OR has matching email invitation
+        $isTaggedArtist = $tattoo->artist_id === $user->id;
+        $invitation = null;
+
+        if (!$isTaggedArtist) {
+            $invitation = ArtistInvitation::where('tattoo_id', $tattoo->id)
+                ->where('email', $user->email)
+                ->whereNull('claimed_at')
+                ->first();
+
+            if (!$invitation) {
+                return $this->returnErrorResponse('You can only respond to tattoos tagged to you', 403);
+            }
         }
 
-        if ($tattoo->approval_status !== ArtistTattooApprovalStatus::PENDING) {
+        // For tagged artists, check pending status; for invitations, tattoo has no approval_status set
+        if ($isTaggedArtist && $tattoo->approval_status !== ArtistTattooApprovalStatus::PENDING) {
             return $this->returnErrorResponse('This tattoo is not pending approval');
         }
 
         $action = $request->input('action');
 
         if ($action === 'approve') {
+            $tattoo->artist_id = $user->id;
             $tattoo->approval_status = ArtistTattooApprovalStatus::APPROVED;
             $tattoo->is_visible = true;
+            $tattoo->attributed_artist_name = null;
+            $tattoo->attributed_studio_name = null;
+            $tattoo->attributed_location = null;
             $tattoo->save();
+
+            // Mark invitation as claimed
+            if ($invitation) {
+                $invitation->claimed_by_user_id = $user->id;
+                $invitation->claimed_at = now();
+                $invitation->save();
+            }
 
             $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
             $tattoo->searchable();
@@ -706,16 +768,30 @@ class TattooController extends Controller
             IndexTattooJob::bustArtistCaches($user->id, $user->slug);
 
             if ($tattoo->uploader) {
-                $tattoo->uploader->notify(new TattooApprovedNotification($tattoo, $user));
+                try {
+                    $tattoo->uploader->notify(new TattooApprovedNotification($tattoo, $user));
+                } catch (\Throwable $e) {
+                    \Log::warning("Failed to send approval notification for tattoo {$tattoo->id}: " . $e->getMessage());
+                }
                 $this->bustUserTattooCache($tattoo->uploader->id);
             }
 
             return response()->json(['success' => true, 'message' => 'Tattoo approved']);
         } elseif ($action === 'reject') {
             $tattoo->artist_id = null;
+            $tattoo->attributed_artist_name = null;
+            $tattoo->attributed_studio_name = null;
+            $tattoo->attributed_location = null;
             $tattoo->approval_status = ArtistTattooApprovalStatus::USER_ONLY;
             $tattoo->is_visible = false;
             $tattoo->save();
+
+            // Mark invitation as claimed (declined)
+            if ($invitation) {
+                $invitation->claimed_by_user_id = $user->id;
+                $invitation->claimed_at = now();
+                $invitation->save();
+            }
 
             $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
             $tattoo->searchable();
@@ -723,7 +799,11 @@ class TattooController extends Controller
             IndexTattooJob::bustArtistCaches($user->id, $user->slug);
 
             if ($tattoo->uploader) {
-                $tattoo->uploader->notify(new TattooRejectedNotification($tattoo, $user));
+                try {
+                    $tattoo->uploader->notify(new TattooRejectedNotification($tattoo, $user));
+                } catch (\Throwable $e) {
+                    \Log::warning("Failed to send rejection notification for tattoo {$tattoo->id}: " . $e->getMessage());
+                }
                 $this->bustUserTattooCache($tattoo->uploader->id);
             }
 

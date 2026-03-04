@@ -131,6 +131,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/confirm', [\App\Http\Controllers\ImageController::class, 'confirmUploads']);
     });
 
+    // Style suggestions (authenticated)
+    Route::post('/styles/suggest', [StyleController::class, 'suggestFromImages']);
+
     // Tag management (authenticated)
     Route::post('/tags', [TagController::class, 'create']);
     Route::post('/tags/suggest', [TagController::class, 'suggestFromImages']);
@@ -216,6 +219,10 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/toggle', [TattooLeadController::class, 'toggle']);
     });
 });
+
+// Artist invitation routes (public show, authenticated claim)
+Route::get('/invitations/{token}', [\App\Http\Controllers\ArtistInvitationController::class, 'show']);
+Route::middleware('auth:sanctum')->post('/invitations/{token}/claim', [\App\Http\Controllers\ArtistInvitationController::class, 'claim']);
 
 // Calendar OAuth callback (no auth required - user comes from Google)
 Route::get('/calendar/callback', [CalendarOAuthController::class, 'handleCallback']);

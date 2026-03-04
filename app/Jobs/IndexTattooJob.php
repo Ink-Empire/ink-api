@@ -32,7 +32,7 @@ class IndexTattooJob implements ShouldQueue
     public function handle(): void
     {
         $tattoo = Tattoo::with([
-            'tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image',
+            'tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image', 'uploader.image',
         ])->find($this->tattooId);
 
         if (!$tattoo) {

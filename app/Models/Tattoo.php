@@ -29,6 +29,9 @@ class Tattoo extends Model
         'uploaded_by_user_id',
         'approval_status',
         'is_visible',
+        'attributed_artist_name',
+        'attributed_studio_name',
+        'attributed_location',
     ];
 
     protected $casts = [
@@ -43,7 +46,7 @@ class Tattoo extends Model
         'primary_style',
         'primary_image',
         'styles',
-        'uploader',
+        'uploader.image',
     ];
 
     protected static function booted()
@@ -112,6 +115,11 @@ class Tattoo extends Model
     public function profileViews()
     {
         return $this->morphMany(ProfileView::class, 'viewable');
+    }
+
+    public function invitations()
+    {
+        return $this->hasMany(ArtistInvitation::class);
     }
 
     public function getIsFeaturedAttribute()

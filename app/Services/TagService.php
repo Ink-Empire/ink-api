@@ -65,7 +65,7 @@ class TagService
 
             return $matchedTags;
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("Failed to generate tags for tattoo ID: {$tattoo->id}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -126,7 +126,7 @@ class TagService
 
             return $tags;
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("Failed to analyze image ID: {$image->id}", [
                 'error' => $e->getMessage()
             ]);
@@ -498,7 +498,7 @@ class TagService
             $content = $response->choices[0]->message->content ?? '';
             return $this->parseTagsFromResponse($content);
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("Failed to analyze image URL", [
                 'url' => $imageUrl,
                 'error' => $e->getMessage()
@@ -560,7 +560,7 @@ class TagService
             $content = $response->choices[0]->message->content ?? '';
             return $this->parseDescriptionAndTagsResponse($content, $existingTags);
 
-        } catch (Exception $e) {
+        } catch (\Throwable $e) {
             Log::error("Failed to analyze tattoo for description and tags", [
                 'url' => $imageUrl,
                 'error' => $e->getMessage()

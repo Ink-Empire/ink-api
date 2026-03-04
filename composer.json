@@ -50,7 +50,8 @@
         "pestphp/pest-plugin-laravel": "^2.4",
         "phpunit/phpunit": "^10.1",
         "rector/rector": "^2.0",
-        "spatie/laravel-ignition": "^2.0"
+        "spatie/laravel-ignition": "^2.0",
+        "xammie/mailbook": "^1.10"
     },
     "autoload": {
         "psr-4": {

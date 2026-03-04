@@ -103,17 +103,21 @@ class TattooService extends SearchService
             $approvalStatus = $taggedArtistId
                 ? ArtistTattooApprovalStatus::PENDING
                 : ArtistTattooApprovalStatus::USER_ONLY;
+            $isVisible = $taggedArtistId ? false : true;
 
             return Tattoo::create([
                 'artist_id' => $taggedArtistId,
                 'uploaded_by_user_id' => $user->id,
                 'approval_status' => $approvalStatus,
-                'is_visible' => false,
+                'is_visible' => $isVisible,
                 'is_demo' => (bool) $user->is_demo,
                 'primary_image_id' => $data['primary_image_id'],
                 'title' => $data['title'] ?? null,
                 'description' => $data['description'] ?? null,
                 'primary_style_id' => $data['primary_style_id'] ?? null,
+                'attributed_artist_name' => $data['attributed_artist_name'] ?? null,
+                'attributed_studio_name' => $data['attributed_studio_name'] ?? null,
+                'attributed_location' => $data['attributed_location'] ?? null,
             ]);
         }
 

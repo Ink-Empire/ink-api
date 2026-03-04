@@ -157,14 +157,13 @@ abstract class SearchService
         }
 
         // Handle demo mode filtering:
+        // Demo users see all data (demo + real), non-demo users only see real data
         if (isset($this->filters['is_demo']) && $this->filters['is_demo']) {
-            // Demo mode: show only demo data
-            $this->search->where('is_demo', 'in', [true]);
+            // Demo user: no filter, show both demo and real data
         } elseif (!isset($this->filters['include_demo']) || !$this->filters['include_demo']) {
-            // Default: filter out demo data
+            // Non-demo user: filter out demo data
             $this->search->where('is_demo', 'in', [false]);
         }
-        // If include_demo is true, no filter is applied (show all data)
 
         if (isset($this->filters['studio_id'])) {
             $this->buildStudioParam();

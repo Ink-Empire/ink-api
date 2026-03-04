@@ -15,8 +15,8 @@ class SecurityHeaders
     {
         $response = $next($request);
 
-        // Skip strict CSP for Horizon dashboard (it needs JS/CSS to render)
-        if ($request->is('horizon', 'horizon/*')) {
+        // Skip strict CSP for dashboards that need JS/CSS to render
+        if ($request->is('horizon', 'horizon/*', 'mailbook', 'mailbook/*')) {
             return $response;
         }
 

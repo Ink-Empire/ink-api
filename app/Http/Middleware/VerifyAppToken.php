@@ -13,6 +13,8 @@ class VerifyAppToken
      * These are typically webhook endpoints called by external services.
      */
     protected array $except = [
+        'mailbook',
+        'mailbook/*',
         'horizon',
         'horizon/*',
         'telescope',

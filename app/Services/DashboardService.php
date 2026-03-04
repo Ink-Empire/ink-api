@@ -238,6 +238,12 @@ class DashboardService
 
             $pendingApprovals = Tattoo::pendingForArtist($artist->id)->count();
 
+            // Also count unclaimed email invitations
+            $invitedCount = \App\Models\ArtistInvitation::where('email', $artist->email)
+                ->whereNull('claimed_at')
+                ->count();
+            $pendingApprovals += $invitedCount;
+
             return [
                 'profile_views' => $viewsThisWeek,
                 'profile_views_total' => $profileViewsTotal,
