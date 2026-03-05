@@ -26,8 +26,10 @@ class TattooRejectedNotification extends Notification
 
     public function via(object $notifiable): array
     {
-        $channels = $this->filterChannelsForUnsubscribed($notifiable, ['mail', FcmChannel::class]);
-        $channels = $this->filterChannelsForPush($notifiable, $channels);
+        // Always include mail — tag responses are transactional, not marketing
+        $channels = ['mail'];
+        $pushChannels = $this->filterChannelsForPush($notifiable, [FcmChannel::class]);
+        $channels = array_merge($channels, $pushChannels);
         $channels[] = 'database';
 
         return $channels;
