@@ -97,6 +97,68 @@ You can check your Elasticsearch indices at: http://localhost:9200/_cat/indices
 - **Redis**: Port 6379
 - **Elasticsearch**: Port 9200
 
+## Development Tools
+
+### Mailbook — Email Template Preview
+
+Preview all email templates and notifications without actually sending them.
+
+- **URL**: [http://localhost/mailbook](http://localhost/mailbook)
+- **Environment**: Local only
+- **Config**: `routes/mailbook.php`
+
+All notification classes are registered with sample data so you can preview every email the platform sends. After editing a Blade template in `resources/views/mail/`, just refresh the page to see changes instantly.
+
+### Horizon — Queue Dashboard
+
+Monitor and manage Redis queues, failed jobs, and worker processes.
+
+- **URL**: [http://localhost/horizon](http://localhost/horizon)
+- **Environment**: All (local + production)
+- **Production access**: Restricted to authorized emails via `auth.basic` middleware
+
+```bash
+# Start Horizon (required for queue processing)
+docker compose exec laravel.app php artisan horizon
+
+# Check Horizon status
+docker compose exec laravel.app php artisan horizon:status
+
+# Pause/resume processing
+docker compose exec laravel.app php artisan horizon:pause
+docker compose exec laravel.app php artisan horizon:continue
+
+# Clear all queued jobs
+docker compose exec laravel.app php artisan horizon:clear
+```
+
+### Telescope — Request & Application Monitor
+
+Inspect incoming requests, database queries, queued jobs, mail, notifications, cache operations, and more.
+
+- **URL**: [http://localhost/telescope](http://localhost/telescope)
+- **Environment**: Local only (controlled by `TELESCOPE_ENABLED` env var)
+- **Slow query threshold**: 100ms
+
+Telescope records requests to `api/*` routes and flags slow queries. Useful for debugging N+1 issues, inspecting mail content, and tracing job failures.
+
+```bash
+# Clear all Telescope entries
+docker compose exec laravel.app php artisan telescope:clear
+
+# Prune old entries (default: 24 hours)
+docker compose exec laravel.app php artisan telescope:prune
+```
+
+### Other Dev Tools
+
+| Tool | Purpose | Usage |
+|------|---------|-------|
+| **Tinker** | Interactive REPL | `php artisan tinker` |
+| **Pint** | Code formatting (PSR-4) | `./vendor/bin/pint` |
+| **Pest/PHPUnit** | Testing | `php artisan test` |
+| **Ray** | Debug output | `ray($variable)` in code |
+
 ## Useful Commands
 
 ```bash
