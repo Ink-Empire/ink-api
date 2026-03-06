@@ -47,7 +47,7 @@
                                 <!-- Content Section -->
                                 <tr>
                                     <td style="padding: 32px 40px 40px 40px;">
-                                        <h2 style="margin: 0 0 20px 0; font-size: 14px; font-weight: 700; color: #D4A853; text-transform: uppercase; letter-spacing: 1px;">Here's the deal</h2>
+                                        <h2 style="margin: 0 0 20px 0; font-size: 14px; font-weight: 700; color: #D4A853; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Here's the deal</h2>
 
                                         @if($isArtist)
                                             <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
@@ -105,8 +105,8 @@
                             <p style="margin: 0; font-size: 12px; color: #444444;">
                                 &copy; {{ date('Y') }} InkedIn. All rights reserved.
                             </p>
-                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #aaaaaa;">
-                                <a href="{{ $unsubscribeUrl }}" style="color: #888888; text-decoration: underline;">Unsubscribe</a> from InkedIn emails
+                            <p style="margin: 8px 0 0 0; font-size: 11px; color: #444444;">
+                                <a href="{{ $unsubscribeUrl }}" style="color: #444444; text-decoration: underline;">Unsubscribe</a> from InkedIn emails
                             </p>
                         </td>
                     </tr>

@@ -58,7 +58,7 @@ class AffiliationAcceptedNotification extends Notification
             ->view('mail.affiliation-accepted', [
                 'accepterName' => $accepterName,
                 'studioName' => $studioName,
-                'message' => $message,
+                'bodyMessage' => $message,
                 'dashboardUrl' => $dashboardUrl,
                 'acceptedByType' => $this->acceptedByType,
                 'unsubscribeUrl' => $unsubscribeUrl,
