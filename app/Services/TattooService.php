@@ -5,8 +5,12 @@ namespace App\Services;
 use App\Enums\ArtistTattooApprovalStatus;
 use App\Enums\UserTypes;
 use App\Exceptions\TattooNotFoundException;
+use App\Jobs\IndexTattooJob;
+use App\Models\Artist;
 use App\Models\Tattoo;
 use App\Models\User;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Storage;
 
 /**
  *
@@ -224,5 +228,53 @@ class TattooService extends SearchService
         $this->search->where('id', 'in', $ids);
 
         return $this->search->get();
+    }
+
+    /**
+     * Delete a tattoo: remove from ES, detach relations, delete record, clean up orphaned S3 images.
+     *
+     * @return int Number of images deleted from S3
+     */
+    public function deleteTattoo(Tattoo $tattoo): int
+    {
+        $tattoo->unsearchable();
+        Cache::forget("es:tattoo:{$tattoo->id}");
+
+        $images = $tattoo->images;
+
+        $tattoo->images()->detach();
+        $tattoo->styles()->detach();
+        $tattoo->tags()->detach();
+        $tattoo->delete();
+
+        $storage = Storage::disk('s3');
+        $deletedImageCount = 0;
+
+        foreach ($images as $image) {
+            $otherTattoosUsingImage = \DB::table('tattoos_images')
+                ->where('image_id', $image->id)
+                ->exists();
+
+            $isPrimaryElsewhere = Tattoo::where('primary_image_id', $image->id)->exists();
+
+            if (!$otherTattoosUsingImage && !$isPrimaryElsewhere) {
+                if ($image->filename && $storage->exists($image->filename)) {
+                    $storage->delete($image->filename);
+                }
+                $image->delete();
+                $deletedImageCount++;
+            }
+        }
+
+        // Re-index the artist if one exists
+        if ($tattoo->artist_id) {
+            $artist = Artist::find($tattoo->artist_id);
+            if ($artist) {
+                $artist->searchable();
+                IndexTattooJob::bustArtistCaches($artist->id, $artist->slug);
+            }
+        }
+
+        return $deletedImageCount;
     }
 }

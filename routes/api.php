@@ -287,6 +287,7 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('tattoos', [\App\Http\Controllers\TattooController::class, 'adminIndex']);
     Route::get('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminShow']);
     Route::put('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminUpdate']);
+    Route::delete('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminDestroy']);
 
     // Demo data management
     Route::get('demo-data/preview', [\App\Http\Controllers\Admin\DemoDataController::class, 'preview']);
