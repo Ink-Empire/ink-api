@@ -231,6 +231,41 @@ class TattooService extends SearchService
     }
 
     /**
+     * Delete tattoo DB records only (no ES removal, no S3 deletion).
+     * Returns orphaned image data for async cleanup.
+     *
+     * @return array Array of ['image_id' => int, 'filename' => string] for orphaned images
+     */
+    public function deleteTattooDbOnly(Tattoo $tattoo): array
+    {
+        $images = $tattoo->images;
+
+        $tattoo->images()->detach();
+        $tattoo->styles()->detach();
+        $tattoo->tags()->detach();
+        $tattoo->delete();
+
+        $orphanedImages = [];
+
+        foreach ($images as $image) {
+            $otherTattoosUsingImage = \DB::table('tattoos_images')
+                ->where('image_id', $image->id)
+                ->exists();
+
+            $isPrimaryElsewhere = Tattoo::where('primary_image_id', $image->id)->exists();
+
+            if (!$otherTattoosUsingImage && !$isPrimaryElsewhere) {
+                $orphanedImages[] = [
+                    'image_id' => $image->id,
+                    'filename' => $image->filename,
+                ];
+            }
+        }
+
+        return $orphanedImages;
+    }
+
+    /**
      * Delete a tattoo: remove from ES, detach relations, delete record, clean up orphaned S3 images.
      *
      * @return int Number of images deleted from S3

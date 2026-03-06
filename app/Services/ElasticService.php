@@ -571,6 +571,57 @@ class ElasticService
     }
 
     /**
+     * Delete documents by their IDs from an index, in chunks.
+     *
+     * @param array $ids Document IDs to delete
+     * @param string $index Index name (e.g., 'tattoos', 'artists')
+     * @param int $chunkSize Number of IDs per bulk request
+     * @return array Response with total deleted count
+     */
+    public function deleteByIds(array $ids, string $index, int $chunkSize = 200): array
+    {
+        if (empty($ids)) {
+            return ['status' => true, 'deleted' => 0];
+        }
+
+        Log::info("deleteByIds: Sending " . count($ids) . " documents to _delete_by_query", [
+            'index' => $index,
+            'ids' => $ids,
+        ]);
+
+        $totalDeleted = 0;
+
+        foreach (array_chunk($ids, $chunkSize) as $chunk) {
+            try {
+                $params = [
+                    'query' => [
+                        'ids' => [
+                            'values' => array_map('strval', $chunk),
+                        ],
+                    ],
+                ];
+
+                $response = $this->post("/{$index}/_delete_by_query", $params);
+                $totalDeleted += $response['deleted'] ?? 0;
+            } catch (Exception $e) {
+                Log::error("Failed to delete chunk of IDs from ES", [
+                    'index' => $index,
+                    'chunk_size' => count($chunk),
+                    'error' => $e->getMessage(),
+                ]);
+            }
+        }
+
+        Log::info("Deleted documents by IDs", [
+            'index' => $index,
+            'requested' => count($ids),
+            'deleted' => $totalDeleted,
+        ]);
+
+        return ['status' => true, 'deleted' => $totalDeleted];
+    }
+
+    /**
      * Delete all documents matching a field/value query.
      *
      * @param string $field The field to match on (e.g., 'artist_id')

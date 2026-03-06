@@ -81,6 +81,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'email_verified_at' => 'datetime',
         'last_seen_at' => 'datetime',
         'last_login_at' => 'datetime',
+        'type_id' => 'integer',
         'is_admin' => 'boolean',
         'is_demo' => 'boolean',
         'is_email_verified' => 'boolean',

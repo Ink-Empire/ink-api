@@ -9,6 +9,7 @@
 - **PHP Version**: 8.3+
 - **Formatting**: Laravel Pint (preset: laravel)
 - **Namespacing**: PSR-4 with App\\ namespace
+- **Imports**: Always use `use` statements at the top of the file — never inline fully qualified class names (e.g., `\App\Enums\...`)
 - **Models**: Located in app/Models with appropriate relationships
 - **Folder Structure**: Follow Laravel conventions (Controllers, Services, Jobs, etc.)
 - **Error Handling**: Use Laravel exceptions and proper try/catch blocks

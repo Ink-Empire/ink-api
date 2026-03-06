@@ -2,22 +2,30 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\ArtistTattooApprovalStatus;
 use App\Enums\UserRelationships;
 use App\Enums\UserTypes;
 use App\Http\Resources\SelfUserResource;
 use App\Http\Resources\UserResource;
 use App\Models\Artist;
 use App\Models\ArtistSettings;
+use App\Models\Image;
+use App\Models\Tattoo;
 use App\Models\TattooLead;
 use App\Models\User;
+use App\Jobs\DeleteImagesFromS3Job;
+use App\Jobs\DeleteTattoosFromElasticJob;
 use App\Services\AddressService;
 use App\Services\ElasticService;
 use App\Services\ImageService;
+use App\Services\TattooService;
 use App\Services\UserService;
 use App\Services\PaginationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Facades\Storage;
 
@@ -31,7 +39,8 @@ class UserController extends Controller
         protected ImageService $imageService,
         protected AddressService $addressService,
         protected PaginationService $paginationService,
-        protected ElasticService $elasticService
+        protected ElasticService $elasticService,
+        protected TattooService $tattooService
     ) {
     }
 
@@ -89,7 +98,7 @@ class UserController extends Controller
 
             // Check for presigned URL flow (faster) - image already uploaded to S3
             if ($request->has('image_id')) {
-                $image = \App\Models\Image::find($request->input('image_id'));
+                $image = Image::find($request->input('image_id'));
 
                 if (!$image) {
                     return $this->returnErrorResponse("Image not found", "The specified image does not exist");
@@ -331,7 +340,7 @@ class UserController extends Controller
         }
 
         // Get the IDs of saved artists directly from the pivot table
-        $savedArtistIds = \Illuminate\Support\Facades\DB::table('users_artists')
+        $savedArtistIds = DB::table('users_artists')
             ->where('user_id', $user->id)
             ->pluck('artist_id')
             ->toArray();
@@ -348,7 +357,7 @@ class UserController extends Controller
             ->get()
             ->map(function ($artist) {
                 // Get artist settings separately
-                $settings = \App\Models\ArtistSettings::where('artist_id', $artist->id)->first();
+                $settings = ArtistSettings::where('artist_id', $artist->id)->first();
                 return [
                     'id' => $artist->id,
                     'name' => $artist->name,
@@ -412,89 +421,106 @@ class UserController extends Controller
 
     /**
      * Perform full user deletion with all relationship cleanup.
-     * Used by both self-deletion and admin deletion.
+     * DB operations run synchronously in a transaction.
+     * S3 and ES cleanup is dispatched to an async job after commit.
      */
     protected function performUserDeletion(User $user): void
     {
+        $tattooImageData = [];
+        $ownTattooIds = [];
+        $clientTattooIds = [];
+        $profileImageInfo = null;
+        $userId = $user->id;
+
+        \Log::info('performUserDeletion: Starting', [
+            'user_id' => $user->id,
+            'type_id' => $user->type_id,
+            'type_id_type' => gettype($user->type_id),
+            'is_artist' => $user->type_id === UserTypes::ARTIST_TYPE_ID,
+            'ARTIST_TYPE_ID' => UserTypes::ARTIST_TYPE_ID,
+        ]);
+
         \DB::beginTransaction();
 
         try {
-            // If user is an artist, remove from Elasticsearch (non-blocking)
             if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
+                // Remove artist from ES (single, fast call)
                 try {
                     $artist = Artist::find($user->id);
                     if ($artist) {
                         $artist->unsearchable();
                     }
-
-                    $tattooIndex = config('elastic.client.tattoos_index', 'tattoos');
-                    $this->elasticService->deleteByQuery('artist_id', (string) $user->id, $tattooIndex);
                 } catch (\Exception $e) {
-                    \Log::warning('Failed to remove user from Elasticsearch during deletion', [
+                    \Log::warning('Failed to remove artist from Elasticsearch', [
                         'user_id' => $user->id,
                         'error' => $e->getMessage(),
                     ]);
                 }
-            }
 
-            // Revoke all API tokens
-            $user->tokens()->delete();
+                // Get all tattoos belonging to this artist
+                $artistTattoos = Tattoo::with('images')
+                    ->where('artist_id', $user->id)
+                    ->get();
 
-            // Delete hasMany relationships
-            $user->passwords()->delete();
-            $user->socialMediaLinks()->delete();
-            $user->tattooLeads()->delete();
-            $user->artistWishlists()->delete();
-            $user->conversationParticipants()->delete();
-            $user->profileViews()->delete();
+                // Split: tattoos uploaded by a different user keep their DB record (just unlink artist)
+                // All others get fully deleted from DB
+                foreach ($artistTattoos as $tattoo) {
+                    $isClientUploaded = $tattoo->uploaded_by_user_id
+                        && $tattoo->uploaded_by_user_id !== $user->id;
 
-            // Delete artist settings if exists
-            if ($user->settings) {
-                $user->settings()->delete();
-            }
+                    if ($isClientUploaded) {
+                        $tattoo->update([
+                            'artist_id' => null,
+                            'approval_status' => ArtistTattooApprovalStatus::USER_ONLY,
+                        ]);
+                        $clientTattooIds[] = $tattoo->id;
+                    } else {
+                        $ownTattooIds[] = $tattoo->id;
+                        try {
+                            $orphaned = $this->tattooService->deleteTattooDbOnly($tattoo);
+                            $tattooImageData = array_merge($tattooImageData, $orphaned);
+                        } catch (\Exception $e) {
+                            \Log::warning('Failed to delete artist tattoo DB records during account deletion', [
+                                'tattoo_id' => $tattoo->id,
+                                'error' => $e->getMessage(),
+                            ]);
+                        }
+                    }
+                }
 
-            // Delete calendar connection if exists
-            if ($user->calendarConnection) {
-                $user->calendarConnection()->delete();
-            }
-
-            // Detach many-to-many relationships
-            $user->styles()->detach();
-            $user->tattoos()->detach();
-            $user->artists()->detach();
-            $user->wishlistArtists()->detach();
-            $user->affiliatedStudios()->detach();
-            $user->blockedUsers()->detach();
-            $user->blockedByUsers()->detach();
-            $user->conversations()->detach();
-
-            // Handle owned studio - remove ownership but keep studio
-            if ($user->ownedStudio) {
-                $user->ownedStudio->update([
-                    'owner_id' => null,
-                    'is_claimed' => false,
+                \Log::info('Artist tattoo cleanup complete', [
+                    'user_id' => $user->id,
+                    'total_artist_tattoos' => $artistTattoos->count(),
+                    'own_tattoos_deleted' => count($ownTattooIds),
+                    'client_tattoos_unlinked' => count($clientTattooIds),
                 ]);
             }
 
-            // Delete profile image from S3 and database
-            if ($user->image_id && $user->image) {
-                $image = $user->image;
-                $user->update(['image_id' => null]);
+            $profileImageInfo = $this->userService->cleanupPostDelete($user);
 
-                if ($image->filename) {
-                    Storage::disk('s3')->delete($image->filename);
-                }
-
-                $image->delete();
-            }
-
-            // Delete the user
             $user->delete();
 
             \DB::commit();
         } catch (\Exception $e) {
             \DB::rollBack();
             throw $e;
+        }
+
+        // Dispatch ES cleanup: delete own tattoos, re-index client tattoos
+        if (!empty($ownTattooIds) || !empty($clientTattooIds)) {
+            DeleteTattoosFromElasticJob::dispatch($userId, $ownTattooIds, $clientTattooIds);
+        }
+
+        // Dispatch S3 cleanup: tattoo images + profile image
+        $allImageData = $tattooImageData;
+        if ($profileImageInfo) {
+            $allImageData[] = [
+                'image_id' => $profileImageInfo['id'],
+                'filename' => $profileImageInfo['filename'],
+            ];
+        }
+        if (!empty($allImageData)) {
+            DeleteImagesFromS3Job::dispatch($userId, $allImageData);
         }
     }
 

@@ -137,6 +137,16 @@ class Tattoo extends Model
         return $query->where('artist_id', $artistId)->where('approval_status', ArtistTattooApprovalStatus::PENDING);
     }
 
+    public function scopeOwnedByArtist($query, $artistId)
+    {
+        return $query->where('artist_id', $artistId)->where('uploaded_by_user_id', $artistId);
+    }
+
+    public function scopeTaggedByClient($query, $artistId)
+    {
+        return $query->where('artist_id', $artistId)->where('uploaded_by_user_id', '!=', $artistId);
+    }
+
     /*
     * Elasticsearch
     */
