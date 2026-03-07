@@ -49,6 +49,7 @@ class AuthController extends Controller
             'selected_styles.*' => 'integer|exists:styles,id',
             'has_accepted_toc' => 'required|accepted',
             'has_accepted_privacy_policy' => 'required|accepted',
+            'signup_platform' => 'nullable|string|in:web,ios,android',
         ]);
 
         if (isset($request->address)) {
@@ -74,6 +75,7 @@ class AuthController extends Controller
             'experience_level' => $request->experience_level ?? null,
             'has_accepted_toc' => true,
             'has_accepted_privacy_policy' => true,
+            'signup_platform' => $request->signup_platform ?? null,
         ]);
 
         // Store password in history
