@@ -74,6 +74,7 @@ class SlackService
             . "*Email:* {$user->email}\n"
             . "*Type:* {$userType}\n"
             . ($user->location ? "*Location:* {$user->location}\n" : "")
+            . ($user->signup_platform ? "*Platform:* {$user->signup_platform}\n" : "")
             . "*Signed up:* {$timestamp}";
 
         return $this->send($message);
