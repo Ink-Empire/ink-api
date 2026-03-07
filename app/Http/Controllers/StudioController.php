@@ -12,6 +12,7 @@ use App\Models\Address;
 use App\Models\StudioAvailability;
 use App\Models\Studio;
 use App\Models\StudioAnnouncement;
+use App\Models\StudioInvitation;
 use App\Models\StudioSpotlight;
 use App\Models\User;
 use App\Services\AddressService;
@@ -155,6 +156,50 @@ class StudioController extends Controller
             'studio' => new StudioResource($studio->fresh()),
             'message' => 'Studio claimed successfully',
         ]);
+    }
+
+    /**
+     * Invite a studio owner to claim their unclaimed studio profile.
+     */
+    public function invite(Request $request, int $id): JsonResponse
+    {
+        $studio = Studio::find($id);
+
+        if (!$studio) {
+            return response()->json(['error' => 'Studio not found'], 404);
+        }
+
+        if ($studio->is_claimed) {
+            return response()->json(['error' => 'This studio has already been claimed'], 422);
+        }
+
+        $request->validate([
+            'email' => 'required|email',
+        ]);
+
+        try {
+            $invitation = StudioInvitation::create([
+                'studio_id' => $studio->id,
+                'invited_by_user_id' => $request->user()->id,
+                'email' => $request->input('email'),
+            ]);
+
+            \Illuminate\Support\Facades\Notification::route('mail', $request->input('email'))
+                ->notify(new \App\Notifications\StudioOwnerInvitationNotification($invitation, $request->user()));
+
+            return response()->json([
+                'success' => true,
+                'message' => 'Invitation sent successfully',
+            ]);
+        } catch (\Exception $e) {
+            \Log::error('Failed to send studio owner invitation', [
+                'studio_id' => $studio->id,
+                'email' => $request->input('email'),
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->returnErrorResponse('Failed to send invitation. Please try again.');
+        }
     }
 
     /**
@@ -575,26 +620,19 @@ class StudioController extends Controller
             }
         }
 
-        if (empty($artistIds)) {
-            return response()->json([
-                'gallery' => [],
-                'meta' => [
-                    'current_page' => 1,
-                    'last_page' => 1,
-                    'per_page' => $request->get('limit', 20),
-                    'total' => 0,
-                ],
-            ]);
-        }
-
         // Use Elasticsearch for speed
         $limit = $request->get('limit', 20);
         $page = $request->get('page', 1);
 
         $search = \App\Models\Tattoo::search();
 
-        // Filter by artist IDs
-        $search->whereIn('artist_id', $artistIds);
+        // Filter by studio_id OR affiliated artist IDs
+        $search->orWhere(function ($query, $boolean) use ($artistIds, $studio) {
+            $query->where('studio_id', '=', $studio->id, $boolean);
+            if (!empty($artistIds)) {
+                $query->where('artist_id', 'in', $artistIds, $boolean);
+            }
+        });
 
         // Sort by featured first, then newest
         $search->sort('is_featured', 'desc');

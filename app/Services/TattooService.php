@@ -119,6 +119,7 @@ class TattooService extends SearchService
                 'title' => $data['title'] ?? null,
                 'description' => $data['description'] ?? null,
                 'primary_style_id' => $data['primary_style_id'] ?? null,
+                'studio_id' => $data['studio_id'] ?? null,
                 'attributed_artist_name' => $data['attributed_artist_name'] ?? null,
                 'attributed_studio_name' => $data['attributed_studio_name'] ?? null,
                 'attributed_location' => $data['attributed_location'] ?? null,

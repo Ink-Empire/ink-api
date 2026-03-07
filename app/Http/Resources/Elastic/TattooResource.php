@@ -22,7 +22,7 @@ class TattooResource extends JsonResource
                 'description' => $this->description,
                 'placement' => $this->placement,
                 'duration' => $this->duration,
-                'studio' => $this->studio?->name ?? "",
+                'studio' => $this->studio ? new StudioResource($this->studio) : null,
                 'primary_style' => $this->primary_style?->name ?? "",
                 'primary_subject' => $this->subject?->name ?? "",
                 'primary_image' => $this->primary_image->uri ?? null,

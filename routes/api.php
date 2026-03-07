@@ -124,6 +124,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/me/studio/{studioId}/primary', [\App\Http\Controllers\ArtistController::class, 'setPrimaryStudio']);
     });
 
+    // Studio owner invitation (invite someone to claim an unclaimed studio)
+    Route::post('/studios/{id}/invite', [StudioController::class, 'invite']);
+
     // Direct S3 upload routes (presigned URLs)
     Route::prefix('uploads')->group(function () {
         Route::post('/presign', [\App\Http\Controllers\ImageController::class, 'getPresignedUrl']);

@@ -10,6 +10,7 @@ use App\Jobs\GenerateAiTagsJob;
 use App\Jobs\IndexTattooJob;
 use App\Models\Artist;
 use App\Models\Image;
+use App\Models\Studio;
 use App\Models\Style;
 use App\Models\Tag;
 use App\Models\Tattoo;
@@ -306,6 +307,11 @@ class TattooController extends Controller
                 $primaryStyleId = $request->input('primary_style_id')
                     ?: (!empty($styleIds) ? $styleIds[0] : null);
 
+                $studioId = $request->input('studio_id');
+                if ($studioId && !Studio::where('id', $studioId)->exists()) {
+                    $studioId = null;
+                }
+
                 $tattoo = $this->tattooService->createTattoo($user, [
                     'tagged_artist_id' => $request->input('tagged_artist_id'),
                     'primary_image_id' => $primaryImage->id,
@@ -314,6 +320,7 @@ class TattooController extends Controller
                     'placement' => $request->input('placement'),
                     'duration' => $request->input('hours_to_complete'),
                     'primary_style_id' => $primaryStyleId,
+                    'studio_id' => $studioId,
                     'attributed_artist_name' => $request->input('attributed_artist_name'),
                     'attributed_studio_name' => $request->input('attributed_studio_name'),
                     'attributed_location' => $request->input('attributed_location'),

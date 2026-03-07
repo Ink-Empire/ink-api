@@ -19,6 +19,8 @@ use App\Notifications\BooksOpenNotification;
 use App\Notifications\NewMessageNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\StudioInvitationNotification;
+use App\Notifications\StudioOwnerInvitationNotification;
+use App\Models\StudioInvitation;
 use App\Notifications\TattooApprovedNotification;
 use App\Notifications\TattooBeaconNotification;
 use App\Notifications\TattooRejectedNotification;
@@ -35,6 +37,12 @@ $getAppointment = fn () => Appointment::first() ?? new Appointment(['date' => '2
 $getMessage = fn () => Message::first() ?? new Message(['content' => 'Hey, I love your work! Are you available next week?']);
 $getLead = fn () => TattooLead::first() ?? new TattooLead(['timing' => 'month', 'description' => 'Looking for a floral sleeve']);
 $getInvitation = fn () => ArtistInvitation::first() ?? new ArtistInvitation(['artist_name' => 'Jane Doe', 'studio_name' => 'Ink Masters Studio', 'location' => 'Austin, TX', 'email' => 'jane@example.com', 'token' => 'sample-token-123']);
+$getStudioInvitation = fn () => StudioInvitation::with('studio')->first() ?? (function () use ($getStudio, $getUser) {
+    $inv = new StudioInvitation(['email' => 'owner@example.com', 'token' => 'sample-studio-token-123']);
+    $inv->setRelation('studio', $getStudio());
+    $inv->setRelation('invitedBy', $getUser());
+    return $inv;
+})();
 
 // -- Mailable --
 
@@ -109,6 +117,10 @@ Mailbook::to($getUser())
 Mailbook::to($getUser())
     ->add(fn () => new AffiliationAcceptedNotification($getArtist(), $getStudio(), 'artist'))
     ->label('Affiliation Accepted');
+
+Mailbook::to('owner@example.com')
+    ->add(fn () => new StudioOwnerInvitationNotification($getStudioInvitation(), $getUser()))
+    ->label('Studio Owner Invitation');
 
 // -- Leads & Availability --
 
