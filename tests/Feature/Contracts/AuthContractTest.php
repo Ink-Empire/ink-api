@@ -38,6 +38,8 @@ describe('Registration API Contracts', function () {
             'type' => 'user',
             'location' => 'New York, NY',
             'selected_styles' => [$this->styles->first()->id],
+            'has_accepted_toc' => true,
+            'has_accepted_privacy_policy' => true,
         ]);
 
         $response->assertStatus(201)
@@ -64,6 +66,8 @@ describe('Registration API Contracts', function () {
             'about' => 'I am a tattoo artist specializing in traditional styles.',
             'location' => 'New York, NY',
             'selected_styles' => $this->styles->pluck('id')->toArray(),
+            'has_accepted_toc' => true,
+            'has_accepted_privacy_policy' => true,
         ]);
 
         $response->assertStatus(201)
