@@ -65,18 +65,9 @@ class IndexTattooJob implements ShouldQueue
         }
         Cache::forget("artist:{$artistId}:dashboard-tattoos");
 
-        $prefix = config('cache.prefix');
-        $pattern = "{$prefix}:es:artist:portfolio:{$artistId}:*";
-        $cursor = '0';
-        do {
-            [$cursor, $keys] = Redis::scan($cursor, ['match' => $pattern, 'count' => 100]);
-            if (!empty($keys)) {
-                Redis::del(...$keys);
-            }
-        } while ($cursor !== '0');
-
-        if ($slug) {
-            $pattern = "{$prefix}:es:artist:portfolio:{$slug}:*";
+        try {
+            $prefix = config('cache.prefix');
+            $pattern = "{$prefix}:es:artist:portfolio:{$artistId}:*";
             $cursor = '0';
             do {
                 [$cursor, $keys] = Redis::scan($cursor, ['match' => $pattern, 'count' => 100]);
@@ -84,20 +75,37 @@ class IndexTattooJob implements ShouldQueue
                     Redis::del(...$keys);
                 }
             } while ($cursor !== '0');
+
+            if ($slug) {
+                $pattern = "{$prefix}:es:artist:portfolio:{$slug}:*";
+                $cursor = '0';
+                do {
+                    [$cursor, $keys] = Redis::scan($cursor, ['match' => $pattern, 'count' => 100]);
+                    if (!empty($keys)) {
+                        Redis::del(...$keys);
+                    }
+                } while ($cursor !== '0');
+            }
+        } catch (\Exception $e) {
+            Log::warning('Redis unavailable for artist cache bust', ['artist_id' => $artistId, 'error' => $e->getMessage()]);
         }
     }
 
     public static function bustUserTattooCaches(int $userId): void
     {
-        $prefix = config('cache.prefix');
-        $pattern = "{$prefix}:es:user:{$userId}:tattoos:*";
-        $cursor = '0';
-        do {
-            [$cursor, $keys] = Redis::scan($cursor, ['match' => $pattern, 'count' => 100]);
-            if (!empty($keys)) {
-                Redis::del(...$keys);
-            }
-        } while ($cursor !== '0');
+        try {
+            $prefix = config('cache.prefix');
+            $pattern = "{$prefix}:es:user:{$userId}:tattoos:*";
+            $cursor = '0';
+            do {
+                [$cursor, $keys] = Redis::scan($cursor, ['match' => $pattern, 'count' => 100]);
+                if (!empty($keys)) {
+                    Redis::del(...$keys);
+                }
+            } while ($cursor !== '0');
+        } catch (\Exception $e) {
+            Log::warning('Redis unavailable for user tattoo cache bust', ['user_id' => $userId, 'error' => $e->getMessage()]);
+        }
     }
 
     public function backoff(): array
