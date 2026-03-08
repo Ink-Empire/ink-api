@@ -111,7 +111,7 @@ class BulkUploadController extends Controller
             ->findOrFail($id);
 
         $request->validate([
-            'filter' => 'nullable|string|in:all,unprocessed,processed,ready,published,skipped',
+            'filter' => 'nullable|string|in:all,unprocessed,processed,unpublished,ready,published,skipped',
             'page' => 'nullable|integer|min:1',
             'per_page' => 'nullable|integer|min:1|max:100',
             'primary_only' => 'nullable|boolean',
@@ -130,6 +130,11 @@ class BulkUploadController extends Controller
                 break;
             case 'processed':
                 $query->processed();
+                break;
+            case 'unpublished':
+                $query->where('is_processed', true)
+                    ->where('is_published', false)
+                    ->where('is_skipped', false);
                 break;
             case 'ready':
                 $query->readyForPublish();
@@ -177,6 +182,7 @@ class BulkUploadController extends Controller
             'approved_tag_ids' => 'nullable|array',
             'approved_tag_ids.*' => 'exists:tags,id',
             'is_skipped' => 'nullable|boolean',
+            'image_id' => 'nullable|exists:images,id',
         ]);
 
         $item->update(array_merge(
@@ -188,6 +194,7 @@ class BulkUploadController extends Controller
                 'additional_style_ids',
                 'approved_tag_ids',
                 'is_skipped',
+                'image_id',
             ]),
             ['is_edited' => true]
         ));
