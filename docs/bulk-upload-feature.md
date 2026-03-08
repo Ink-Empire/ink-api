@@ -2,13 +2,25 @@
 
 ## Overview
 
-Allow artists to bulk upload images (from Instagram export or any ZIP file) and efficiently add metadata via a paginated thumbnail interface before publishing to their portfolio.
+Allow artists to bulk upload images and efficiently add metadata before publishing to their portfolio.
 
-The process is:
+### Upload Methods
+
+**1. ZIP Upload (Web - Next.js)**
+Upload a ZIP file (Instagram export or manual collection) via the web dashboard:
 1. **Scan** - Catalog all images in ZIP without extracting
 2. **Process** - Extract and upload to S3 in batches of 200
 3. **Review** - Edit metadata (placement, styles, tags) via thumbnail grid
 4. **Publish** - Create tattoo records and index to Elasticsearch
+
+**2. Album Upload (Mobile - React Native)**
+Select multiple photos from camera roll for quick portfolio import:
+1. **Select** - Pick up to 50 photos from device camera roll (multi-select)
+2. **Confirm** - Preview grid with optional AI tag/style toggle
+3. **Upload** - Images uploaded to S3, bulk upload created with `source: 'album'`
+4. **AI Processing** (optional) - Background job suggests tags and styles per image
+5. **Review** - Edit metadata via Drafts screen (accessible from dashboard)
+6. **Publish** - Create tattoo records and index to Elasticsearch
 
 ---
 
@@ -59,8 +71,8 @@ Tracks each bulk upload session.
 CREATE TABLE bulk_uploads (
     id BIGINT UNSIGNED PRIMARY KEY AUTO_INCREMENT,
     artist_id BIGINT UNSIGNED NOT NULL,
-    source VARCHAR(50) DEFAULT 'manual',  -- 'instagram', 'manual'
-    status ENUM('scanning', 'cataloged', 'processing', 'ready', 'completed', 'failed') DEFAULT 'scanning',
+    source VARCHAR(50) DEFAULT 'manual',  -- 'instagram', 'manual', 'album'
+    status ENUM('scanning', 'cataloged', 'processing', 'ready', 'completed', 'failed', 'deleting', 'incomplete') DEFAULT 'scanning',
 
     -- Counts
     total_images INT DEFAULT 0,
@@ -107,8 +119,8 @@ CREATE TABLE bulk_upload_items (
     image_id BIGINT UNSIGNED NULL,
     tattoo_id BIGINT UNSIGNED NULL,
 
-    -- Original source data (from ZIP scan)
-    zip_path VARCHAR(500) NOT NULL,
+    -- Original source data (from ZIP scan, nullable for album uploads)
+    zip_path VARCHAR(500) NULL,
     file_size_bytes INT NULL,
     original_caption TEXT NULL,
     original_timestamp TIMESTAMP NULL,
@@ -119,9 +131,13 @@ CREATE TABLE bulk_upload_items (
     primary_style_id BIGINT UNSIGNED NULL,
     additional_style_ids JSON NULL,
 
-    -- Tags
+    -- Tags and Styles
     ai_suggested_tags JSON NULL,
+    ai_suggested_styles JSON NULL,
     approved_tag_ids JSON NULL,
+    title VARCHAR(255) NULL,
+    is_edited BOOLEAN DEFAULT FALSE,
+    is_ready_for_publish BOOLEAN DEFAULT FALSE,
 
     sort_order INT DEFAULT 0,
     created_at TIMESTAMP NULL,
@@ -142,6 +158,44 @@ CREATE TABLE bulk_upload_items (
 ---
 
 ## User Flow
+
+### Album Upload Flow (React Native)
+
+#### Step 1: Select Photos
+Artist taps "Bulk Upload from Album" on the Upload screen (step 0). Opens multi-select photo picker (`ImageCropPicker.openPicker({ multiple: true, maxFiles: 50 })`).
+
+#### Step 2: Confirm Screen (`BulkUploadConfirmScreen`)
+- Grid preview of selected photos (3-4 column thumbnails)
+- Count header: "X photos selected"
+- Toggle: "Let AI suggest styles & tags" (default on)
+- "Upload All" button
+
+#### Step 3: Upload
+Calls `POST /api/bulk-uploads/album` with `image_ids[]` (images pre-uploaded via presigned S3 URLs) and optional `ai_tag` boolean.
+
+#### Step 4: AI Processing (if enabled)
+`ProcessAlbumUploadAiJob` runs in background:
+- For each item: `TagService::suggestTagsForImages()` and `StyleService::suggestStylesForImages()`
+- Stores suggestions in `ai_suggested_tags` and `ai_suggested_styles` JSON columns
+- Updates bulk upload status to `ready`
+- Sends `BulkUploadReadyNotification` push notification: "Your X photos are ready to review"
+
+#### Step 5: Drafts Review (`DraftsScreen`)
+- Accessible from artist dashboard (shows "X Drafts" chip)
+- Grid of uploaded thumbnails
+- Tap item to edit: title, description, placement, primary style, tags
+- AI-suggested tags/styles shown as approve/dismiss chips
+- Can create new tags inline (same as single upload)
+
+#### Step 6: Publish
+- "Publish Ready" publishes items with required details (style + placement)
+- "Publish All" publishes all unpublished, non-skipped items regardless of detail completeness
+- Uses `PublishBulkUploadItems` job (same as ZIP flow)
+- Items are optimistically removed from the UI
+
+---
+
+### ZIP Upload Flow (Next.js)
 
 ### Step 1: Upload Page (`/dashboard/bulk-upload`)
 
@@ -213,7 +267,14 @@ Paginated thumbnail grid:
 | `GET` | `/api/bulk-uploads/{id}` | Get upload status and counts |
 | `DELETE` | `/api/bulk-uploads/{id}` | Cancel and cleanup |
 
-### Batch Processing
+### Album Upload (Mobile)
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `POST` | `/api/bulk-uploads/album` | Create album upload from image IDs |
+| `GET` | `/api/bulk-uploads/draft-count` | Get total unpublished draft count |
+
+### Batch Processing (ZIP only)
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
@@ -235,7 +296,8 @@ Paginated thumbnail grid:
 
 | Method | Endpoint | Description |
 |--------|----------|-------------|
-| `POST` | `/api/bulk-uploads/{id}/publish` | Publish all ready items |
+| `POST` | `/api/bulk-uploads/{id}/publish` | Publish items with complete details |
+| `POST` | `/api/bulk-uploads/{id}/publish-all` | Publish all unpublished items (no detail requirement) |
 | `GET` | `/api/bulk-uploads/{id}/publish-status` | Check publish progress |
 
 ---
@@ -261,9 +323,23 @@ Paginated thumbnail grid:
 5. Mark `is_processed = true`
 6. Update counts
 
+### `ProcessAlbumUploadAiJob`
+
+1. Takes `bulkUploadId`
+2. For each item with an image:
+   - `TagService::suggestTagsForImages([imageUrl])` → store in `ai_suggested_tags`
+   - `StyleService::suggestStylesForImages([imageUrl])` → store in `ai_suggested_styles`
+3. Update bulk upload status to `ready`
+4. Send `BulkUploadReadyNotification` push notification to artist
+
 ### `PublishBulkUploadItems`
 
-1. Get all ready items (processed, not skipped, not published)
+Supports two modes via `$publishAll` flag:
+- **Default (`publishAll: false`)**: Publishes items with `primary_style_id` AND `placement_id` set (uses `readyItems()` scope)
+- **Publish All (`publishAll: true`)**: Publishes all unpublished, non-skipped items regardless of details (uses `unpublishedItems()` scope)
+
+Steps:
+1. Get items based on mode
 2. Group by `post_group_id`
 3. For each group/single:
    - Create Tattoo record inside a DB transaction (includes `studio_id` from artist's primary studio)
@@ -320,9 +396,11 @@ Paginated thumbnail grid:
 | `app/Jobs/ScanBulkUploadZip.php` | Catalog ZIP contents |
 | `app/Jobs/ProcessBulkUploadBatch.php` | Extract & upload batch |
 | `app/Jobs/PublishBulkUploadItems.php` | Create tattoos |
+| `app/Jobs/ProcessAlbumUploadAiJob.php` | AI tag/style suggestions for album uploads |
 | `app/Jobs/CleanupExpiredBulkUploads.php` | Remove old ZIPs |
+| `app/Notifications/BulkUploadReadyNotification.php` | Push notification when AI processing completes |
 
-### Frontend (nextjs)
+### Frontend (Next.js - Web)
 
 | File | Purpose |
 |------|---------|
@@ -334,6 +412,19 @@ Paginated thumbnail grid:
 | `components/BulkUpload/ItemDetailModal.tsx` | Edit modal |
 | `components/BulkUpload/CarouselPreview.tsx` | Grouped images |
 | `hooks/useBulkUpload.ts` | API hooks |
+| `services/bulkUploadService.ts` | Service layer for bulk upload API calls |
+
+### Frontend (React Native - Mobile)
+
+| File | Purpose |
+|------|---------|
+| `app/screens/UploadScreen.tsx` | Upload entry point (includes "Bulk Upload from Album" button) |
+| `app/screens/BulkUploadConfirmScreen.tsx` | Photo preview grid + AI toggle + upload button |
+| `app/screens/DraftsScreen.tsx` | Draft review grid with edit modal and publish actions |
+| `app/components/artist/ArtistOwnerDashboard.tsx` | Dashboard with draft count chip |
+| `shared/services/bulkUploadService.ts` | Shared service layer (cross-platform) |
+| `app/navigation/UploadStack.tsx` | Upload navigation (includes BulkUploadConfirm) |
+| `app/navigation/ProfileStack.tsx` | Profile navigation (includes Drafts) |
 
 ---
 

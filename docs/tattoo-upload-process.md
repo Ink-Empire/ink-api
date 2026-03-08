@@ -41,6 +41,12 @@ Both artists and clients can upload tattoos. When a tattoo is uploaded, the syst
 | `title` | string | No | Tattoo name |
 | `description` | string | No | Story or context from the client |
 | `tagged_artist_id` | int | No | Artist to tag (triggers approval workflow) |
+| `studio_id` | int | No | Studio to associate with the tattoo |
+| `attributed_studio_name` | string | No | Studio name (stored on tattoo for display) |
+| `attributed_location` | string | No | Location where tattoo was done |
+| `attributed_location_lat_long` | string | No | Lat/long for location |
+| `attributed_artist_name` | string | No | Artist name (for unregistered artists) |
+| `artist_invite_email` | string | No | Email to invite unregistered artist |
 
 ### Step 2: Image Processing
 
@@ -103,6 +109,61 @@ Search indexing happens asynchronously via `IndexTattooJob`:
 - Tag changes via `TagController` also dispatch `IndexTattooJob` to keep the index in sync
 
 The frontend shows a message: "Tattoo published! It will appear in search shortly."
+
+---
+
+## Studio Tagging and Invite Flow
+
+During client upload, users can tag the studio where they got their tattoo. This creates discoverability for studios and can lead to studio owners claiming their profiles.
+
+### How Studio Tagging Works
+
+1. **Studio Autocomplete**: The upload form includes a `StudioAutocomplete` component that searches existing studios via the API and Google Places.
+2. **Selecting a Studio**: When a user selects a studio:
+   - If the studio already exists in our database, `studio_id` is sent with the upload
+   - If found via Google Places but not in our database, the API creates an unclaimed studio record from the Google Places data (`StudioController@findOrCreateFromPlace`)
+   - `attributed_studio_name` and `attributed_location` are stored on the tattoo for display
+3. **Tattoo Creation**: The tattoo is created with `studio_id` linking it to the studio. This means the tattoo appears in the studio's portfolio grid on `/studios/{slug}`.
+
+### Unclaimed Studio Pages
+
+Studios created via Google Places are "unclaimed" (`is_claimed = false`, no `owner_id`). They have public profile pages at `/studios/{slug}` that display:
+- Studio name, address, phone, website (from Google Places)
+- Google Maps embed
+- Portfolio grid of tattoos tagged at this studio
+- SEO metadata (JSON-LD TattooParlor schema, Open Graph tags)
+
+This creates organic search visibility for the studio, which can prompt studio owners to claim their profile.
+
+### Studio Invite Flow
+
+When a client uploads a tattoo and tags an unregistered artist, an invitation can be sent:
+
+1. **Artist Invite**: If `artist_invite_email` is provided during upload, a `StudioInvitation` record is created with:
+   - `tattoo_id`: The uploaded tattoo
+   - `invited_by_user_id`: The uploading client
+   - `artist_name`, `studio_name`, `location`, `email`
+2. **Notification**: `StudioOwnerInvitationNotification` email is sent to the invite email
+3. **Artist Signs Up**: When the invited artist creates an account, they can:
+   - View pending tattoos attributed to them
+   - Approve or reject tattoos (`TattooController@handleApproval`)
+   - Claim their studio via `POST /api/studios/{id}/claim`
+
+### Studio Claim Endpoint
+
+`POST /api/studios/{id}/claim`
+- Sets `owner_id` to the authenticated artist
+- Marks studio as claimed (`is_claimed = true`)
+- Artist must be the studio owner (verified via email or admin approval)
+
+### Related Endpoints
+
+| Method | Endpoint | Description |
+|--------|----------|-------------|
+| `GET` | `/api/studios/search?q={query}` | Search studios by name |
+| `POST` | `/api/studios/find-or-create` | Find existing or create from Google Place ID |
+| `POST` | `/api/studios/{id}/claim` | Claim unclaimed studio |
+| `POST` | `/api/studios/{id}/invite` | Send studio owner invitation |
 
 ---
 
@@ -209,8 +270,19 @@ For existing tattoos without tags:
 
 **Frontend (React Native):**
 - `reactnative/app/screens/ClientUploadScreen.tsx` - Client upload wizard
+- `reactnative/app/screens/UploadScreen.tsx` - Artist upload (single + bulk album upload entry point)
+- `reactnative/app/screens/BulkUploadConfirmScreen.tsx` - Album upload confirm screen
+- `reactnative/app/screens/DraftsScreen.tsx` - Bulk upload draft review and publish
 - `reactnative/app/screens/TattooDetailScreen.tsx` - Tattoo detail view (shows "Uploaded by" comment box for client uploads)
 - `reactnative/app/screens/PendingApprovalsScreen.tsx` - Artist approval screen
+- `reactnative/app/components/common/StudioAutocomplete.tsx` - Studio search/select component
+
+**Backend (Studio/Invite):**
+- `app/Http/Controllers/StudioController.php` - Studio CRUD, claim, invite
+- `app/Models/Studio.php` - Studio model
+- `app/Models/StudioInvitation.php` - Invitation model
+- `app/Notifications/StudioOwnerInvitationNotification.php` - Invitation email
+- `app/Services/GooglePlacesService.php` - Creates studios from Google Places data
 
 **Routes:**
 - `routes/api.php` - API route definitions
