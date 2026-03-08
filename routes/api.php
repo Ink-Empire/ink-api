@@ -185,6 +185,8 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::prefix('bulk-uploads')->group(function () {
         Route::get('/', [\App\Http\Controllers\BulkUploadController::class, 'index']);
         Route::post('/', [\App\Http\Controllers\BulkUploadController::class, 'store']);
+        Route::post('/album', [\App\Http\Controllers\BulkUploadController::class, 'storeAlbum']);
+        Route::get('/draft-count', [\App\Http\Controllers\BulkUploadController::class, 'draftCount']);
         Route::get('/{id}', [\App\Http\Controllers\BulkUploadController::class, 'show']);
         Route::delete('/{id}', [\App\Http\Controllers\BulkUploadController::class, 'destroy']);
         Route::get('/{id}/items', [\App\Http\Controllers\BulkUploadController::class, 'items']);
@@ -193,6 +195,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/{id}/process-batch', [\App\Http\Controllers\BulkUploadController::class, 'processBatch']);
         Route::post('/{id}/process-range', [\App\Http\Controllers\BulkUploadController::class, 'processRange']);
         Route::post('/{id}/publish', [\App\Http\Controllers\BulkUploadController::class, 'publish']);
+        Route::post('/{id}/publish-all', [\App\Http\Controllers\BulkUploadController::class, 'publishAll']);
         Route::get('/{id}/publish-status', [\App\Http\Controllers\BulkUploadController::class, 'publishStatus']);
     });
 

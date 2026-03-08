@@ -68,6 +68,14 @@ class BulkUpload extends Model
             ->whereNotNull('placement_id');
     }
 
+    public function unpublishedItems(): HasMany
+    {
+        return $this->hasMany(BulkUploadItem::class)
+            ->where('is_processed', true)
+            ->where('is_published', false)
+            ->where('is_skipped', false);
+    }
+
     public function publishedItems(): HasMany
     {
         return $this->hasMany(BulkUploadItem::class)

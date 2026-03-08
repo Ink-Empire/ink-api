@@ -64,6 +64,7 @@ class BulkUploadItemResource extends JsonResource
 
             // Tags
             'ai_suggested_tags' => $this->ai_suggested_tags ?? [],
+            'ai_suggested_styles' => $this->ai_suggested_styles ?? [],
             'approved_tag_ids' => $this->approved_tag_ids ?? [],
 
             'sort_order' => $this->sort_order,

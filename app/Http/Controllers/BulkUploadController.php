@@ -5,6 +5,7 @@ namespace App\Http\Controllers;
 use App\Http\Resources\BulkUploadResource;
 use App\Http\Resources\BulkUploadItemResource;
 use App\Jobs\DeleteBulkUpload;
+use App\Jobs\ProcessAlbumUploadAiJob;
 use App\Jobs\ScanBulkUploadZip;
 use App\Jobs\ProcessBulkUploadBatch;
 use App\Jobs\PublishBulkUploadItems;
@@ -12,6 +13,7 @@ use App\Models\BulkUpload;
 use App\Models\BulkUploadItem;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -341,6 +343,28 @@ class BulkUploadController extends Controller
         ]);
     }
 
+    public function publishAll(Request $request, int $id): JsonResponse
+    {
+        $user = $request->user();
+
+        $upload = BulkUpload::where('artist_id', $user->id)->findOrFail($id);
+
+        $unpublishedCount = $upload->unpublishedItems()->primaryInGroup()->count();
+
+        if ($unpublishedCount === 0) {
+            return response()->json([
+                'error' => 'No items to publish',
+            ], 400);
+        }
+
+        PublishBulkUploadItems::dispatch($upload->id, true);
+
+        return response()->json([
+            'message' => "Publishing {$unpublishedCount} tattoos",
+            'count' => $unpublishedCount,
+        ]);
+    }
+
     public function publishStatus(Request $request, int $id): JsonResponse
     {
         $user = $request->user();
@@ -355,6 +379,72 @@ class BulkUploadController extends Controller
             'processed_images' => $upload->processed_images,
             'published_images' => $upload->published_images,
             'ready_to_publish' => $upload->readyItems()->primaryInGroup()->count(),
+        ]);
+    }
+
+    public function storeAlbum(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $request->validate([
+            'image_ids' => 'required|array|min:1|max:50',
+            'image_ids.*' => 'required|integer|exists:images,id',
+            'ai_tag' => 'nullable|boolean',
+        ]);
+
+        $aiTag = $request->boolean('ai_tag', false);
+        $imageIds = $request->input('image_ids');
+
+        $bulkUpload = DB::transaction(function () use ($user, $imageIds) {
+            $bulkUpload = BulkUpload::create([
+                'artist_id' => $user->id,
+                'source' => 'album',
+                'status' => 'processing',
+                'total_images' => count($imageIds),
+                'cataloged_images' => count($imageIds),
+                'processed_images' => count($imageIds),
+            ]);
+
+            foreach ($imageIds as $sortOrder => $imageId) {
+                BulkUploadItem::create([
+                    'bulk_upload_id' => $bulkUpload->id,
+                    'image_id' => $imageId,
+                    'is_cataloged' => true,
+                    'is_processed' => true,
+                    'sort_order' => $sortOrder,
+                ]);
+            }
+
+            return $bulkUpload;
+        });
+
+        if ($aiTag) {
+            ProcessAlbumUploadAiJob::dispatch($bulkUpload->id);
+        } else {
+            $bulkUpload->update(['status' => 'ready']);
+        }
+
+        return response()->json([
+            'data' => new BulkUploadResource($bulkUpload->fresh()),
+            'message' => $aiTag
+                ? 'Photos uploaded. AI is analyzing your tattoos...'
+                : 'Photos uploaded and ready to review.',
+        ], 201);
+    }
+
+    public function draftCount(Request $request): JsonResponse
+    {
+        $user = $request->user();
+
+        $count = BulkUploadItem::whereHas('bulkUpload', function ($query) use ($user) {
+            $query->where('artist_id', $user->id);
+        })
+            ->where('is_published', false)
+            ->where('is_skipped', false)
+            ->count();
+
+        return response()->json([
+            'draft_count' => $count,
         ]);
     }
 }

@@ -24,7 +24,8 @@ class PublishBulkUploadItems implements ShouldQueue
     public int $timeout = 600; // 10 minutes
 
     public function __construct(
-        public int $bulkUploadId
+        public int $bulkUploadId,
+        public bool $publishAll = false,
     ) {
         $this->onQueue(QueueNames::BULK_UPLOAD);
     }
@@ -39,8 +40,12 @@ class PublishBulkUploadItems implements ShouldQueue
         }
 
         try {
-            // Get all ready items, grouped by post_group_id
-            $items = $bulkUpload->readyItems()
+            // Get items to publish, grouped by post_group_id
+            $itemsQuery = $this->publishAll
+                ? $bulkUpload->unpublishedItems()
+                : $bulkUpload->readyItems();
+
+            $items = $itemsQuery
                 ->orderBy('post_group_id')
                 ->orderBy('is_primary_in_group', 'desc')
                 ->orderBy('sort_order')

@@ -30,6 +30,7 @@ class BulkUploadItem extends Model
         'primary_style_id',
         'additional_style_ids',
         'ai_suggested_tags',
+        'ai_suggested_styles',
         'approved_tag_ids',
         'sort_order',
     ];
@@ -44,6 +45,7 @@ class BulkUploadItem extends Model
         'original_timestamp' => 'datetime',
         'additional_style_ids' => 'array',
         'ai_suggested_tags' => 'array',
+        'ai_suggested_styles' => 'array',
         'approved_tag_ids' => 'array',
         'file_size_bytes' => 'integer',
         'sort_order' => 'integer',
