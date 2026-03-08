@@ -26,6 +26,7 @@ use App\Services\UserService;
 use App\Services\GooglePlacesService;
 use App\Services\SearchImpressionService;
 use App\Services\PaginationService;
+use App\Util\ParseInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -295,13 +296,9 @@ class TattooController extends Controller
             if (count($images) > 0) {
                 $primaryImage = $images[0];
 
-                $styleIds = [];
-                if ($request->has('style_ids')) {
-                    $styleIds = json_decode($request->input('style_ids'), true);
-                    if (!is_array($styleIds)) {
-                        $styleIds = [];
-                    }
-                }
+                $styleIds = $request->has('style_ids')
+                    ? ParseInput::ids($request->input('style_ids'))
+                    : [];
 
                 // Get primary style from explicit field or first style
                 $primaryStyleId = $request->input('primary_style_id')
@@ -509,21 +506,20 @@ class TattooController extends Controller
 
             $tattoo->save();
 
-            // Handle styles - can be array of IDs or comma-separated string
+            // Handle styles - accepts array, JSON string, or comma-separated string
             $styles = $request->input('styles');
             if (!empty($styles)) {
-                if (is_array($styles)) {
-                    $styleIds = $styles;
-                } else {
-                    $styleIds = explode(",", $styles);
+                $styleIds = ParseInput::ids($styles);
+                if (!empty($styleIds)) {
+                    $tattoo->styles()->sync($styleIds);
                 }
-                $tattoo->styles()->sync($styleIds);
             }
 
-            // Handle tags
+            // Handle tags - accepts array, JSON string, or comma-separated string
             $tagIds = $request->input('tag_ids');
             if (!empty($tagIds)) {
-                if (is_array($tagIds)) {
+                $tagIds = ParseInput::ids($tagIds);
+                if (!empty($tagIds)) {
                     $tattoo->tags()->sync($tagIds);
                 }
             }
@@ -908,8 +904,8 @@ class TattooController extends Controller
 
         // Handle styles if provided
         if ($request->has('style_ids')) {
-            $styleIds = $request->input('style_ids', []);
-            if (is_array($styleIds)) {
+            $styleIds = ParseInput::ids($request->input('style_ids'));
+            if (!empty($styleIds)) {
                 $tattoo->styles()->sync($styleIds);
             }
         }
