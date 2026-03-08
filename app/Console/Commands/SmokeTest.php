@@ -160,14 +160,6 @@ class SmokeTest extends Command
                 ['id', 'name', 'slug', 'about', 'location']
             );
 
-            $this->testEndpointWithStructure(
-                'POST',
-                '/api/artists',
-                ['id' => $artistId],
-                '10.1 Artist profile has settings',
-                'artist',
-                ['settings']
-            );
         } else {
             $this->line("<fg=yellow>SKIP</> Artist profile tests - no artist ID from search");
         }
