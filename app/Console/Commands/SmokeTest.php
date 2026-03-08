@@ -26,29 +26,45 @@ class SmokeTest extends Command
         $this->section('Tattoo Search (Stories 8.1-8.3)');
 
         $tattooId = $this->testSearchEndpoint(
-            'POST', '/api/tattoos', [], 'Tattoo search returns results', 'response.0.id'
+            'POST',
+            '/api/tattoos',
+            [],
+            'Tattoo search returns results',
+            'response.0.id'
         );
 
         $this->testEndpointWithStructure(
-            'POST', '/api/tattoos', [],
+            'POST',
+            '/api/tattoos',
+            [],
             '8.1 Search response has required fields',
-            'response.0', ['id', 'title', 'primary_image', 'artist_id']
+            'response.0',
+            ['id', 'title', 'primary_image', 'artist_id']
         );
 
         $this->testEndpointWithStructure(
-            'POST', '/api/tattoos', [],
+            'POST',
+            '/api/tattoos',
+            [],
             '8.1 Search results include uploader fields',
-            'response.0', ['uploaded_by_user_id', 'approval_status', 'is_visible']
+            'response.0',
+            ['uploaded_by_user_id', 'approval_status', 'is_visible']
         );
 
         // 8.2 Filter by style
         $styleId = $this->testSearchEndpoint(
-            'GET', '/api/styles', null, 'Styles index returns data', '0.id'
+            'GET',
+            '/api/styles',
+            null,
+            'Styles index returns data',
+            '0.id'
         );
 
         if ($styleId) {
             $this->testEndpoint(
-                'POST', '/api/tattoos', ['styles' => [$styleId]],
+                'POST',
+                '/api/tattoos',
+                ['styles' => [$styleId]],
                 '8.2 Tattoo search with style filter'
             );
         }
@@ -57,30 +73,43 @@ class SmokeTest extends Command
         $this->section('Artist Search (Stories 9.1-9.3)');
 
         $artistId = $this->testSearchEndpoint(
-            'POST', '/api/artists', [], 'Artist search returns results', 'response.0.id'
+            'POST',
+            '/api/artists',
+            [],
+            'Artist search returns results',
+            'response.0.id'
         );
 
         $this->testEndpointWithStructure(
-            'POST', '/api/artists', [],
+            'POST',
+            '/api/artists',
+            [],
             '9.1 Artist search has required fields',
-            'response.0', ['id', 'name', 'slug', 'location']
+            'response.0',
+            ['id', 'name', 'slug', 'location']
         );
 
         if ($styleId) {
             $this->testEndpoint(
-                'POST', '/api/artists', ['styles' => [$styleId]],
+                'POST',
+                '/api/artists',
+                ['styles' => [$styleId]],
                 '9.2 Artist search with style filter'
             );
         }
 
         $this->testEndpoint(
-            'POST', '/api/artists', ['books_open' => true],
+            'POST',
+            '/api/artists',
+            ['books_open' => true],
             '9.3 Artist search with books_open filter'
         );
 
         // 9.4 Client fallback on empty artist results
         $this->testEndpoint(
-            'POST', '/api/artists', ['query' => 'zzzznonexistent99999'],
+            'POST',
+            '/api/artists',
+            ['query' => 'zzzznonexistent99999'],
             '9.4 Artist search with no results returns 200'
         );
 
@@ -89,21 +118,30 @@ class SmokeTest extends Command
 
         if ($tattooId) {
             $this->testEndpointWithStructure(
-                'GET', "/api/tattoos/{$tattooId}", null,
+                'GET',
+                "/api/tattoos/{$tattooId}",
+                null,
                 '6.1 Tattoo detail has core fields',
-                'tattoo', ['id', 'title', 'description', 'primary_image', 'styles', 'tags']
+                'tattoo',
+                ['id', 'title', 'description', 'primary_image', 'styles', 'tags']
             );
 
             $this->testEndpointWithStructure(
-                'GET', "/api/tattoos/{$tattooId}", null,
+                'GET',
+                "/api/tattoos/{$tattooId}",
+                null,
                 '6.1 Tattoo detail has artist info',
-                'tattoo', ['artist_id', 'studio']
+                'tattoo',
+                ['artist_id', 'studio']
             );
 
             $this->testEndpointWithStructure(
-                'GET', "/api/tattoos/{$tattooId}", null,
+                'GET',
+                "/api/tattoos/{$tattooId}",
+                null,
                 '6.4 Tattoo detail has uploader attribution',
-                'tattoo', ['uploaded_by_user_id', 'approval_status']
+                'tattoo',
+                ['uploaded_by_user_id', 'approval_status']
             );
         } else {
             $this->line("<fg=yellow>SKIP</> Tattoo detail tests - no tattoo ID from search");
@@ -114,15 +152,21 @@ class SmokeTest extends Command
 
         if ($artistId) {
             $this->testEndpointWithStructure(
-                'GET', "/api/artists/{$artistId}?db=true", null,
+                'POST',
+                '/api/artists',
+                ['id' => $artistId],
                 '10.1 Artist profile has core fields',
-                'artist', ['id', 'name', 'slug', 'about', 'location']
+                'artist',
+                ['id', 'name', 'slug', 'about', 'location']
             );
 
             $this->testEndpointWithStructure(
-                'GET', "/api/artists/{$artistId}?db=true", null,
+                'POST',
+                '/api/artists',
+                ['id' => $artistId],
                 '10.1 Artist profile has settings',
-                'artist', ['settings']
+                'artist',
+                ['settings']
             );
         } else {
             $this->line("<fg=yellow>SKIP</> Artist profile tests - no artist ID from search");
@@ -132,15 +176,21 @@ class SmokeTest extends Command
         $this->section('Tags (Stories 12.1-12.3)');
 
         $this->testEndpointWithStructure(
-            'GET', '/api/tags', null,
+            'GET',
+            '/api/tags',
+            null,
             '12.3 Tags index returns data',
-            null, ['success', 'data']
+            null,
+            ['success', 'data']
         );
 
         $this->testEndpointWithStructure(
-            'GET', '/api/tags/featured', null,
+            'GET',
+            '/api/tags/featured',
+            null,
             '12.3 Featured tags returns data',
-            null, ['success', 'data']
+            null,
+            ['success', 'data']
         );
 
         $this->testEndpoint('GET', '/api/tags/search?q=test', null, 'Tags search');
