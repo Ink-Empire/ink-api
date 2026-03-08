@@ -10,7 +10,9 @@ return new class extends Migration
     public function up(): void
     {
         Schema::table('tattoos', function (Blueprint $table) {
-            $table->renameColumn('is_public', 'is_visible');
+            if (!Schema::hasColumn('tattoos', 'is_visible')) {
+                $table->boolean('is_visible')->default(true)->after('approval_status');
+            }
         });
 
         DB::table('tattoos')->where('approval_status', 'approved')->update(['is_visible' => true]);
@@ -20,7 +22,7 @@ return new class extends Migration
     public function down(): void
     {
         Schema::table('tattoos', function (Blueprint $table) {
-            $table->renameColumn('is_visible', 'is_public');
+            $table->dropColumn('is_visible');
         });
     }
 };
