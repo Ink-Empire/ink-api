@@ -6,7 +6,7 @@ use Illuminate\Http\Request;
 
 class PaginationService
 {
-    private int $defaultPerPage = 25;
+    private int $defaultPerPage = 50;
     private int $maxPerPage = 100;
 
     /**
