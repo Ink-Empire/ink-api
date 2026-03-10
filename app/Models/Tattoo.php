@@ -32,10 +32,12 @@ class Tattoo extends Model
         'attributed_artist_name',
         'attributed_studio_name',
         'attributed_location',
+        'is_demo',
     ];
 
     protected $casts = [
         'is_visible' => 'boolean',
+        'is_demo' => 'boolean',
     ];
 
     protected array $searchableRelations = [

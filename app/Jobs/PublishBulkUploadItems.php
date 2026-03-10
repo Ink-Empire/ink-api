@@ -127,6 +127,7 @@ class PublishBulkUploadItems implements ShouldQueue
                 'placement' => $item->placement?->name,
                 'primary_style_id' => $item->primary_style_id,
                 'primary_image_id' => $item->image_id,
+                'is_demo' => (bool) ($artist?->is_demo ?? false),
             ]);
 
             if ($item->image_id) {
@@ -166,6 +167,7 @@ class PublishBulkUploadItems implements ShouldQueue
                 'placement' => $primaryItem->placement?->name,
                 'primary_style_id' => $primaryItem->primary_style_id,
                 'primary_image_id' => $primaryItem->image_id,
+                'is_demo' => (bool) ($artist?->is_demo ?? false),
             ]);
 
             $imageIds = $items->pluck('image_id')->filter()->unique()->toArray();

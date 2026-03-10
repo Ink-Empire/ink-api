@@ -266,6 +266,8 @@ class ElasticsearchEngine extends Engine
             return $item['_source'];
         });
 
+        $data['total'] = $results['hits']['total']['value'] ?? 0;
+
         if (isset($results["aggregations"])) {
             $data['aggs'] = $results["aggregations"] ?? null;
         }
