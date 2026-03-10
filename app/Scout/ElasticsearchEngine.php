@@ -266,7 +266,8 @@ class ElasticsearchEngine extends Engine
             return $item['_source'];
         });
 
-        $data['total'] = $results['hits']['total']['value'] ?? 0;
+        $hitsTotal = $results['hits']['total'] ?? 0;
+        $data['total'] = is_array($hitsTotal) ? ($hitsTotal['value'] ?? 0) : (int) $hitsTotal;
 
         if (isset($results["aggregations"])) {
             $data['aggs'] = $results["aggregations"] ?? null;
