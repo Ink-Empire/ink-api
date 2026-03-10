@@ -360,8 +360,9 @@ class BulkUploadController extends Controller
 
         if ($unpublishedCount === 0) {
             return response()->json([
-                'error' => 'No items to publish',
-            ], 400);
+                'message' => 'No items to publish',
+                'count' => 0,
+            ]);
         }
 
         PublishBulkUploadItems::dispatch($upload->id, true);
