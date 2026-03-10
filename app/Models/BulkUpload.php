@@ -110,12 +110,12 @@ class BulkUpload extends Model
 
     public function canProcess(): bool
     {
-        return in_array($this->status, ['cataloged', 'ready', 'incomplete']) && !$this->isExpired();
+        return in_array($this->status, ['cataloged', 'processing', 'ready', 'incomplete']) && !$this->isExpired();
     }
 
     public function canPublish(): bool
     {
-        return in_array($this->status, ['ready', 'incomplete']) && $this->readyItems()->exists();
+        return in_array($this->status, ['ready', 'processing', 'incomplete']) && $this->readyItems()->exists();
     }
 
     public function updateCounts(): void
