@@ -20,7 +20,10 @@ use ZipArchive;
 
 class ProcessBulkUploadBatch implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public int $tries = 3;
     public int $timeout = 900; // 15 minutes
@@ -175,19 +178,11 @@ class ProcessBulkUploadBatch implements ShouldQueue
         $image->setUriAttribute($filename);
         $image->save();
 
-        // Update item with image reference
+        // Update item with image reference - always mark as processed
+        // AI tag generation happens later when tattoo is published (via GenerateAiTagsJob)
         $item->update([
             'image_id' => $image->id,
             'is_processed' => true,
         ]);
-
-        // Generate AI tags (optional, can be done separately)
-        $this->generateAiTags($item, $image);
-    }
-
-    private function generateAiTags(BulkUploadItem $item, Image $image): void
-    {
-        // Skip AI tagging for now - can be implemented later
-        // The suggestTagsForImage method doesn't exist yet
     }
 }

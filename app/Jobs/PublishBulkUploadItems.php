@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Enums\QueueNames;
+use App\Jobs\GenerateAiTagsJob;
 use App\Models\Artist;
 use App\Models\BulkUpload;
 use App\Models\BulkUploadItem;
@@ -18,7 +19,10 @@ use Illuminate\Support\Facades\Log;
 
 class PublishBulkUploadItems implements ShouldQueue
 {
-    use Dispatchable, InteractsWithQueue, Queueable, SerializesModels;
+    use Dispatchable;
+    use InteractsWithQueue;
+    use Queueable;
+    use SerializesModels;
 
     public int $tries = 3;
     public int $timeout = 600; // 10 minutes
@@ -215,6 +219,11 @@ class PublishBulkUploadItems implements ShouldQueue
             }
             // Re-index artist once
             Artist::find($artistId)?->searchable();
+        }
+
+        // Dispatch AI tag generation for each published tattoo
+        foreach ($tattooIds as $tattooId) {
+            GenerateAiTagsJob::dispatch($tattooId);
         }
     }
 }
