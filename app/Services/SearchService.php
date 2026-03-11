@@ -63,7 +63,7 @@ abstract class SearchService
         $this->applySorting();
         $this->applyPagination();
 
-        $engine = $this->search->engine();
+        $engine = $this->search->model->searchableUsing();
         $rawResults = $engine->search($this->search);
         $mapped = $engine->map($this->search, $rawResults, $this->search->model);
         $mapped['total'] = $engine->getTotalCount($rawResults);
