@@ -63,7 +63,12 @@ abstract class SearchService
         $this->applySorting();
         $this->applyPagination();
 
-        return $this->search->get();
+        $engine = $this->search->model->searchableUsing();
+        $rawResults = $engine->search($this->search);
+        $mapped = $engine->map($this->search, $rawResults, $this->search->model);
+        $mapped['total'] = $engine->getTotalCount($rawResults);
+
+        return $mapped;
     }
 
     /**
@@ -431,7 +436,8 @@ abstract class SearchService
                 $this->search->nestedOr(
                     [
                         $clause
-                    ], $minMatch
+                    ],
+                    $minMatch
                 );
             }
         }
@@ -518,7 +524,7 @@ abstract class SearchService
         // Split search string into individual words for tag/style matching
         $words = array_filter(
             explode(' ', strtolower(trim($searchText))),
-            fn($word) => strlen(trim($word)) >= 2
+            fn ($word) => strlen(trim($word)) >= 2
         );
 
         // Add terms query for each word against tags
@@ -534,7 +540,7 @@ abstract class SearchService
             $word = trim($word);
             if (!empty($word)) {
                 $query->where('styles.name', 'in', [$word]);
-                $query->where('placement', 'in',[$word]); //in case they want to see all shoulder tats
+                $query->where('placement', 'in', [$word]); //in case they want to see all shoulder tats
             }
         }
 

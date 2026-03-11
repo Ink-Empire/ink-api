@@ -129,6 +129,14 @@ class TattooController extends Controller
         $total = $response['total'] ?? 0;
         $paginationMeta = $this->paginationService->buildMeta($total, $pagination['page'], $pagination['per_page']);
 
+        \Log::debug('[TattooController] search response', [
+            'page' => $pagination['page'],
+            'per_page' => $pagination['per_page'],
+            'total' => $total,
+            'result_count' => count($response['response']),
+            'has_more' => $paginationMeta['has_more'],
+        ]);
+
         return response()->json([
             'response' => $response['response'],
             ...$paginationMeta,
