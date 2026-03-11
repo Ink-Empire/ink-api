@@ -34,12 +34,14 @@ class ArtistInvitationController extends Controller
             ]);
         }
 
-        $unclaimedCount = ArtistInvitation::where('email', $invitation->email)
-            ->whereNull('claimed_at')
-            ->count();
+        // For phone-only invitations, scope to this specific invitation; for email, find all with same email
+        $unclaimedQuery = $invitation->email
+            ? ArtistInvitation::where('email', $invitation->email)->whereNull('claimed_at')
+            : ArtistInvitation::where('id', $invitation->id)->whereNull('claimed_at');
 
-        $tattoos = ArtistInvitation::where('email', $invitation->email)
-            ->whereNull('claimed_at')
+        $unclaimedCount = $unclaimedQuery->count();
+
+        $tattoos = (clone $unclaimedQuery)
             ->with(['tattoo.primary_image', 'tattoo.images'])
             ->get()
             ->pluck('tattoo')
@@ -83,8 +85,8 @@ class ArtistInvitationController extends Controller
             return $this->returnErrorResponse('Invitation not found or already claimed', 404);
         }
 
-        // Verify the user's email matches the invitation
-        if (strtolower($user->email) !== strtolower($invitation->email)) {
+        // Verify the user's email matches the invitation (skip for phone-only invitations)
+        if ($invitation->email && strtolower($user->email) !== strtolower($invitation->email)) {
             return response()->json([
                 'error' => 'Email mismatch',
                 'message' => 'Please sign in with the email address this invitation was sent to.',
@@ -92,9 +94,14 @@ class ArtistInvitationController extends Controller
             ], 403);
         }
 
-        $invitations = ArtistInvitation::where('email', $invitation->email)
-            ->whereNull('claimed_at')
-            ->get();
+        // For phone-only invitations, claim just this one; for email invitations, claim all with same email
+        if ($invitation->email) {
+            $invitations = ArtistInvitation::where('email', $invitation->email)
+                ->whereNull('claimed_at')
+                ->get();
+        } else {
+            $invitations = collect([$invitation]);
+        }
 
         $claimedTattooIds = [];
 

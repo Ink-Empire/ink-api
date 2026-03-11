@@ -55,6 +55,7 @@ Route::prefix('api')->group(function () {
 
         Route::group(['prefix' => 'tattoos'], function () {
             Route::post('/create', [TattooController::class, 'create']);
+            Route::post('/bulk-delete', [TattooController::class, 'bulkDestroy']);
             Route::match(['put', 'post'], '/{id}', [TattooController::class, 'update']);
             Route::post('/{id}/generate-tags', [TattooController::class, 'generateTags']);
             Route::put('/{id}/featured', [TattooController::class, 'toggleFeatured']);

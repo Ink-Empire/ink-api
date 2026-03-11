@@ -364,10 +364,11 @@ class TattooController extends Controller
                     }
                 }
 
-                // Create artist invitation if attributed artist + email provided
+                // Create artist invitation if attributed artist + email or phone provided
                 $artistInviteEmail = $request->input('artist_invite_email');
+                $artistInvitePhone = $request->input('artist_invite_phone');
                 $attributedArtistName = $request->input('attributed_artist_name');
-                if ($attributedArtistName && $artistInviteEmail) {
+                if ($attributedArtistName && ($artistInviteEmail || $artistInvitePhone)) {
                     $invitation = ArtistInvitation::create([
                         'tattoo_id' => $tattoo->id,
                         'invited_by_user_id' => $user->id,
@@ -375,11 +376,13 @@ class TattooController extends Controller
                         'studio_name' => $request->input('attributed_studio_name'),
                         'location' => $request->input('attributed_location'),
                         'location_lat_long' => $request->input('attributed_location_lat_long'),
-                        'email' => $artistInviteEmail,
+                        'email' => $artistInviteEmail ?? '',
                     ]);
 
-                    \Illuminate\Support\Facades\Notification::route('mail', $artistInviteEmail)
-                        ->notify(new \App\Notifications\ArtistInvitationNotification($invitation, $user));
+                    if ($artistInviteEmail) {
+                        \Illuminate\Support\Facades\Notification::route('mail', $artistInviteEmail)
+                            ->notify(new \App\Notifications\ArtistInvitationNotification($invitation, $user));
+                    }
                 }
 
                 // Dispatch background jobs for AI tags and ES indexing
@@ -391,10 +394,16 @@ class TattooController extends Controller
                 $tattoo->refresh();
                 $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
 
-                return response()->json([
+                $responseData = [
                     'tattoo' => new TattooResource($tattoo),
                     'ai_tags_pending' => true,
-                ]);
+                ];
+
+                if (isset($invitation)) {
+                    $responseData['invitation_token'] = $invitation->token;
+                }
+
+                return response()->json($responseData);
             } else {
                 return $this->returnErrorResponse("No images uploaded", "No files uploaded");
             }
@@ -628,6 +637,50 @@ class TattooController extends Controller
                 'file' => $e->getFile(),
             ]);
 
+            return $this->returnErrorResponse($e->getMessage());
+        }
+    }
+
+    /**
+     * Bulk delete tattoos. Only the owner can delete their own tattoos.
+     */
+    public function bulkDestroy(Request $request): JsonResponse
+    {
+        try {
+            $user = $request->user();
+            $ids = $request->input('ids', []);
+
+            if (!is_array($ids) || count($ids) === 0) {
+                return $this->returnErrorResponse('No tattoo IDs provided', 422);
+            }
+
+            if (count($ids) > 50) {
+                return $this->returnErrorResponse('Cannot delete more than 50 tattoos at once', 422);
+            }
+
+            $tattoos = Tattoo::with('images')->whereIn('id', $ids)->get();
+            $deleted = 0;
+            $failed = [];
+
+            foreach ($tattoos as $tattoo) {
+                if ($tattoo->artist_id !== $user->id && $tattoo->uploaded_by_user_id !== $user->id) {
+                    $failed[] = $tattoo->id;
+                    continue;
+                }
+
+                $this->bustUserTattooCache($tattoo->uploaded_by_user_id);
+                $this->tattooService->deleteTattoo($tattoo);
+                $deleted++;
+            }
+
+            return response()->json([
+                'success' => true,
+                'deleted_count' => $deleted,
+                'failed_ids' => $failed,
+            ]);
+
+        } catch (\Exception $e) {
+            \Log::error("Bulk delete failed", ['error' => $e->getMessage()]);
             return $this->returnErrorResponse($e->getMessage());
         }
     }
