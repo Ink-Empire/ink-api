@@ -385,6 +385,7 @@ class TattooController extends Controller
                         'location' => $request->input('attributed_location'),
                         'location_lat_long' => $request->input('attributed_location_lat_long'),
                         'email' => $artistInviteEmail ?? '',
+                        'phone' => $artistInvitePhone ?: null,
                     ]);
 
                     if ($artistInviteEmail) {

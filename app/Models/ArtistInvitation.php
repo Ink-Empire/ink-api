@@ -15,6 +15,7 @@ class ArtistInvitation extends Model
         'location',
         'location_lat_long',
         'email',
+        'phone',
         'token',
         'claimed_by_user_id',
         'claimed_at',
