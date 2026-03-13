@@ -522,6 +522,45 @@ class TattooController extends Controller
                 }
             }
 
+            // Handle artist tagging/attribution (client who uploaded the tattoo)
+            if ($tattoo->uploaded_by_user_id === $user->id) {
+                if ($request->has('tagged_artist_id')) {
+                    $taggedArtistId = $request->input('tagged_artist_id');
+                    if ($taggedArtistId) {
+                        $taggedArtist = User::find($taggedArtistId);
+                        if ($taggedArtist) {
+                            $tattoo->artist_id = $taggedArtist->id;
+                            $tattoo->approval_status = ArtistTattooApprovalStatus::PENDING;
+                            $tattoo->attributed_artist_name = null;
+                            $tattoo->attributed_studio_name = null;
+                            $taggedArtist->notify(new ArtistTaggedNotification($tattoo, $user));
+                        }
+                    } else {
+                        $tattoo->artist_id = null;
+                        $tattoo->approval_status = null;
+                    }
+                }
+
+                if ($request->has('attributed_artist_name')) {
+                    $tattoo->attributed_artist_name = $request->input('attributed_artist_name') ?: null;
+                }
+
+                // Create invitation if attributed artist + email provided
+                $inviteEmail = $request->input('artist_invite_email');
+                $attrName = $request->input('attributed_artist_name');
+                if ($attrName && $inviteEmail) {
+                    $invitation = ArtistInvitation::create([
+                        'tattoo_id' => $tattoo->id,
+                        'invited_by_user_id' => $user->id,
+                        'artist_name' => $attrName,
+                        'email' => $inviteEmail,
+                    ]);
+
+                    \Illuminate\Support\Facades\Notification::route('mail', $inviteEmail)
+                        ->notify(new \App\Notifications\ArtistInvitationNotification($invitation, $user));
+                }
+            }
+
             $tattoo->save();
 
             // Handle styles - accepts array, JSON string, or comma-separated string
