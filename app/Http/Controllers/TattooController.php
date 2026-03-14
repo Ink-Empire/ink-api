@@ -569,6 +569,19 @@ class TattooController extends Controller
                 }
             }
 
+            //studio tagging
+            if ($request->has('studio_id')) {
+                $studioId = $request->input('studio_id');
+                if ($studioId && \App\Models\Studio::where('id', $studioId)->exists()) {
+                    $tattoo->studio_id = $studioId;
+                } else {
+                    $tattoo->studio_id = null;
+                }
+            }
+            if ($request->has('attributed_studio_name')) {
+                $tattoo->attributed_studio_name = $request->input('attributed_studio_name') ?: null;
+            }
+
             $tattoo->save();
 
             // Handle styles - accepts array, JSON string, or comma-separated string
