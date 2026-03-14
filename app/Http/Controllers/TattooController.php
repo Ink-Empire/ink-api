@@ -522,6 +522,14 @@ class TattooController extends Controller
                 }
             }
 
+            // Ensure primary_image_id is never null after image operations
+            if (!$tattoo->primary_image_id) {
+                $firstImage = $tattoo->images()->first();
+                if ($firstImage) {
+                    $tattoo->primary_image_id = $firstImage->id;
+                }
+            }
+
             // Handle artist tagging/attribution (client who uploaded the tattoo)
             if ($tattoo->uploaded_by_user_id === $user->id) {
                 if ($request->has('tagged_artist_id')) {
