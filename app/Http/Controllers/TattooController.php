@@ -545,7 +545,7 @@ class TattooController extends Controller
                         }
                     } else {
                         $tattoo->artist_id = null;
-                        $tattoo->approval_status = null;
+                        $tattoo->approval_status = ArtistTattooApprovalStatus::USER_ONLY;
                     }
                 }
 
