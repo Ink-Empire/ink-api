@@ -61,14 +61,14 @@ abstract class SearchService
         $this->applyCommonFilters();
         $this->applySpecificFilters();
         $this->applySorting();
-        $this->applyPagination();
 
-        $engine = $this->search->model->searchableUsing();
-        $rawResults = $engine->search($this->search);
-        $mapped = $engine->map($this->search, $rawResults, $this->search->model);
-        $mapped['total'] = $engine->getTotalCount($rawResults);
+        $pagination = $this->paginationService->extractParams($this->filters);
+        $paginator = $this->search->paginate($pagination['per_page'], 'page', $pagination['page']);
 
-        return $mapped;
+        return [
+            'response' => $paginator->getCollection(),
+            'total' => $paginator->total(),
+        ];
     }
 
     /**

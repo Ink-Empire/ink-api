@@ -40,30 +40,30 @@ use App\Http\Controllers\SupportController;
 |
 */
 
-// Public routes
-Route::get('/styles', [StyleController::class, 'index']);
-Route::get('/countries', [CountryController::class, 'index']);
+// Public routes — static/reference data (cached aggressively, changes rarely)
+Route::middleware('cache.headers:public;max_age=3600;etag')->group(function () {
+    Route::get('/styles', [StyleController::class, 'index']);
+    Route::get('/countries', [CountryController::class, 'index']);
+    Route::get('/tags', [TagController::class, 'index']);
+    Route::get('/tags/featured', [TagController::class, 'featured']);
+    Route::get('/placements', [PlacementController::class, 'index']);
+    Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'config']);
+});
+
+// Public routes — dynamic data (cached briefly for CDN/browser, still fresh)
+Route::middleware('cache.headers:public;max_age=60;etag')->group(function () {
+    Route::get('/studios/{id}/gallery', [StudioController::class, 'getGallery']);
+    Route::get('/artists/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'getSettings']);
+    Route::get('/users/{slug}/profile', [UserProfileController::class, 'getProfile']);
+    Route::get('/users/{slug}/tattoos', [UserProfileController::class, 'getUploadedTattoos']);
+});
+
+// Public routes — not cacheable (POST/mutations/signed URLs)
+Route::get('/tags/search', [TagController::class, 'search']);
 Route::post('/studios/check-availability', [StudioController::class, 'checkAvailability']);
 Route::post('/studios/lookup-or-create', [StudioController::class, 'lookupOrCreate']);
 Route::post('/studios/{id}/claim', [StudioController::class, 'claim']);
-Route::get('/studios/{id}/gallery', [StudioController::class, 'getGallery']);
-
-// Tag routes (public for autocomplete)
-Route::get('/tags', [TagController::class, 'index']);
-Route::get('/tags/search', [TagController::class, 'search']);
-Route::get('/tags/featured', [TagController::class, 'featured']);
-
-// Placement routes (public)
-Route::get('/placements', [PlacementController::class, 'index']);
-
-// Artist appointments (public for calendar display)
 Route::post('/artists/appointments', [AppointmentController::class, 'getArtistAppointments']);
-
-// Artist settings (public for booking info display)
-Route::get('/artists/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'getSettings']);
-
-// Google Places config (returns API key for frontend SDK use)
-Route::get('/places/config', [\App\Http\Controllers\PlacesController::class, 'config']);
 
 // Subscription routes (signed URLs from email)
 Route::get('/subscribe', [SubscriptionController::class, 'subscribe'])->name('subscribe');
@@ -71,10 +71,6 @@ Route::get('/unsubscribe', [SubscriptionController::class, 'unsubscribe'])->name
 
 // Feedback submission (public)
 Route::post('/feedback', [FeedbackController::class, 'submit']);
-
-// Public user profile routes
-Route::get('/users/{slug}/profile', [UserProfileController::class, 'getProfile']);
-Route::get('/users/{slug}/tattoos', [UserProfileController::class, 'getUploadedTattoos']);
 
 // Auth routes
 Route::post('/register', [AuthController::class, 'register']);

@@ -18,7 +18,7 @@
         "fico7489/laravel-pivot": "^3.0",
         "google/apiclient": "^2.0",
         "guzzlehttp/guzzle": "^7.2",
-        "ink-empire/elastic": "^2.0",
+        "ink-empire/elastic": "2.0.5",
         "intervention/image": "^3.11",
         "jamesmills/laravel-timezone": "^1.13",
         "laravel-notification-channels/fcm": "^4.0",

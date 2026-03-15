@@ -30,7 +30,8 @@ Route::get('/test', function () {
 
 Route::prefix('api')->group(function () {
     // Public tattoo routes - optional auth to filter blocked artists
-    Route::middleware('auth.optional')->group(function () {
+    // Private cache only (response varies by user due to blocked artist filtering)
+    Route::middleware(['auth.optional', 'cache.headers:private;max_age=60;etag'])->group(function () {
         Route::group(['prefix' => 'tattoos'], function () {
             Route::post('/', [TattooController::class, 'search']);
             Route::get('/{id}', [TattooController::class, 'getById']);
@@ -64,7 +65,8 @@ Route::prefix('api')->group(function () {
 
     Route::group(['prefix' => 'artists'], function () {
         // Public artist routes - optional auth to filter blocked users
-        Route::middleware('auth.optional')->group(function () {
+        // Private cache only (response varies by user due to blocked user filtering)
+        Route::middleware(['auth.optional', 'cache.headers:private;max_age=60;etag'])->group(function () {
             Route::post('/', [ArtistController::class, 'search']);
             Route::get('/{id}', [ArtistController::class, 'getById']);
             Route::get('/{id}/portfolio', [ArtistController::class, 'getPortfolio']);
@@ -137,12 +139,14 @@ Route::prefix('api')->group(function () {
     });
 
     Route::group(['prefix' => 'studios'], function () {
-        // Public studio routes - for guests to view
-        Route::get('/{id}', [StudioController::class, 'getById']);
-        Route::get('/{id}/announcements', [StudioController::class, 'getAnnouncements']);
-        Route::get('/{id}/spotlights', [StudioController::class, 'getSpotlights']);
-        Route::get('/{id}/artists', [StudioController::class, 'getArtists']);
-        Route::get('/{id}/working-hours', [StudioController::class, 'getAvailability']);
+        // Public studio routes - for guests to view (public cache, safe to share)
+        Route::middleware('cache.headers:public;max_age=60;etag')->group(function () {
+            Route::get('/{id}', [StudioController::class, 'getById']);
+            Route::get('/{id}/announcements', [StudioController::class, 'getAnnouncements']);
+            Route::get('/{id}/spotlights', [StudioController::class, 'getSpotlights']);
+            Route::get('/{id}/artists', [StudioController::class, 'getArtists']);
+            Route::get('/{id}/working-hours', [StudioController::class, 'getAvailability']);
+        });
 
         // Protected studio routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
