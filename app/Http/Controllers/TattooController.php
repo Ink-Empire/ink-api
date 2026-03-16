@@ -527,6 +527,9 @@ class TattooController extends Controller
                 $firstImage = $tattoo->images()->first();
                 if ($firstImage) {
                     $tattoo->primary_image_id = $firstImage->id;
+                } else {
+                    // No images remain — restore original primary_image_id to prevent NOT NULL violation
+                    $tattoo->primary_image_id = $tattoo->getOriginal('primary_image_id');
                 }
             }
 
