@@ -30,6 +30,7 @@ use App\Util\ParseInput;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\DB;
 
 class TattooController extends Controller
 {
@@ -441,6 +442,7 @@ class TattooController extends Controller
                 return $this->returnErrorResponse('You can only update your own tattoos', 403);
             }
 
+            return DB::transaction(function () use ($request, $tattoo, $user, $id) {
             // Update basic fields
             if ($request->has('title')) {
                 $tattoo->title = $request->input('title');
@@ -480,19 +482,23 @@ class TattooController extends Controller
 
             // Handle image_ids from pre-uploaded images (S3 upload flow)
             $imageIds = $request->input('image_ids');
-            if (!empty($imageIds) && is_array($imageIds)) {
-                $imageIds = array_filter($imageIds);
+            \Log::info("image_ids received for tattoo update", [
+                'tattoo_id' => $tattoo->id,
+                'image_ids' => $imageIds,
+                'type' => gettype($imageIds),
+            ]);
+            if (is_array($imageIds)) {
+                $imageIds = array_filter($imageIds, fn($id) => !empty($id));
                 if (count($imageIds) > 0) {
                     $tattoo->images()->sync($imageIds);
 
-                    // Update primary image if current one was removed
-                    if (!in_array($tattoo->primary_image_id, $imageIds)) {
-                        $tattoo->primary_image_id = $imageIds[0];
-                    }
+                    // Always set primary_image_id from the synced set
+                    $tattoo->primary_image_id = $imageIds[0];
 
                     \Log::info("Synced images on tattoo", [
                         'tattoo_id' => $tattoo->id,
                         'image_ids' => $imageIds,
+                        'primary_image_id' => $tattoo->primary_image_id,
                     ]);
                 }
             }
@@ -524,13 +530,23 @@ class TattooController extends Controller
 
             // Ensure primary_image_id is never null after image operations
             if (!$tattoo->primary_image_id) {
-                $firstImage = $tattoo->images()->first();
-                if ($firstImage) {
-                    $tattoo->primary_image_id = $firstImage->id;
+                // Query DB directly to avoid any Eloquent relationship caching
+                $firstImageId = DB::table('tattoos_images')
+                    ->where('tattoo_id', $tattoo->id)
+                    ->value('image_id');
+
+                if ($firstImageId) {
+                    $tattoo->primary_image_id = $firstImageId;
                 } else {
-                    // No images remain — restore original primary_image_id to prevent NOT NULL violation
+                    // No images in pivot — restore original to prevent NOT NULL violation
                     $tattoo->primary_image_id = $tattoo->getOriginal('primary_image_id');
                 }
+
+                \Log::warning("primary_image_id was null after image operations", [
+                    'tattoo_id' => $tattoo->id,
+                    'resolved_to' => $tattoo->primary_image_id,
+                    'from_pivot' => $firstImageId,
+                ]);
             }
 
             // Handle artist tagging/attribution (client who uploaded the tattoo)
@@ -615,6 +631,7 @@ class TattooController extends Controller
             $tattoo->load(['tags', 'styles', 'images', 'artist', 'studio', 'primary_style', 'primary_image']);
 
             return $this->returnResponse('tattoo', new TattooResource($tattoo));
+            }); // end DB::transaction
 
         } catch (\Exception $e) {
             \Log::error("Unable to update tattoo", [
