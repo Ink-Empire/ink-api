@@ -490,10 +490,9 @@ class TattooController extends Controller
             if (is_array($imageIds)) {
                 $imageIds = array_filter($imageIds, fn($id) => !empty($id));
                 if (count($imageIds) > 0) {
-                    $tattoo->images()->sync($imageIds);
-
                     // Always set primary_image_id from the synced set
                     $tattoo->primary_image_id = $imageIds[0];
+                    $tattoo->images()->sync($imageIds);
 
                     \Log::info("Synced images on tattoo", [
                         'tattoo_id' => $tattoo->id,
