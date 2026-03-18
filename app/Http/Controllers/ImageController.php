@@ -3,12 +3,14 @@
 namespace App\Http\Controllers;
 
 use App\Exceptions\UserNotFoundException;
+use App\Http\Resources\BriefImageResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
 use App\Models\Image;
 use App\Services\ImageService;
 use App\Services\StudioService;
 use App\Services\UserService;
+use App\Http\Requests\UpdateImageEditParamsRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
@@ -284,5 +286,12 @@ class ImageController extends Controller
 
             return $this->returnErrorResponse('Failed to confirm uploads', $e->getMessage());
         }
+    }
+
+    public function updateEditParams(UpdateImageEditParamsRequest $request, Image $image): JsonResponse
+    {
+        $image->update(['edit_params' => $request->validated()]);
+
+        return $this->returnResponse('image', new BriefImageResource($image->fresh()));
     }
 }

@@ -130,6 +130,9 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/confirm', [\App\Http\Controllers\ImageController::class, 'confirmUploads']);
     });
 
+    // Image edit params
+    Route::put('/images/{image}/edit-params', [\App\Http\Controllers\ImageController::class, 'updateEditParams']);
+
     // Style suggestions (authenticated)
     Route::post('/styles/suggest', [StyleController::class, 'suggestFromImages']);
 
