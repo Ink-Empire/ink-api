@@ -75,4 +75,20 @@ return [
         public_path('storage') => storage_path('app/public'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Imgix CDN Configuration
+    |--------------------------------------------------------------------------
+    |
+    | When enabled, image URIs will use the Imgix CDN domain instead of
+    | direct S3 URLs. Imgix sources from the same S3 bucket, providing
+    | on-the-fly image transformations and CDN delivery.
+    |
+    */
+
+    'imgix' => [
+        'enabled' => env('IMGIX_ENABLED', false),
+        'url' => env('IMGIX_URL', 'https://inked-in.imgix.net'),
+    ],
+
 ];

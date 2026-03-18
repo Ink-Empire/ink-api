@@ -11,6 +11,7 @@ class BriefImageResource extends JsonResource
         return [
             'id' => $this->id,
             'uri' => $this->uri,
+            'edit_params' => $this->edit_params,
         ];
     }
 }

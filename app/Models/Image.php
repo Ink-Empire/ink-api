@@ -15,11 +15,13 @@ class Image extends Model
         'name',
         'filename',
         'uri',
-        'is_primary'
+        'is_primary',
+        'edit_params',
     ];
 
     protected $casts = [
         'is_primary' => 'boolean',
+        'edit_params' => 'array',
     ];
 
     /**
@@ -48,12 +50,16 @@ class Image extends Model
 
     public function setUriAttribute($filename = null)
     {
-        if (!$filename) { //replace with image not found perhaps
+        if (!$filename) {
             $this->attributes['uri'] = "https://www.gravatar.com/avatar?d=mm&s=140";
         } else {
-            // Use configured AWS_URL from env file instead of hardcoded URL
-            $s3Url = rtrim(config('filesystems.disks.s3.url', 'https://inked-in-images.s3.amazonaws.com'), '/');
-            $this->attributes['uri'] = $s3Url . '/' . $filename;
+            if (config('filesystems.imgix.enabled')) {
+                $imgixUrl = rtrim(config('filesystems.imgix.url'), '/');
+                $this->attributes['uri'] = $imgixUrl . '/' . $filename;
+            } else {
+                $s3Url = rtrim(config('filesystems.disks.s3.url', 'https://inked-in-images.s3.amazonaws.com'), '/');
+                $this->attributes['uri'] = $s3Url . '/' . $filename;
+            }
         }
     }
 }

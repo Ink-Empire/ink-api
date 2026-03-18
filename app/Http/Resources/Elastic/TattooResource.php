@@ -25,7 +25,10 @@ class TattooResource extends JsonResource
                 'studio' => $this->studio ? new StudioResource($this->studio) : null,
                 'primary_style' => $this->primary_style?->name ?? "",
                 'primary_subject' => $this->subject?->name ?? "",
-                'primary_image' => $this->primary_image->uri ?? null,
+                'primary_image' => $this->primary_image ? [
+                    'uri' => $this->primary_image->uri,
+                    'edit_params' => $this->primary_image->edit_params ?? null,
+                ] : null,
                 'images' => $this->images ?? [],
                 'styles' => $this->styles ?? [],
                 'tags' => $this->tags ?? [],
