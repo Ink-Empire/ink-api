@@ -11,12 +11,11 @@ class MigrateImagesToImgix extends Command
                             {--dry-run : Show what would be changed without making changes}
                             {--batch-size=500 : Number of images to process per batch}';
 
-    protected $description = 'Update image URIs to use the Imgix CDN domain instead of S3 direct URLs';
+    protected $description = 'Update image URIs to use the Imgix CDN domain instead of S3/CloudFront URLs';
 
     public function handle(): int
     {
         $imgixUrl = rtrim(config('filesystems.imgix.url'), '/');
-        $s3Url = rtrim(config('filesystems.disks.s3.url', 'https://inked-in-images.s3.amazonaws.com'), '/');
         $batchSize = (int) $this->option('batch-size');
         $dryRun = $this->option('dry-run');
 
@@ -25,15 +24,16 @@ class MigrateImagesToImgix extends Command
             return 1;
         }
 
-        $this->info("Migrating image URIs from: {$s3Url}");
-        $this->info("                      to: {$imgixUrl}");
+        // Find all non-Imgix, non-gravatar images
+        $total = Image::where('uri', 'not like', '%imgix.net%')
+            ->where('uri', 'not like', '%gravatar.com%')
+            ->count();
+
+        $this->info("Migrating {$total} image URIs to: {$imgixUrl}");
 
         if ($dryRun) {
             $this->warn('DRY RUN - no changes will be made.');
         }
-
-        $total = Image::where('uri', 'like', $s3Url . '%')->count();
-        $this->info("Found {$total} images to migrate.");
 
         if ($total === 0) {
             $this->info('Nothing to do.');
@@ -44,16 +44,21 @@ class MigrateImagesToImgix extends Command
         $bar = $this->output->createProgressBar($total);
         $bar->start();
 
-        Image::where('uri', 'like', $s3Url . '%')
-            ->chunkById($batchSize, function ($images) use ($s3Url, $imgixUrl, $dryRun, &$updated, $bar) {
+        Image::where('uri', 'not like', '%imgix.net%')
+            ->where('uri', 'not like', '%gravatar.com%')
+            ->chunkById($batchSize, function ($images) use ($imgixUrl, $dryRun, &$updated, $bar) {
                 foreach ($images as $image) {
                     if (!$dryRun) {
-                        $newUri = str_replace($s3Url, $imgixUrl, $image->uri);
-                        $image->timestamps = false;
-                        // Write directly to bypass setUriAttribute mutator
-                        $image->getConnection()->table('images')
-                            ->where('id', $image->id)
-                            ->update(['uri' => $newUri]);
+                        // Extract just the filename/path from the existing URL
+                        $parsed = parse_url($image->uri);
+                        $path = ltrim($parsed['path'] ?? '', '/');
+
+                        if ($path) {
+                            $newUri = $imgixUrl . '/' . $path;
+                            $image->getConnection()->table('images')
+                                ->where('id', $image->id)
+                                ->update(['uri' => $newUri]);
+                        }
                     }
                     $updated++;
                     $bar->advance();
