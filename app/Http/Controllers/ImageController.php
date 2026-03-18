@@ -6,6 +6,7 @@ use App\Exceptions\UserNotFoundException;
 use App\Http\Resources\BriefImageResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
+use App\Models\Artist;
 use App\Models\Image;
 use App\Services\ImageService;
 use App\Services\StudioService;
@@ -14,6 +15,7 @@ use App\Http\Requests\UpdateImageEditParamsRequest;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
@@ -291,6 +293,35 @@ class ImageController extends Controller
     public function updateEditParams(UpdateImageEditParamsRequest $request, Image $image): JsonResponse
     {
         $image->update(['edit_params' => $request->validated()]);
+
+        // reindex any tattoos that use this image so ES reflects the updated edit_params
+        $tattooIds = $image->tattoos()->pluck('tattoo_id')
+            ->merge($image->tattoosAsPrimary()->pluck('id'))
+            ->unique();
+
+        if ($tattooIds->isNotEmpty()) {
+            $tattoos = \App\Models\Tattoo::whereIn('id', $tattooIds)->get();
+            $tattoos->searchable();
+
+            foreach ($tattoos as $tattoo) {
+                // Tattoo detail cache
+                Cache::forget("es:tattoo:{$tattoo->id}");
+
+                // User profile tattoo list (version bump forces new cache key)
+                if ($tattoo->uploaded_by_user_id) {
+                    Cache::increment("es:user:{$tattoo->uploaded_by_user_id}:tattoos:version");
+                }
+            }
+        }
+
+        // Re-index any artists that use this as their profile image
+        $artistIds = $image->artists()
+            ->where('type_id', 2)
+            ->pluck('id');
+
+        if ($artistIds->isNotEmpty()) {
+            Artist::whereIn('id', $artistIds)->get()->searchable();
+        }
 
         return $this->returnResponse('image', new BriefImageResource($image->fresh()));
     }
