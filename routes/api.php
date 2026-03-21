@@ -215,6 +215,18 @@ Route::middleware('auth:sanctum')->group(function () {
     Route::get('/support/contact', [SupportController::class, 'getContact']);
     Route::post('/support/message', [SupportController::class, 'sendMessage']);
 
+    // Client insights routes
+    Route::get('/clients', [\App\Http\Controllers\ClientProfileController::class, 'index']);
+    Route::get('/tag-categories', [\App\Http\Controllers\ClientProfileController::class, 'tagCategories']);
+    Route::post('/tag-categories', [\App\Http\Controllers\ClientProfileController::class, 'createTagCategory']);
+    Route::prefix('clients/{client}')->group(function () {
+        Route::get('/profile', [\App\Http\Controllers\ClientProfileController::class, 'show']);
+        Route::post('/tags', [\App\Http\Controllers\ClientProfileController::class, 'addTag']);
+        Route::delete('/tags/{tag}', [\App\Http\Controllers\ClientProfileController::class, 'removeTag']);
+        Route::get('/tags/suggestions', [\App\Http\Controllers\ClientProfileController::class, 'suggestions']);
+        Route::post('/notes', [\App\Http\Controllers\ClientProfileController::class, 'addNote']);
+    });
+
     // Tattoo lead routes (for users looking for tattoos)
     Route::prefix('leads')->group(function () {
         Route::get('/status', [TattooLeadController::class, 'status']);

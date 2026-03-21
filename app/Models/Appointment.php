@@ -28,11 +28,15 @@ class Appointment extends Model
         'all_day',
         'start_time',
         'end_time',
+        'price',
+        'duration_minutes',
     ];
 
     protected $casts = [
         'date' => 'date',
         'all_day' => 'boolean',
+        'price' => 'decimal:2',
+        'duration_minutes' => 'integer',
     ];
 
     public function client()

@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\Studio;
 use App\Services\AddressService;
 use App\Services\UserService;
+use Database\Seeders\UserTagCategorySeeder;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
@@ -82,6 +83,11 @@ class AuthController extends Controller
         $user->passwords()->create([
             'password' => $hashedPassword,
         ]);
+
+        // Seed default tag categories for artist and studio accounts
+        if (in_array($request->type ?? '', [UserTypes::ARTIST, UserTypes::STUDIO])) {
+            UserTagCategorySeeder::seedForUser($user->id);
+        }
 
         // If artist affiliated with a studio, create a pending join request
         // Artists never auto-claim studios — only the studio registration flow does that
