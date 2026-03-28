@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Models\Appointment;
+use App\Models\ArtistSettings;
 use App\Models\ClientNote;
 use App\Models\User;
 use App\Models\UserTag;
@@ -85,10 +86,30 @@ class ClientInsightsService
             ->sortBy('date')
             ->first();
 
+        $hourlyRate = null;
+        $needsDerivation = $completed->contains(fn ($a) => !$a->duration_minutes || $a->price === null);
+        if ($needsDerivation) {
+            $artistId = $appointments->first()?->artist_id;
+            $hourlyRate = $artistId ? (ArtistSettings::where('artist_id', $artistId)->value('hourly_rate') ?? 0) : 0;
+        }
+
+        $totalSpent = 0;
+        $totalMinutes = 0;
+        foreach ($completed as $appt) {
+            if ($appt->duration_minutes && $appt->price !== null) {
+                $totalMinutes += $appt->duration_minutes;
+                $totalSpent += $appt->price;
+            } else {
+                [$duration, $price] = $appt->resolveFinancials($hourlyRate);
+                $totalSpent += $price ?? 0;
+                $totalMinutes += $duration ?? 0;
+            }
+        }
+
         return [
             'sessions' => $completed->count(),
-            'total_spent' => (float) $completed->sum('price'),
-            'hours_in_chair' => round($completed->sum(fn ($a) => ($a->duration_minutes ?? 0) / 60), 1),
+            'total_spent' => (float) $totalSpent,
+            'hours_in_chair' => round($totalMinutes / 60, 1),
             'next_appointment' => $nextAppointment?->date->toDateString(),
         ];
     }
@@ -209,5 +230,16 @@ class ClientInsightsService
             'studio_user_id' => $artist->id,
             'body' => $body,
         ]);
+    }
+
+    public function updateNote(ClientNote $note, User $artist, string $body): ClientNote
+    {
+        if ($note->studio_user_id !== $artist->id) {
+            abort(403);
+        }
+
+        $note->update(['body' => $body]);
+
+        return $note->fresh();
     }
 }

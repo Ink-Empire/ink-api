@@ -6,6 +6,7 @@ use App\Http\Resources\ClientNoteResource;
 use App\Http\Resources\ClientProfileResource;
 use App\Http\Resources\UserTagCategoryResource;
 use App\Http\Resources\UserTagResource;
+use App\Models\ClientNote;
 use App\Models\User;
 use App\Models\UserTag;
 use App\Services\ClientInsightsService;
@@ -91,5 +92,16 @@ class ClientProfileController extends Controller
         $note = $this->service->addNote($client, $request->user(), $request->body);
 
         return response()->json(['note' => new ClientNoteResource($note)], 201);
+    }
+
+    public function updateNote(Request $request, User $client, ClientNote $note): JsonResponse
+    {
+        $request->validate([
+            'body' => 'required|string|max:5000',
+        ]);
+
+        $note = $this->service->updateNote($note, $request->user(), $request->body);
+
+        return $this->returnResponse('note', new ClientNoteResource($note));
     }
 }

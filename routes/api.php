@@ -225,6 +225,7 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::delete('/tags/{tag}', [\App\Http\Controllers\ClientProfileController::class, 'removeTag']);
         Route::get('/tags/suggestions', [\App\Http\Controllers\ClientProfileController::class, 'suggestions']);
         Route::post('/notes', [\App\Http\Controllers\ClientProfileController::class, 'addNote']);
+        Route::put('/notes/{note}', [\App\Http\Controllers\ClientProfileController::class, 'updateNote']);
     });
 
     // Tattoo lead routes (for users looking for tattoos)

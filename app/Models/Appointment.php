@@ -111,7 +111,7 @@ class Appointment extends Model
         return $query->with(['messages.sender', 'messages.recipient', 'latestMessage']);
     }
 
-    public function resolveFinancials(): array
+    public function resolveFinancials(?float $hourlyRate = null): array
     {
         if ($this->status === AppointmentStatus::CANCELLED) {
             return [null, null, false];
@@ -136,9 +136,9 @@ class Appointment extends Model
                     $derived = true;
                 }
                 if ($price === null) {
-                    $hourlyRate = ArtistSettings::where('artist_id', $this->artist_id)->value('hourly_rate') ?? 0;
-                    if ($hourlyRate > 0) {
-                        $price = round(($diff / 60) * $hourlyRate, 2);
+                    $rate = $hourlyRate ?? (ArtistSettings::where('artist_id', $this->artist_id)->value('hourly_rate') ?? 0);
+                    if ($rate > 0) {
+                        $price = round(($diff / 60) * $rate, 2);
                         $derived = true;
                     }
                 }
