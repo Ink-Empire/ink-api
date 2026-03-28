@@ -13,6 +13,7 @@ class ClientAppointmentHistoryResource extends JsonResource
             'type' => $this->type,
             'date' => $this->date->toDateString(),
             'duration_minutes' => $this->duration_minutes,
+            'notes' => $this->notes,
             'status' => $this->date->isFuture() ? 'upcoming' : ($this->status === 'completed' ? 'done' : $this->status),
         ];
     }

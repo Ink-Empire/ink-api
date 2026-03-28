@@ -157,6 +157,20 @@ class AppointmentController extends Controller
             ? date('H:i:s', strtotime($request->get('end_time')))
             : null;
 
+        // Auto-calculate duration_minutes and price from time range and hourly rate
+        if (!empty($data['start_time']) && !empty($data['end_time'])) {
+            $startMin = (int) date('H', strtotime($data['start_time'])) * 60 + (int) date('i', strtotime($data['start_time']));
+            $endMin = (int) date('H', strtotime($data['end_time'])) * 60 + (int) date('i', strtotime($data['end_time']));
+            $diff = $endMin - $startMin;
+            if ($diff > 0) {
+                $data['duration_minutes'] = $diff;
+                $hourlyRate = $artist->settings?->hourly_rate ?? 0;
+                if ($hourlyRate > 0) {
+                    $data['price'] = round(($diff / 60) * $hourlyRate, 2);
+                }
+            }
+        }
+
         $appointment = $artist->appointments()->create($data);
 
         // Find existing conversation between client and artist, or create one

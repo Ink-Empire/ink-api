@@ -12,11 +12,11 @@ class AppointmentResource extends JsonResource
 {
     public function toArray($request)
     {
+        [$duration, $price, $derived] = $this->resource->resolveFinancials();
+
         return [
             'id' => $this->id,
             'title' => $this->title,
-//            'start' => Timezone::convertToLocal($this->start),
-//            'end' => Timezone::convertToLocal($this->end),
             'start' => $this->getISODateTime($this->date, $this->start_time),
             'end' => $this->getISODateTime($this->date, $this->end_time),
             'date' => $this->date instanceof \DateTimeInterface
@@ -25,6 +25,13 @@ class AppointmentResource extends JsonResource
             'allDay' => $this->all_day,
             'client_id' => $this->client_id,
             'status' => $this->status,
+            'price' => $price,
+            'duration_minutes' => $duration,
+            'is_derived' => $derived,
+            'notes' => $this->when(
+                $request->user() && $request->user()->id === $this->artist_id,
+                $this->notes
+            ),
             'extendedProps' => [
                 'status' => $this->status,
                 'description' => $this->description,
@@ -43,7 +50,6 @@ class AppointmentResource extends JsonResource
             return null;
         }
 
-        // Handle Carbon/DateTime objects - extract just the date portion
         $dateStr = $date instanceof \DateTimeInterface
             ? $date->format('Y-m-d')
             : date('Y-m-d', strtotime($date));

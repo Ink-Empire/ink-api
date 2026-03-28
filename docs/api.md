@@ -87,11 +87,18 @@ The SearchService is the core component for creating and executing search querie
 
 ### Appointments
 
-- `POST /api/artists/appointments`: Search for available appointments (requires authentication)
+- `POST /api/artists/appointments`: List artist's appointments. Accepts `artist_id`, optional `status`, `start_date`, `end_date` (requires authentication)
 - `GET /api/artists/appointments/{id}`: Get a specific appointment (requires authentication)
-- `POST /api/artists/appointments/create`: Create a new appointment (requires authentication)
-- `PUT /api/artists/appointments/{id}`: Update an appointment (requires authentication)
+- `POST /api/artists/appointments/create`: Create a new appointment. Auto-calculates `duration_minutes` and `price` from time range and artist hourly rate (requires authentication)
+- `PUT /api/artists/appointments/{id}`: Update an appointment. Supports `price`, `duration_minutes`, `notes` (requires authentication)
 - `DELETE /api/artists/appointments/{id}`: Delete an appointment (requires authentication)
+
+#### Appointment Response Fields
+
+- `price`: Saved or derived from `(duration / 60) * hourly_rate`
+- `duration_minutes`: Saved or derived from `end_time - start_time`
+- `is_derived`: `true` when price/duration are calculated, `false` when explicitly saved
+- `notes`: Private artist notes, only included when the authenticated user is the appointment's artist
 
 ### Users
 

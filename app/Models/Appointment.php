@@ -1,6 +1,8 @@
 <?php
 
 namespace App\Models;
+
+use App\Enums\AppointmentStatus;
 use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
@@ -30,6 +32,7 @@ class Appointment extends Model
         'end_time',
         'price',
         'duration_minutes',
+        'notes',
     ];
 
     protected $casts = [
@@ -106,5 +109,42 @@ class Appointment extends Model
     public function scopeWithMessages($query)
     {
         return $query->with(['messages.sender', 'messages.recipient', 'latestMessage']);
+    }
+
+    public function resolveFinancials(): array
+    {
+        if ($this->status === AppointmentStatus::CANCELLED) {
+            return [null, null, false];
+        }
+
+        $duration = $this->duration_minutes;
+        $price = $this->price;
+        $derived = false;
+
+        if ($duration && $price !== null) {
+            return [$duration, $price, false];
+        }
+
+        if ($this->start_time && $this->end_time) {
+            $startMin = (int) date('H', strtotime($this->start_time)) * 60 + (int) date('i', strtotime($this->start_time));
+            $endMin = (int) date('H', strtotime($this->end_time)) * 60 + (int) date('i', strtotime($this->end_time));
+            $diff = $endMin - $startMin;
+
+            if ($diff > 0) {
+                if (!$duration) {
+                    $duration = $diff;
+                    $derived = true;
+                }
+                if ($price === null) {
+                    $hourlyRate = ArtistSettings::where('artist_id', $this->artist_id)->value('hourly_rate') ?? 0;
+                    if ($hourlyRate > 0) {
+                        $price = round(($diff / 60) * $hourlyRate, 2);
+                        $derived = true;
+                    }
+                }
+            }
+        }
+
+        return [$duration, $price, $derived];
     }
 }

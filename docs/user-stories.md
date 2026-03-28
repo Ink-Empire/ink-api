@@ -244,15 +244,48 @@ This document outlines testable user stories for the tattoo upload, search, prof
 
 ---
 
-## 13. Cross-Platform Parity
+## 13. Appointment Management (Artist)
 
-### 13.1 Feature parity between mobile and web
+### 13.1 View all appointments (Manage Calendar)
+**As an artist**, when I tap "Manage Calendar" on my dashboard,
+**then** I see a paginated list of all my appointments (5 per page, most recent first), starting at the page containing today's date. Each card shows the date, title, time range, client name, status badge, and an edit icon.
+
+### 13.2 Edit appointment details
+**As an artist**, when I tap a card or the edit icon on the Manage Calendar screen,
+**then** an Edit Appointment screen opens showing a read-only header (title, date, time, client, status) and editable fields for Total Price, Duration (minutes), and Notes.
+
+### 13.3 Save appointment details
+**As an artist**, when I fill in price, duration, and/or notes on the Edit Appointment screen and tap Save,
+**then** the values are persisted, the calendar cache is cleared, and I am returned to the previous screen with updated data.
+
+### 13.4 Derived price and duration
+**As an artist**, when I view an appointment that has a time range but no saved price or duration,
+**then** the system derives duration from the start/end time and price from (duration / 60) * hourly rate (if set in artist settings). These values are shown with an asterisk and a hint: "Estimated from calendar time and your hourly rate."
+
+### 13.5 Derived values replaced on save
+**As an artist**, when I save explicit price and duration values on an appointment,
+**then** the derived indicator disappears and the saved values are shown without an asterisk.
+
+### 13.6 Private notes
+**As an artist**, when I add notes to an appointment,
+**then** those notes are only visible to me. Clients and other users cannot see appointment notes.
+
+### 13.7 Edit from calendar day modal
+**As an artist**, when I view an appointment in the Calendar day modal,
+**then** I see an edit (pencil) icon that opens the Edit Appointment screen.
+
+---
+
+## 14. Cross-Platform Parity
+
+### 14.1 Feature parity between mobile and web
 All of the above flows should function equivalently on both the React Native mobile app and the Next.js web app, including:
 - Tattoo search with style filters
 - Artist search with client fallback
 - Tattoo detail page with "Uploaded by" attribution
 - Profile pages for artists and clients
 - Save/unsave functionality
+- Appointment management (Manage Calendar, Edit Appointment)
 
 ---
 
@@ -270,3 +303,5 @@ All of the above flows should function equivalently on both the React Native mob
 | Delete own tattoo | No | Yes | Yes |
 | Approve/reject tagged tattoos | No | No | Yes |
 | Book appointment | No | Yes | No |
+| Manage appointments (view/edit) | No | No | Yes |
+| View appointment notes | No | No | Yes (own only) |

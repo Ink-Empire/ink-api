@@ -6,12 +6,10 @@ use Illuminate\Http\Resources\Json\JsonResource;
 
 class RawAppointmentResource extends JsonResource
 {
-    /**
-     * Enable default data wrapping for Laravel best practices
-     */
-
     public function toArray($request)
     {
+        [$duration, $price, $derived] = $this->resource->resolveFinancials();
+
         return [
             'id' => $this->id,
             'title' => $this->title,
@@ -26,6 +24,13 @@ class RawAppointmentResource extends JsonResource
             'all_day' => $this->all_day,
             'start_time' => $this->start_time,
             'end_time' => $this->end_time,
+            'price' => $price,
+            'duration_minutes' => $duration,
+            'is_derived' => $derived,
+            'notes' => $this->when(
+                $request->user() && $request->user()->id === $this->artist_id,
+                $this->notes
+            ),
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'messages_count' => $this->messages_count,
@@ -41,22 +46,8 @@ class RawAppointmentResource extends JsonResource
                     ];
                 });
             }),
-            'client' => $this->when($this->relationLoaded('client'), function () {
-                return [
-                    'id' => $this->client->id,
-                    'username' => $this->client->username,
-                    'email' => $this->client->email,
-                    'name' => $this->client->name,
-                ];
-            }),
-            'artist' => $this->when($this->relationLoaded('artist'), function () {
-                return [
-                    'id' => $this->artist->id,
-                    'username' => $this->artist->username,
-                    'email' => $this->artist->email,
-                    'name' => $this->artist->name,
-                ];
-            }),
+            'client' => new ClientResource($this->whenLoaded('client')),
+            'artist' => new BriefArtistResource($this->whenLoaded('artist')),
         ];
     }
 }

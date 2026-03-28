@@ -70,6 +70,7 @@ class ClientInsightsService
             'stats' => $this->buildStats($appointments),
             'tags' => $this->getTagsGroupedByCategory($client, $artist),
             'notes' => $this->getNotes($client, $artist),
+            'appointment_notes' => $this->getAppointmentsWithNotes($client, $artist),
             'history' => $appointments,
         ];
     }
@@ -188,6 +189,16 @@ class ClientInsightsService
         return ClientNote::where('client_id', $client->id)
             ->where('studio_user_id', $artist->id)
             ->orderByDesc('created_at')
+            ->get();
+    }
+
+    public function getAppointmentsWithNotes(User $client, User $artist): Collection
+    {
+        return Appointment::where('client_id', $client->id)
+            ->where('artist_id', $artist->id)
+            ->whereNotNull('notes')
+            ->where('notes', '!=', '')
+            ->orderByDesc('date')
             ->get();
     }
 

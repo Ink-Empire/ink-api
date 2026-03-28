@@ -168,6 +168,40 @@ Artists configure consultation windows per day in the Working Hours Editor:
 | `deposit_amount` | Required deposit amount for appointments | `null` |
 | `consultation_duration` | Duration of consultations in minutes | `15` |
 
+## Appointment Management (Artist)
+
+After an appointment is created, artists can view and edit appointment details from the Manage Calendar screen.
+
+### Manage Calendar Screen
+
+- Displays a paginated list (5 per page) of all appointments, sorted most recent first
+- Auto-starts at the page containing today's date
+- Each card shows: date badge, title, time range, client name, status badge, edit icon
+- Derived price/duration values shown with an asterisk
+
+### Edit Appointment Screen
+
+- Read-only header: title, date, time, client, status
+- Editable fields: Total Price ($), Duration (minutes), Notes
+- Notes are private (artist-only, enforced by API resource via `$this->when()`)
+- On save: updates appointment, clears calendar cache, returns to previous screen
+
+### Derived Financials
+
+When an appointment has a time range but no saved price/duration, the API resources (`AppointmentResource`, `RawAppointmentResource`) derive values:
+
+```
+duration_minutes = end_time - start_time (in minutes)
+price = (duration / 60) * artist_settings.hourly_rate
+is_derived = true
+```
+
+Once the artist explicitly saves price and duration, `is_derived` returns `false` and the asterisk indicator disappears.
+
+### Auto-Calculation at Creation
+
+When a new appointment is created with `start_time` and `end_time`, the `AppointmentController::store()` method auto-calculates `duration_minutes` and `price` (using the artist's hourly rate) and saves them to the database.
+
 ## Key Files
 
 | Component | Path |
@@ -178,9 +212,15 @@ Artists configure consultation windows per day in the Working Hours Editor:
 | Booking Accepted Notification | `ink-api/app/Notifications/BookingAcceptedNotification.php` |
 | Booking Declined Notification | `ink-api/app/Notifications/BookingDeclinedNotification.php` |
 | Push Preferences Trait | `ink-api/app/Notifications/Traits/RespectsPushPreferences.php` |
+| Appointment Resource | `ink-api/app/Http/Resources/AppointmentResource.php` |
+| Raw Appointment Resource | `ink-api/app/Http/Resources/RawAppointmentResource.php` |
 | Shared Appointment Service | `inked-in-www/shared/services/appointmentService.ts` |
+| RN ManageCalendarScreen | `inked-in-www/reactnative/app/screens/ManageCalendarScreen.tsx` |
+| RN EditAppointmentScreen | `inked-in-www/reactnative/app/screens/EditAppointmentScreen.tsx` |
 | RN CalendarDayModal | `inked-in-www/reactnative/app/components/Calendar/CalendarDayModal.tsx` |
 | RN BookingFormModal | `inked-in-www/reactnative/app/components/Calendar/BookingFormModal.tsx` |
 | RN MessageBubble | `inked-in-www/reactnative/app/components/inbox/MessageBubble.tsx` |
+| NextJS ManageCalendarPage | `inked-in-www/nextjs/pages/manage-calendar/index.tsx` |
+| NextJS EditAppointmentModal | `inked-in-www/nextjs/components/appointments/EditAppointmentModal.tsx` |
 | NextJS BookingModal | `inked-in-www/nextjs/components/BookingModal.tsx` |
 | NextJS MessageBubble | `inked-in-www/nextjs/components/inbox/MessageBubble.tsx` |
