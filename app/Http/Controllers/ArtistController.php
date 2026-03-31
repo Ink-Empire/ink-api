@@ -702,6 +702,8 @@ class ArtistController extends Controller
         } else {
             // Appointment slots
             $step = 30;
+            $minSessionMinutes = ($settings->minimum_session ?? 0) * 60;
+            $slotDuration = max($step, $minSessionMinutes);
             $cursor = $startTime->copy();
 
             while ($cursor->lt($endTime)) {
@@ -712,7 +714,7 @@ class ArtistController extends Controller
                 }
                 $slots[] = [
                     'time' => $cursor->format('H:i'),
-                    'end' => $cursor->copy()->addMinutes($step)->format('H:i'),
+                    'end' => $cursor->copy()->addMinutes($slotDuration)->format('H:i'),
                 ];
                 $cursor->addMinutes($step);
             }
