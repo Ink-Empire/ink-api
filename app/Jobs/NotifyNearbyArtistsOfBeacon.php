@@ -6,8 +6,10 @@ use App\Enums\UserTypes;
 use App\Models\TattooLead;
 use App\Models\User;
 use App\Notifications\TattooBeaconNotification;
+use App\Services\ArtistService;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Foundation\Bus\Dispatchable;
 use Illuminate\Queue\InteractsWithQueue;
 use Illuminate\Queue\SerializesModels;
@@ -24,7 +26,7 @@ class NotifyNearbyArtistsOfBeacon implements ShouldQueue
         public int $leadId
     ) {}
 
-    public function handle(): void
+    public function handle(ArtistService $artistService): void
     {
         $lead = TattooLead::with('user')->find($this->leadId);
 
@@ -39,11 +41,11 @@ class NotifyNearbyArtistsOfBeacon implements ShouldQueue
             return;
         }
 
-        // Find artists in the same location
-        $artists = $this->findNearbyArtists($client);
+        // Find artists near the lead's location (or fall back to client location)
+        $artists = $this->findNearbyArtists($lead, $client, $artistService);
 
         if ($artists->isEmpty()) {
-            Log::info("No nearby artists found for lead {$this->leadId} in location: {$client->location}");
+            Log::info("No nearby artists found for lead {$this->leadId}");
             return;
         }
 
@@ -70,31 +72,33 @@ class NotifyNearbyArtistsOfBeacon implements ShouldQueue
         Log::info("Sent beacon notifications for lead {$this->leadId} to {$notifiedCount} artists");
     }
 
-    private function findNearbyArtists(User $client): \Illuminate\Database\Eloquent\Collection
+    private function findNearbyArtists(TattooLead $lead, User $client, ArtistService $artistService): Collection
     {
-        $query = User::where('type_id', UserTypes::ARTIST_TYPE_ID);
+        // Use Elasticsearch geo_distance when lead has coordinates
+        if ($lead->lat && $lead->lng) {
+            $radius = $lead->radius ?? 50;
+            $unit = $lead->radius_unit === 'km' ? 'km' : 'mi';
 
-        // Match by location if the client has one set
-        if ($client->location) {
-            // Simple location matching - can be enhanced with geo queries later
-            $query->where(function ($q) use ($client) {
-                // Exact match
-                $q->where('location', $client->location)
-                    // Or partial match (e.g., "Los Angeles" matches "Los Angeles, CA")
-                    ->orWhere('location', 'LIKE', '%' . $this->extractCity($client->location) . '%');
-            });
+            return $artistService->getNearby(
+                (float) $lead->lat,
+                (float) $lead->lng,
+                "{$radius}{$unit}",
+            );
         }
 
-        // Optionally filter by styles if the lead has style preferences
-        // This could be added later for more targeted notifications
+        // Fall back to string-based location matching when no coordinates exist
+        if ($client->location) {
+            $city = trim(explode(',', $client->location)[0]);
 
-        return $query->limit(50)->get(); // Cap at 50 artists per notification batch
-    }
+            return User::where('type_id', UserTypes::ARTIST_TYPE_ID)
+                ->where(function ($q) use ($client, $city) {
+                    $q->where('location', $client->location)
+                        ->orWhere('location', 'LIKE', '%' . $city . '%');
+                })
+                ->limit(50)
+                ->get();
+        }
 
-    private function extractCity(string $location): string
-    {
-        // Extract the city from "City, State" or "City, State, Country" format
-        $parts = explode(',', $location);
-        return trim($parts[0]);
+        return new Collection();
     }
 }

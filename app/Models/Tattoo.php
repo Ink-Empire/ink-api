@@ -33,11 +33,16 @@ class Tattoo extends Model
         'attributed_studio_name',
         'attributed_location',
         'is_demo',
+        'post_type',
+        'flash_price',
+        'flash_size',
+        'tattoo_lead_id',
     ];
 
     protected $casts = [
         'is_visible' => 'boolean',
         'is_demo' => 'boolean',
+        'flash_price' => 'decimal:2',
     ];
 
     protected array $searchableRelations = [
@@ -117,6 +122,11 @@ class Tattoo extends Model
     public function profileViews()
     {
         return $this->morphMany(ProfileView::class, 'viewable');
+    }
+
+    public function tattooLead()
+    {
+        return $this->belongsTo(TattooLead::class);
     }
 
     public function invitations()

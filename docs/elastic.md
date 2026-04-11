@@ -338,7 +338,7 @@ The Elasticsearch query building process leverages multiple components:
 
 Special query features include:
 
-- **GeoDistance Queries** - Find results within a specific radius of coordinates
+- **GeoDistance Queries** - Find results within a specific radius of coordinates. For artist proximity lookups, prefer the reusable `App\Services\ArtistService::getNearby($lat, $lng, $distance)` helper instead of writing a new `whereDistance` call — it queries the artists index's `location_lat_long` `geo_point` field and rehydrates Eloquent `Artist` models from the matching IDs.
 - **Nested Queries** - Search within arrays of related objects (styles, images)
 - **Minimum Should Match** - Control partial matching for OR conditions
 - **Prefix Matching** - Support for autocomplete-style search

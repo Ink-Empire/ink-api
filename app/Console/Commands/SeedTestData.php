@@ -2,6 +2,8 @@
 
 namespace App\Console\Commands;
 
+use App\Models\Artist;
+use App\Models\Tattoo;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Artisan;
 
@@ -14,6 +16,8 @@ class SeedTestData extends Command
                            {--tattoos : Seed tattoos and related data}
                            {--images : Seed images}
                            {--lookups : Seed lookup tables only (styles, tags, etc.)}
+                           {--post-types : Seed flash + seeking test posts (non-destructive; safe to re-run)}
+                           {--count= : Number of post-type records to create (default 20)}
                            {--elastic : Rebuild Elasticsearch indexes after seeding}
                            {--fresh : Wipe database and run migrations first}
                            {--clean : Run data:clean first to remove existing test data}
@@ -87,6 +91,12 @@ class SeedTestData extends Command
                 \Database\Seeders\ConversationSeeder::class,
             ],
         ],
+        'post-types' => [
+            'label' => 'Post Types Test Data (flash + seeking)',
+            'seeders' => [
+                \Database\Seeders\PostTypeSeeder::class,
+            ],
+        ],
     ];
 
     public function handle(): int
@@ -97,7 +107,13 @@ class SeedTestData extends Command
         // Check if any explicit options were passed
         $hasExplicitOptions = $this->option('all') || $this->option('users') ||
                               $this->option('studios') || $this->option('tattoos') ||
-                              $this->option('images') || $this->option('lookups');
+                              $this->option('images') || $this->option('lookups') ||
+                              $this->option('post-types');
+
+        // Allow overriding record count for post-types via --count (read by seeder via env)
+        if ($this->option('count')) {
+            putenv('POST_TYPE_SEED_COUNT='.(int) $this->option('count'));
+        }
 
         $selections = $this->getSelections();
 
@@ -155,7 +171,7 @@ class SeedTestData extends Command
         }
 
         $explicit = [];
-        foreach (['users', 'studios', 'tattoos', 'images', 'lookups'] as $opt) {
+        foreach (['users', 'studios', 'tattoos', 'images', 'lookups', 'post-types'] as $opt) {
             if ($this->option($opt)) {
                 $explicit[] = $opt;
             }
@@ -174,6 +190,7 @@ class SeedTestData extends Command
             'images' => '🖼️  Images',
             'appointments' => '📅 Appointments & Conversations',
             'lookups' => '📚 Lookup tables only (styles, tags, etc.)',
+            'post-types' => '⚡ Post Types Test Data (flash + seeking)',
         ];
 
         $this->info('What would you like to seed?');
@@ -264,8 +281,8 @@ class SeedTestData extends Command
 
         $this->info('🔍 Clearing Elasticsearch indexes...');
         try {
-            Artisan::call('elastic:delete-index "App\\\\Models\\\\Tattoo"');
-            Artisan::call('elastic:delete-index "App\\\\Models\\\\Artist"');
+            Artisan::call('elastic:delete-index', ['model' => Tattoo::class]);
+            Artisan::call('elastic:delete-index', ['model' => Artist::class]);
         } catch (\Exception $e) {
             $this->warn('Could not clear Elasticsearch indexes: ' . $e->getMessage());
         }
@@ -305,19 +322,19 @@ class SeedTestData extends Command
         $this->newLine();
         $this->info('🔍 Rebuilding Elasticsearch indexes...');
 
-        $rebuildTattoos = in_array('tattoos', $resolved);
+        $rebuildTattoos = in_array('tattoos', $resolved) || in_array('post-types', $resolved);
         $rebuildArtists = in_array('users', $resolved);
 
         try {
             if ($rebuildTattoos) {
-                Artisan::call('elastic:create-index-ifnotexists "App\\Models\\Tattoo"');
-                Artisan::call('scout:import "App\\Models\\Tattoo"');
+                Artisan::call('elastic:create-index-ifnotexists', ['model' => Tattoo::class]);
+                Artisan::call('scout:import', ['model' => Tattoo::class]);
                 $this->line('  ✓ Tattoos indexed');
             }
 
             if ($rebuildArtists) {
-                Artisan::call('elastic:create-index-ifnotexists "App\\Models\\Artist"');
-                Artisan::call('scout:import "App\\Models\\Artist"');
+                Artisan::call('elastic:create-index-ifnotexists', ['model' => Artist::class]);
+                Artisan::call('scout:import', ['model' => Artist::class]);
                 $this->line('  ✓ Artists indexed');
             }
         } catch (\Exception $e) {

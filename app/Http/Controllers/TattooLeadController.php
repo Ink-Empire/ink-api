@@ -18,7 +18,8 @@ class TattooLeadController extends Controller
     public function status(Request $request): JsonResponse
     {
         $user = $request->user();
-        $lead = TattooLead::where('user_id', $user->id)
+        $lead = TattooLead::with(['tattoo.primary_image', 'tattoo.images'])
+            ->where('user_id', $user->id)
             ->where('is_active', true)
             ->first();
 
@@ -52,6 +53,19 @@ class TattooLeadController extends Controller
                 'description' => $lead->description,
                 'is_active' => $lead->is_active,
             ],
+            'tattoo' => $lead->tattoo ? [
+                'id' => $lead->tattoo->id,
+                'title' => $lead->tattoo->title,
+                'description' => $lead->tattoo->description,
+                'post_type' => $lead->tattoo->post_type,
+                'primary_image' => $lead->tattoo->primary_image ? [
+                    'uri' => $lead->tattoo->primary_image->uri,
+                ] : null,
+                'images' => $lead->tattoo->images->map(fn ($img) => [
+                    'id' => $img->id,
+                    'uri' => $img->uri,
+                ])->values(),
+            ] : null,
         ]);
     }
 

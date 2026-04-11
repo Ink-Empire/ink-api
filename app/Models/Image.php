@@ -48,6 +48,33 @@ class Image extends Model
         return $this->hasMany(User::class, 'image_id');
     }
 
+    /**
+     * Normalize legacy CloudFront/S3 URIs to imgix on read.
+     */
+    public function getUriAttribute($value)
+    {
+        if (!$value || !config('filesystems.imgix.enabled')) {
+            return $value;
+        }
+
+        $imgixUrl = rtrim(config('filesystems.imgix.url'), '/');
+
+        // Already an imgix URL
+        if (str_contains($value, 'imgix.net')) {
+            return $value;
+        }
+
+        // Skip non-image URLs (gravatar, etc.)
+        if (!str_contains($value, 'cloudfront.net') && !str_contains($value, 's3.amazonaws.com') && !str_contains($value, 's3.us-east-1.amazonaws.com')) {
+            return $value;
+        }
+
+        // Extract the filename/path after the domain
+        $path = preg_replace('#^https?://[^/]+/#', '', $value);
+
+        return $imgixUrl . '/' . $path;
+    }
+
     public function setUriAttribute($filename = null)
     {
         if (!$filename) {

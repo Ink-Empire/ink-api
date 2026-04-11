@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\ArtistTattooApprovalStatus;
+use App\Enums\PostType;
 use App\Enums\UserTypes;
 use App\Http\Resources\Elastic\TattooResource;
 use App\Http\Resources\PendingTattooResource;
@@ -136,6 +137,8 @@ class TattooController extends Controller
             'total' => $total,
             'result_count' => count($response['response']),
             'has_more' => $paginationMeta['has_more'],
+            'sort' => $params['sort'] ?? null,
+            'post_types' => $params['post_types'] ?? null,
         ]);
 
         return response()->json([
@@ -318,7 +321,7 @@ class TattooController extends Controller
                     $studioId = null;
                 }
 
-                $tattoo = $this->tattooService->createTattoo($user, [
+                $tattooData = [
                     'tagged_artist_id' => $request->input('tagged_artist_id'),
                     'primary_image_id' => $primaryImage->id,
                     'title' => $request->input('title'),
@@ -330,7 +333,28 @@ class TattooController extends Controller
                     'attributed_artist_name' => $request->input('attributed_artist_name'),
                     'attributed_studio_name' => $request->input('attributed_studio_name'),
                     'attributed_location' => $request->input('attributed_location'),
-                ]);
+                    'post_type' => $request->input('post_type', PostType::PORTFOLIO),
+                ];
+
+                // Flash-specific fields
+                if ($tattooData['post_type'] === PostType::FLASH) {
+                    $tattooData['flash_price'] = $request->input('flash_price');
+                    $tattooData['flash_size'] = $request->input('flash_size');
+                }
+
+                // Seeking-specific fields
+                if ($tattooData['post_type'] === PostType::SEEKING) {
+                    $tattooData['timing'] = $request->input('timing');
+                    $tattooData['allow_artist_contact'] = $request->input('allow_artist_contact', true);
+                    $tattooData['style_ids'] = $styleIds;
+                    $tattooData['tag_ids'] = json_decode($request->input('tag_ids', '[]'), true);
+                    $tattooData['seeking_location'] = $request->input('seeking_location');
+                    $tattooData['location_lat_long'] = $request->input('location_lat_long');
+                    $tattooData['seeking_radius'] = $request->input('seeking_radius', 50);
+                    $tattooData['seeking_radius_unit'] = $request->input('seeking_radius_unit', 'mi');
+                }
+
+                $tattoo = $this->tattooService->createTattoo($user, $tattooData);
 
                 // Attach ALL images to the pivot table (including the primary image)
                 $imageIds = collect($images)->pluck('id')->toArray();

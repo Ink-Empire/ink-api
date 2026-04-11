@@ -43,6 +43,9 @@ class TattooResource extends JsonResource
                 'attributed_artist_name' => $this->attributed_artist_name ?? '',
                 'attributed_studio_name' => $this->attributed_studio_name ?? '',
                 'attributed_location' => $this->attributed_location ?? '',
+                'post_type' => $this->post_type ?? 'portfolio',
+                'flash_price' => $this->flash_price ? (float) $this->flash_price : null,
+                'flash_size' => $this->flash_size ?? null,
             ];
         } catch (\Exception $e) {
             \Log::error([

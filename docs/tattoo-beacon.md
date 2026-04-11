@@ -26,6 +26,12 @@ When a client enables their beacon:
 | `custom_themes` | json | Array of custom theme strings |
 | `description` | string | Free-text description of what they want |
 | `is_active` | boolean | Whether the beacon is currently active |
+| `lat` | decimal(10,7), nullable | Latitude for geo matching |
+| `lng` | decimal(10,7), nullable | Longitude for geo matching |
+| `location` | string, nullable | Human-readable location string |
+| `location_lat_long` | string, nullable | Combined `"lat,lng"` representation |
+| `radius` | integer, default `50` | Search radius for nearby artists |
+| `radius_unit` | string(10), default `mi` | `mi` or `km` |
 
 ## API Endpoints
 
@@ -109,15 +115,26 @@ Returns active, contactable leads for artists to browse.
 
 ### Artist Matching
 
-Currently, artists are matched by location string:
+`NotifyNearbyArtistsOfBeacon::findNearbyArtists()` resolves nearby artists in two ways:
+
+**1. Geo path (preferred — used when the lead has `lat` + `lng`):**
+- Delegates to `ArtistService::getNearby($lat, $lng, "{$radius}{$unit}")`
+- That service calls `Artist::search()->whereDistance('location_lat_long', $lat, $lng, $distance)` against the artists Elasticsearch index, where `location_lat_long` is mapped as a `geo_point`
+- Eloquent `Artist` models are then rehydrated from the matching IDs via `Artist::whereIn('id', $ids)->get()` so the rest of the job has full models for `->notify()`
+- Distance is built from `$lead->radius` + `$lead->radius_unit` so both `mi` and `km` are passed natively to Elasticsearch — no manual unit conversion
+- `ArtistService::getNearby()` accepts a `$distance` parameter (default `'50mi'`) and is reusable from anywhere else that needs nearby artists
+
+**2. String-location fallback (used only when the lead has no coordinates):**
 - Exact match on `location` field
 - Partial match on city name (e.g., "Los Angeles" matches "Los Angeles, CA")
-- Limited to 50 artists per notification batch
+- Hits MySQL directly via `User::where('type_id', UserTypes::ARTIST_TYPE_ID)`
+
+Both paths cap results at 50 artists per notification batch.
 
 Future enhancements could include:
-- Geo-distance calculation using `location_lat_long`
 - Style matching based on `style_ids`
 - Artist availability/books open status
+- Pushing the string-location fallback through Elasticsearch as well
 
 ## Notification Tracking
 
@@ -159,6 +176,9 @@ $count = NotificationLogItem::query()
 ### Jobs
 - `App\Jobs\NotifyNearbyArtistsOfBeacon` - Finds and notifies nearby artists
 
+### Services
+- `App\Services\ArtistService::getNearby()` - Reusable Elasticsearch geo lookup that returns Eloquent `Artist` models within a given radius of a coordinate
+
 ### Notifications
 - `App\Notifications\TattooBeaconNotification` - Email sent to artists
 
@@ -172,10 +192,35 @@ The beacon UI is in `ClientDashboardContent.tsx`:
 - Shows "X artists in your area notified" when active
 - Opens `TattooIntent` modal to collect preferences when enabling
 
+## Seeking Posts (Tattoo + Beacon Link)
+
+Clients can create "seeking" posts — tattoo uploads with `post_type = 'seeking'` that include reference images of work they want done. When a seeking post is created:
+
+1. A `TattooLead` record is automatically created with the post's styles/tags/description
+2. The tattoo is linked to the lead via `tattoo_lead_id` FK
+3. `NotifyNearbyArtistsOfBeacon` is dispatched to notify nearby artists
+4. The post appears in the main feed with a teal "Seeking Artist" strip
+5. Users can filter the feed by `post_type=seeking` to browse seeking posts
+
+### How it works in the API
+
+When `POST /tattoos/create` is called with `post_type: 'seeking'`:
+- `TattooService::createTattoo()` calls `createSeekingLead()` internally
+- The lead is created with `allow_artist_contact` (default true) and optional `timing`
+- The tattoo gets `approval_status = 'user_only'`, `is_visible = true`
+- No separate `/leads` API call is needed from the frontend
+
+### Database
+
+The `tattoos` table now includes:
+- `post_type` (string, default 'portfolio') — values: `portfolio`, `flash`, `seeking`
+- `flash_price` (decimal, nullable) — for flash designs
+- `flash_size` (string, nullable) — for flash designs
+- `tattoo_lead_id` (FK to `tattoo_leads`, nullable) — links seeking posts to their beacon
+
 ## Future Considerations
 
-1. **Geo-based matching** - Use lat/long for distance-based artist matching
-2. **Style matching** - Only notify artists whose styles match the client's preferences
-3. **Notification preferences** - Let artists opt-in/out of beacon notifications
-4. **Rate limiting** - Prevent spam by limiting how often a user can create new leads
-5. **Lead expiration** - Automatically deactivate leads past their `interested_by` date
+1. **Style matching** - Only notify artists whose styles match the client's preferences
+2. **Rate limiting** - Prevent spam by limiting how often a user can create new leads
+3. **Lead expiration** - Automatically deactivate leads past their `interested_by` date
+4. **Flash availability** - Add `is_available` boolean to mark flash designs as taken

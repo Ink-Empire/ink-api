@@ -25,6 +25,7 @@ class CleanTestData extends Command
     protected $signature = 'data:clean
                            {--preserve-admin : Preserve admin users (is_admin = true)}
                            {--preserve-lookups : Preserve lookup tables (styles, tags, placements, etc.)}
+                           {--post-types : Only remove PostTypeSeeder test records (flash/seeking)}
                            {--reseed : Re-run database seeders after cleanup}
                            {--force : Skip confirmation prompt}';
 
@@ -79,6 +80,11 @@ class CleanTestData extends Command
         $this->info('🧹 Test Data Cleanup Tool');
         $this->newLine();
 
+        // Targeted post-type cleanup only
+        if ($this->option('post-types')) {
+            return $this->handlePostTypesOnly($force);
+        }
+
         // Show what will be deleted
         $this->showDataSummary($preserveAdmin);
 
@@ -129,6 +135,42 @@ class CleanTestData extends Command
 
             return 1;
         }
+    }
+
+    /**
+     * Targeted cleanup of records created by PostTypeSeeder.
+     */
+    private function handlePostTypesOnly(bool $force): int
+    {
+        $marker = \Database\Seeders\PostTypeSeeder::MARKER;
+        $this->info("Removing PostTypeSeeder test records (marker: {$marker})");
+        $this->newLine();
+
+        $count = Tattoo::where('description', 'like', '%'.$marker.'%')->count();
+        if ($count === 0) {
+            $this->info('No post-type test records found.');
+            return 0;
+        }
+
+        $this->line("Found {$count} tattoo(s) to remove (plus linked leads).");
+
+        if (!$force && !$this->confirm('Proceed with deletion?')) {
+            $this->info('Cancelled.');
+            return 0;
+        }
+
+        $stats = \Database\Seeders\PostTypeSeeder::cleanup();
+
+        $this->info("✓ Deleted {$stats['tattoos']} tattoo(s) and {$stats['leads']} lead(s).");
+
+        try {
+            Artisan::call('scout:import', ['model' => Tattoo::class]);
+            $this->line('✓ Tattoo index refreshed');
+        } catch (\Exception $e) {
+            $this->warn('Could not refresh tattoo index: ' . $e->getMessage());
+        }
+
+        return 0;
     }
 
     /**

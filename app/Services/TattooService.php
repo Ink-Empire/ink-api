@@ -3,11 +3,14 @@
 namespace App\Services;
 
 use App\Enums\ArtistTattooApprovalStatus;
+use App\Enums\PostType;
 use App\Enums\UserTypes;
 use App\Exceptions\TattooNotFoundException;
 use App\Jobs\IndexTattooJob;
+use App\Jobs\NotifyNearbyArtistsOfBeacon;
 use App\Models\Artist;
 use App\Models\Tattoo;
+use App\Models\TattooLead;
 use App\Models\User;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
@@ -76,6 +79,14 @@ class TattooService extends SearchService
         if (isset($this->filters['booksOpen']) && $this->filters['booksOpen'] === true) {
             $this->search->where('artist_books_open', '=', true);
         }
+
+        if (!empty($this->filters['post_type'])) {
+            $this->search->where('post_type', '=', $this->filters['post_type']);
+        }
+
+        if (!empty($this->filters['post_types']) && is_array($this->filters['post_types'])) {
+            $this->search->where('post_type', 'in', $this->filters['post_types']);
+        }
     }
 
     /**
@@ -102,7 +113,30 @@ class TattooService extends SearchService
     {
         $isClient = $user->type_id === UserTypes::CLIENT_TYPE_ID;
 
+        $postType = $data['post_type'] ?? PostType::PORTFOLIO;
+
         if ($isClient) {
+            // Seeking posts: visible, user_only, with linked beacon
+            if ($postType === PostType::SEEKING) {
+                $tattoo = Tattoo::create([
+                    'uploaded_by_user_id' => $user->id,
+                    'approval_status' => ArtistTattooApprovalStatus::USER_ONLY,
+                    'is_visible' => true,
+                    'is_demo' => (bool) $user->is_demo,
+                    'post_type' => PostType::SEEKING,
+                    'primary_image_id' => $data['primary_image_id'],
+                    'title' => $data['title'] ?? null,
+                    'description' => $data['description'] ?? null,
+                    'primary_style_id' => $data['primary_style_id'] ?? null,
+                ]);
+
+                // Create linked beacon
+                $lead = $this->createSeekingLead($user, $data);
+                $tattoo->update(['tattoo_lead_id' => $lead->id]);
+
+                return $tattoo;
+            }
+
             $taggedArtistId = $data['tagged_artist_id'] ?? null;
             $approvalStatus = $taggedArtistId
                 ? ArtistTattooApprovalStatus::PENDING
@@ -115,6 +149,7 @@ class TattooService extends SearchService
                 'approval_status' => $approvalStatus,
                 'is_visible' => $isVisible,
                 'is_demo' => (bool) $user->is_demo,
+                'post_type' => PostType::PORTFOLIO,
                 'primary_image_id' => $data['primary_image_id'],
                 'title' => $data['title'] ?? null,
                 'description' => $data['description'] ?? null,
@@ -132,6 +167,9 @@ class TattooService extends SearchService
             'approval_status' => ArtistTattooApprovalStatus::APPROVED,
             'is_visible' => true,
             'is_demo' => (bool) $user->is_demo,
+            'post_type' => $postType,
+            'flash_price' => $postType === PostType::FLASH ? ($data['flash_price'] ?? null) : null,
+            'flash_size' => $postType === PostType::FLASH ? ($data['flash_size'] ?? null) : null,
             'primary_image_id' => $data['primary_image_id'],
             'studio_id' => $user->primary_studio?->id,
             'title' => $data['title'] ?? null,
@@ -140,6 +178,48 @@ class TattooService extends SearchService
             'duration' => $data['duration'] ?? null,
             'primary_style_id' => $data['primary_style_id'] ?? null,
         ]);
+    }
+
+    /**
+     * Create a TattooLead linked to a seeking post and notify nearby artists.
+     */
+    private function createSeekingLead(User $user, array $data): TattooLead
+    {
+        // Deactivate existing active leads
+        TattooLead::where('user_id', $user->id)
+            ->where('is_active', true)
+            ->update(['is_active' => false]);
+
+        // Use provided location or fall back to user's profile location
+        $locationLatLong = $data['location_lat_long'] ?? $user->location_lat_long;
+        $lat = null;
+        $lng = null;
+        if ($locationLatLong) {
+            [$lat, $lng] = array_map('floatval', explode(',', $locationLatLong));
+        }
+
+        $lead = TattooLead::create([
+            'user_id' => $user->id,
+            'timing' => $data['timing'] ?? null,
+            'interested_by' => TattooLead::calculateInterestedBy($data['timing'] ?? null),
+            'allow_artist_contact' => $data['allow_artist_contact'] ?? true,
+            'style_ids' => $data['style_ids'] ?? null,
+            'tag_ids' => $data['tag_ids'] ?? null,
+            'description' => $data['description'] ?? null,
+            'is_active' => true,
+            'lat' => $lat,
+            'lng' => $lng,
+            'location' => $data['seeking_location'] ?? $user->location,
+            'location_lat_long' => $locationLatLong,
+            'radius' => $data['seeking_radius'] ?? 50,
+            'radius_unit' => $data['seeking_radius_unit'] ?? 'mi',
+        ]);
+
+        if ($lead->allow_artist_contact) {
+            NotifyNearbyArtistsOfBeacon::dispatch($lead->id);
+        }
+
+        return $lead;
     }
 
     /**

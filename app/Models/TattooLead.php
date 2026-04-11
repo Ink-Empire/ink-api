@@ -22,6 +22,10 @@ class TattooLead extends Model
         'is_active',
         'lat',
         'lng',
+        'location',
+        'location_lat_long',
+        'radius',
+        'radius_unit',
     ];
 
     protected $casts = [
@@ -33,11 +37,17 @@ class TattooLead extends Model
         'interested_by' => 'date',
         'lat' => 'decimal:7',
         'lng' => 'decimal:7',
+        'radius' => 'integer',
     ];
 
     public function user(): BelongsTo
     {
         return $this->belongsTo(User::class);
+    }
+
+    public function tattoo()
+    {
+        return $this->hasOne(Tattoo::class, 'tattoo_lead_id');
     }
 
     /**

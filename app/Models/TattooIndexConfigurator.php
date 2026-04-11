@@ -196,6 +196,10 @@ class TattooIndexConfigurator extends IndexConfigurator
             'attributed_artist_name' => Datatypes::TEXT,
             'attributed_studio_name' => Datatypes::TEXT,
             'attributed_location' => Datatypes::KEYWORD,
+
+            'post_type' => Datatypes::KEYWORD,
+            'flash_price' => Datatypes::FLOAT,
+            'flash_size' => Datatypes::KEYWORD,
         ]
     ];
 

@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\UserNotFoundException;
 use App\Models\Artist;
 use App\Models\Image;
+use Illuminate\Database\Eloquent\Collection;
 
 /**
  *
@@ -80,6 +81,33 @@ class ArtistService extends SearchService
     public function getById($id, $model = 'artist')
     {
         return parent::getById($id, $model);
+    }
+
+    /**
+     * Find artists within a given radius of a coordinate point using Elasticsearch.
+     *
+     * Queries the artist index's location_lat_long geo_point and rehydrates
+     * Eloquent Artist models from the matching IDs.
+     *
+     * @param  float  $lat
+     * @param  float  $lng
+     * @param  string $distance Distance with unit suffix (e.g. "50mi", "25km")
+     * @param  int    $limit
+     * @return Collection<int, Artist>
+     */
+    public function getNearby(float $lat, float $lng, string $distance = '50mi', int $limit = 50): Collection
+    {
+        $results = Artist::search()
+            ->whereDistance('location_lat_long', $lat, $lng, $distance)
+            ->take($limit)
+            ->get();
+
+        $ids = collect($results['response'] ?? $results)
+            ->pluck('id')
+            ->filter()
+            ->all();
+
+        return Artist::whereIn('id', $ids)->get();
     }
 
     /**

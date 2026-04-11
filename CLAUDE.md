@@ -15,8 +15,7 @@
 - **Error Handling**: Use Laravel exceptions and proper try/catch blocks
 - **Testing**: PHPUnit for backend, Laravel Dusk for frontend
 - **Documentation**: DocBlocks on classes and complex methods
-- When asked to document a flow or process, generate
-- Mermaid diagrams and save to `docs/flows/`.
+- When asked to document a flow or process, generate Mermaid diagrams and save to `docs/flows/`
 
 ### Standard prompts for generating flow docs:
 
@@ -39,7 +38,7 @@ Map search from user input through Elasticsearch, filters, notBlockedBy scope, a
 - Use `-->|label|` for labeled arrows
 - Save output to `docs/flows/[flow-name].md`
 - **Git Flow**: Create branches from develop, request code review before merging
-- Don't automatically perform any git operations; I'll handle git and version control
+- Do not automatically perform any git operations — git is handled manually
 
 ## Email & Notifications
 - **Always use Laravel Notifications** (`$user->notify()` or `Notification::route()`) — never use the `Mail` facade directly
@@ -136,7 +135,34 @@ php artisan test
 The `phpunit.xml` uses `force="true"` to ensure the `inkedin_test` database is always used.
 
 All code changes must pass CI tests and receive an approval before merging to develop.
-Always check the /docs directory to understand the flow and update it when we make changes to a process
-Keep comments to a minimum and never put emojis into this project
-Do not change the order of database migrations or attempt to rename them.
-Do not make proactive decisions about implementation. Always present options and wait for direction before writing code.
+
+## Scope & Focus
+- When implementing a feature, only modify files directly related to the task
+- Do not refactor unrelated code even if it looks improvable
+- Do not add unrequested features or "nice to haves"
+- If something is ambiguous, stop and ask rather than assume
+
+## Output & Verification
+- After generating any code, summarize what was created, what files were changed, and what still needs to be done
+- Flag any assumptions made during implementation
+- When multiple implementation approaches exist, briefly explain the tradeoff between them before proceeding — do not pick one silently
+
+## Pattern Consistency
+- Before implementing anything new, check existing code for established patterns and match them exactly
+- Do not introduce a second way of doing something that already exists in the codebase
+
+## Database & Migrations
+- Never modify existing migrations — always create new ones
+- Do not change the order of database migrations or attempt to rename them
+
+## Dependencies
+- Before adding any package, ask for approval
+- Prefer solving problems with what the framework already provides
+- No extra packages unless explicitly requested
+
+## General Rules
+- Always check the /docs directory to understand the flow and update it when we make changes to a process
+- Keep comments to a minimum
+- Never put emojis into this project
+- Do not make proactive decisions about implementation — always present options and wait for direction before writing code
+- Prefer explicit over clever - no unnecessary abstraction
