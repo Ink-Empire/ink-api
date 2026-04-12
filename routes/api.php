@@ -307,6 +307,11 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::put('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminUpdate']);
     Route::delete('tattoos/{id}', [\App\Http\Controllers\TattooController::class, 'adminDestroy']);
 
+    // Tattoo Leads (Beacons)
+    Route::get('tattoo-leads', [\App\Http\Controllers\TattooLeadController::class, 'adminIndex']);
+    Route::get('tattoo-leads/{id}', [\App\Http\Controllers\TattooLeadController::class, 'adminShow']);
+    Route::put('tattoo-leads/{id}', [\App\Http\Controllers\TattooLeadController::class, 'adminUpdate']);
+
     // Demo data management
     Route::get('demo-data/preview', [\App\Http\Controllers\Admin\DemoDataController::class, 'preview']);
     Route::post('demo-data/purge', [\App\Http\Controllers\Admin\DemoDataController::class, 'purge']);
