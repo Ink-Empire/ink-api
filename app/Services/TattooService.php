@@ -85,15 +85,7 @@ class TattooService extends SearchService
         }
 
         if (!empty($this->filters['post_types']) && is_array($this->filters['post_types'])) {
-            // Filter by exclusion so legacy docs indexed before post_type existed
-            // (where the field is missing) are treated as portfolio and survive.
-            $excluded = array_values(array_diff(
-                [PostType::PORTFOLIO, PostType::FLASH, PostType::SEEKING],
-                $this->filters['post_types']
-            ));
-            if (!empty($excluded)) {
-                $this->search->whereNot('post_type', 'in', $excluded);
-            }
+            $this->search->where('post_type', 'in', $this->filters['post_types']);
         }
     }
 
