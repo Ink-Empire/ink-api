@@ -43,8 +43,17 @@ return [
     ],
 
     'slack' => [
-        'webhook_url' => env('SLACK_NEW_CONTACT_WEBHOOK_URL'),
+        'webhook_url'         => env('SLACK_NEW_CONTACT_WEBHOOK_URL'),
+        'new_contact_webhook' => env('SLACK_NEW_CONTACT_WEBHOOK_URL'),
         'support_webhook_url' => env('SLACK_SUPPORT_WEBHOOK_URL'),
+    ],
+
+    'inbound_imap' => [
+        'host'       => env('INBOUND_IMAP_HOST'),
+        'port'       => env('INBOUND_IMAP_PORT', 993),
+        'username'   => env('INBOUND_IMAP_USERNAME'),
+        'password'   => env('INBOUND_IMAP_PASSWORD'),
+        'encryption' => env('INBOUND_IMAP_ENCRYPTION', 'ssl'),
     ],
 
 ];

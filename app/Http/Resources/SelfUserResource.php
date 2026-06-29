@@ -56,6 +56,8 @@ class SelfUserResource extends JsonResource
                 'studios' => $this->studios->pluck('id')->toArray(),
             ],
             'username' => $this->username,
+            // Account state
+            'force_password_reset' => (bool) $this->force_password_reset,
             // Admin fields
             'is_admin' => (bool) $this->is_admin,
             // Owned studio (if user owns a studio)

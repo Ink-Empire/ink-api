@@ -7,26 +7,13 @@ use Illuminate\Console\Command;
 
 class ElasticsearchInit extends Command
 {
-    /**
-     * The name and signature of the console command.
-     *
-     * @var string
-     */
     protected $signature = 'elasticsearch:init {index? : The name of the index to create} {--model= : The model to index data for}';
 
-    /**
-     * The console command description.
-     *
-     * @var string
-     */
+    private ElasticsearchService $elasticsearch;
+
     protected $description = 'Initialize Elasticsearch indices and index data';
 
-    /**
-     * Create a new command instance.
-     *
-     * @return void
-     */
-    public function __construct(protected ElasticsearchService $elasticsearch)
+    public function __construct()
     {
         parent::__construct();
     }
@@ -36,6 +23,7 @@ class ElasticsearchInit extends Command
      */
     public function handle()
     {
+        $this->elasticsearch = app(ElasticsearchService::class);
         $index = $this->argument('index');
         $modelOption = $this->option('model');
         

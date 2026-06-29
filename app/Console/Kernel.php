@@ -18,6 +18,18 @@ class Kernel extends ConsoleKernel
      */
     protected function schedule(Schedule $schedule)
     {
+        // Poll inbound email mailbox every 3 minutes
+        $schedule->command('email:fetch-inbound')
+            ->everyThreeMinutes()
+            ->withoutOverlapping()
+            ->onOneServer();
+
+        // Expire provisional email-inbound accounts with no login after 14 days
+        $schedule->command('users:expire-provisional')
+            ->dailyAt('02:00')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // Refresh calendar webhooks daily (before they expire)
         $schedule->job(new RefreshCalendarWebhooks)
             ->daily()

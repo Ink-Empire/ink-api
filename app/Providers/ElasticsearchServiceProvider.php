@@ -16,6 +16,10 @@ class ElasticsearchServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
+        if (config('scout.driver') !== 'elasticsearch') {
+            return;
+        }
+
         $this->app->singleton(ElasticsearchService::class, function ($app) {
             return new ElasticsearchService();
         });
@@ -26,6 +30,10 @@ class ElasticsearchServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
+        if (config('scout.driver') !== 'elasticsearch') {
+            return;
+        }
+
         resolve(EngineManager::class)->extend('elasticsearch', function () {
             return new ElasticsearchEngine(app(ElasticsearchService::class));
         });

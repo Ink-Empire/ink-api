@@ -46,9 +46,10 @@ class UpdatePasswordController extends Controller
             }
         }
 
-        // Update the password
+        // Update the password and clear any forced-reset flag
         $user->forceFill([
-            'password' => Hash::make($request->password),
+            'password'             => Hash::make($request->password),
+            'force_password_reset' => false,
         ])->save();
 
         // Store the new password in history

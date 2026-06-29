@@ -52,6 +52,40 @@ class SlackService
         }
     }
 
+    public function notifyEmailInboundSignup(\App\Models\User $user, int $photoCount): bool
+    {
+        $webhookUrl = config('services.slack.new_contact_webhook');
+
+        if (empty($webhookUrl)) {
+            Log::warning('Slack new_contact_webhook not configured');
+            return false;
+        }
+
+        $message = "New artist via email upload\n"
+            . "━━━━━━━━━━━━━━━━━━\n"
+            . "*Name:* {$user->name}\n"
+            . "*Email:* {$user->email}\n"
+            . "*Photos uploaded:* {$photoCount}\n"
+            . "*Account expires if no login:* " . now()->addDays(14)->format('M j, Y') . "\n"
+            . "_Provisional account — awaiting first login_";
+
+        try {
+            $response = \Illuminate\Support\Facades\Http::post($webhookUrl, ['text' => $message]);
+
+            if (!$response->successful()) {
+                Log::error('Slack email inbound signup notification failed', [
+                    'status' => $response->status(),
+                ]);
+                return false;
+            }
+
+            return true;
+        } catch (\Exception $e) {
+            Log::error('Slack email inbound signup notification error', ['message' => $e->getMessage()]);
+            return false;
+        }
+    }
+
     public function notifyNewUser(\App\Models\User $user): bool
     {
         if (app()->environment() !== 'production') {
