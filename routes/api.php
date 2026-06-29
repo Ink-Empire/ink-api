@@ -19,6 +19,7 @@ use App\Http\Controllers\PlacementController;
 use App\Http\Controllers\BlockedTermController;
 use App\Http\Controllers\CalendarOAuthController;
 use App\Http\Controllers\CalendarWebhookController;
+use App\Http\Controllers\InboundEmailController;
 use App\Http\Controllers\TattooLeadController;
 use App\Http\Controllers\EmailTestController;
 use App\Http\Controllers\SubscriptionController;
@@ -247,6 +248,7 @@ Route::get('/calendar/callback', [CalendarOAuthController::class, 'handleCallbac
 
 // Webhook endpoints (no auth - verified by channel ID/signature)
 Route::post('/webhooks/google-calendar', [CalendarWebhookController::class, 'handleGoogleWebhook']);
+Route::post('/webhooks/inbound-email', [InboundEmailController::class, 'handle']);
 
 // Admin routes (requires authentication + admin privilege)
 Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function () {

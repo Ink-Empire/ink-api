@@ -1,4 +1,4 @@
-FROM php:8.3-apache
+FROM php:8.3-apache-bullseye
 
 LABEL maintainer="Ink API Team"
 
@@ -28,6 +28,11 @@ RUN docker-php-ext-install pdo pdo_mysql pdo_pgsql mysqli mbstring exif pcntl bc
 # Install Imagick via PECL
 RUN pecl install imagick \
     && docker-php-ext-enable imagick
+
+# Install php-imap (needed for inbound email polling)
+RUN apt-get install -y libc-client-dev libkrb5-dev --no-install-recommends \
+    && docker-php-ext-configure imap --with-kerberos --with-imap-ssl \
+    && docker-php-ext-install imap
 
 # Install XDebug
 RUN pecl install xdebug \
