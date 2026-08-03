@@ -7,14 +7,6 @@ use Illuminate\Database\Eloquent\Model;
 
 class Appointment extends Model
 {
-    protected static function booted()
-    {
-        static::saved(function ($appointment) {
-            // Your logic here, e.g.:
-            //TODO if the appointment status is changed to booked, send a notification to the client
-        });
-    }
-
     protected $fillable = [
         'id',
         'title',

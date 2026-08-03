@@ -24,10 +24,6 @@ use Illuminate\Support\Facades\Route;
 |
 */
 
-Route::get('/test', function () {
-   return "hello";
-});
-
 Route::prefix('api')->group(function () {
     // Public tattoo routes - optional auth to filter blocked artists
     // Private cache only (response varies by user due to blocked artist filtering)
@@ -211,8 +207,8 @@ Route::prefix('api')->group(function () {
         Route::get('/{id}', 'ElasticController@getById');
         Route::post('/initial-search', 'SearchController@getInitialSearch');
 
-        // Protected elastic routes - require authentication (admin operations)
-        Route::middleware('auth:sanctum')->group(function () {
+        // Protected elastic routes - admin only (index rebuild/reindex operations)
+        Route::middleware(['auth:sanctum', 'admin'])->group(function () {
             Route::post('/rebuild', [ElasticController::class, 'rebuild']);
             Route::post('/rebuild-by-elastic', [ElasticController::class, 'rebuildByElasticQuery']);
             Route::post('/rebuild-bypass', [ElasticController::class, 'rebuildBypass']);
