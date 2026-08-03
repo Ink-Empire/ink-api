@@ -14,10 +14,12 @@ use App\Models\Message;
 use App\Models\User;
 use App\Notifications\BookingRequestNotification;
 use App\Notifications\BookingAcceptedNotification;
+use App\Notifications\GuestAppointmentInviteNotification;
 use App\Services\ConversationService;
 use App\Util\ModelLookup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Password;
 use Illuminate\Support\Str;
 
 class AppointmentController extends Controller
@@ -492,9 +494,11 @@ class AppointmentController extends Controller
 
         // Find or create the guest user by email
         $guest = User::where('email', $data['guest_email'])->first();
+        $isNewGuest = false;
 
         if (!$guest) {
             // Create a new user with a temporary password
+            $isNewGuest = true;
             $guest = User::create([
                 'email' => $data['guest_email'],
                 'name' => $data['guest_name'] ?? explode('@', $data['guest_email'])[0],
@@ -515,7 +519,13 @@ class AppointmentController extends Controller
             'description' => $data['note'] ?? null,
         ]);
 
-        // TODO: Send email notification to guest
+        try {
+            // New guests get a set-password link so they can claim the account
+            $setupToken = $isNewGuest ? Password::createToken($guest) : null;
+            $guest->notify(new GuestAppointmentInviteNotification($appointment, $setupToken));
+        } catch (\Exception $e) {
+            \Log::error('Failed to send guest appointment invite: ' . $e->getMessage());
+        }
 
         return response()->json([
             'message' => 'Invite sent successfully',

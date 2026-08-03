@@ -231,7 +231,7 @@ class ElasticController
         }
     }
 
-    //TODO wrap this route in a sanctum role-based restriction ASAP
+    // Not currently routed. If ever exposed, it must sit behind the admin middleware.
     public function dropIndex($index)
     {
         try {
