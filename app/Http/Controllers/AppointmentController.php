@@ -16,6 +16,7 @@ use App\Notifications\BookingRequestNotification;
 use App\Notifications\BookingAcceptedNotification;
 use App\Notifications\GuestAppointmentInviteNotification;
 use App\Services\ConversationService;
+use App\Services\UserService;
 use App\Util\ModelLookup;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Cache;
@@ -476,7 +477,7 @@ class AppointmentController extends Controller
         return response()->json(['message' => 'Appointment deleted successfully'], 200);
     }
 
-    public function invite(Request $request)
+    public function invite(Request $request, UserService $userService)
     {
         $data = $request->validate([
             'artist_id' => 'required|exists:users,id',
@@ -497,14 +498,11 @@ class AppointmentController extends Controller
         $isNewGuest = false;
 
         if (!$guest) {
-            // Create a new user with a temporary password
             $isNewGuest = true;
-            $guest = User::create([
-                'email' => $data['guest_email'],
-                'name' => $data['guest_name'] ?? explode('@', $data['guest_email'])[0],
-                'password' => bcrypt(Str::random(16)),
-                'type_id' => 1, // Client type
-            ]);
+            $guest = $userService->createProvisionalClient(
+                $data['guest_email'],
+                $data['guest_name'] ?? null
+            );
         }
 
         // Create the appointment

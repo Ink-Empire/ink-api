@@ -2,12 +2,15 @@
 
 namespace App\Services;
 
+use App\Enums\UserTypes;
 use App\Exceptions\UserNotFoundException;
 use App\Models\Image;
 use App\Models\Style;
 use App\Models\Tattoo;
 use App\Models\User;
 use App\Util\ModelLookup;
+use Illuminate\Support\Facades\Hash;
+use Illuminate\Support\Str;
 
 
 /**
@@ -20,6 +23,45 @@ class UserService
         'tattoos' => Tattoo::class,
         'artists' => User::class
     ];
+
+    /**
+     * Create a placeholder client account for someone an artist is booking
+     * who has not signed up yet. They claim it via a set-password link.
+     */
+    public function createProvisionalClient(string $email, ?string $name = null): User
+    {
+        $username = $this->generateUniqueUsername($email);
+
+        return User::create([
+            'name' => $name ?: explode('@', $email)[0],
+            'email' => $email,
+            'username' => $username,
+            'slug' => $username,
+            'password' => Hash::make(Str::random(32)),
+            'type_id' => UserTypes::CLIENT_TYPE_ID,
+            'location' => '',
+            'has_accepted_toc' => false,
+            'has_accepted_privacy_policy' => false,
+        ]);
+    }
+
+    /**
+     * Derive a username that collides with no existing username or slug.
+     */
+    public function generateUniqueUsername(string $email): string
+    {
+        $base = strtolower(preg_replace('/[^a-zA-Z0-9._]/', '', explode('@', $email)[0]));
+        $base = substr($base ?: 'client', 0, 28);
+
+        $username = $base;
+        $counter = 1;
+        while (User::where('username', $username)->orWhere('slug', $username)->exists()) {
+            $username = $base . $counter;
+            $counter++;
+        }
+
+        return $username;
+    }
 
     /**
      * Get a user by their ID or username

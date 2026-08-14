@@ -7,7 +7,7 @@
 */
 
 uses(Tests\TestCase::class)->in('Feature', 'Unit');
-uses(Tests\Traits\RefreshTestDatabase::class)->in('Feature/Contracts');
+uses(Tests\Traits\RefreshTestDatabase::class)->in('Feature/Contracts', 'Feature/Flows');
 
 /*
 |--------------------------------------------------------------------------
