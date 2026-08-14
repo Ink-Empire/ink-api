@@ -457,4 +457,52 @@ class GoogleCalendarService
 
         return implode("\n", $lines);
     }
+
+    /**
+     * Time ranges on a given date that are already taken by the artist's synced
+     * external calendars, so availability does not offer them to clients.
+     *
+     * Returned as ['start' => 'H:i', 'end' => 'H:i'] clipped to the date. An
+     * all-day event returns the whole day.
+     */
+    public function getExternalBusyRanges(int $userId, string $date): array
+    {
+        $connectionIds = CalendarConnection::where('user_id', $userId)
+            ->where('sync_enabled', true)
+            ->pluck('id');
+
+        if ($connectionIds->isEmpty()) {
+            return [];
+        }
+
+        $dayStart = Carbon::parse($date)->startOfDay();
+        $dayEnd = $dayStart->copy()->endOfDay();
+
+        $events = ExternalCalendarEvent::whereIn('calendar_connection_id', $connectionIds)
+            ->whereNull('appointment_id') // our own appointments already block separately
+            ->where('status', '!=', 'cancelled')
+            ->where('starts_at', '<', $dayEnd)
+            ->where('ends_at', '>', $dayStart)
+            ->get();
+
+        $ranges = [];
+
+        foreach ($events as $event) {
+            if ($event->all_day) {
+                $ranges[] = ['start' => '00:00', 'end' => '23:59'];
+                continue;
+            }
+
+            $start = Carbon::parse($event->starts_at);
+            $end = Carbon::parse($event->ends_at);
+
+            // Clip events that span midnight to this date
+            $ranges[] = [
+                'start' => $start->lt($dayStart) ? '00:00' : $start->format('H:i'),
+                'end' => $end->gt($dayEnd) ? '23:59' : $end->format('H:i'),
+            ];
+        }
+
+        return $ranges;
+    }
 }

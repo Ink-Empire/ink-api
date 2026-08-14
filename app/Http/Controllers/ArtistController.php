@@ -17,6 +17,7 @@ use App\Services\ArtistService;
 use App\Services\ImageService;
 use App\Services\TattooService;
 use App\Services\PaginationService;
+use App\Services\GoogleCalendarService;
 use App\Util\ModelLookup;
 use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
@@ -633,7 +634,7 @@ class ArtistController extends Controller
     /**
      * Get available time slots for booking with an artist on a specific date.
      */
-    public function getAvailableSlots(Request $request, $id): JsonResponse
+    public function getAvailableSlots(Request $request, $id, GoogleCalendarService $googleCalendarService): JsonResponse
     {
         $artist = ModelLookup::findArtist($id);
 
@@ -720,6 +721,9 @@ class ArtistController extends Controller
             }
         }
 
+        // Time already taken on the artist's synced external calendars
+        $externalBusy = $googleCalendarService->getExternalBusyRanges($artist->id, $date);
+
         // Filter out slots that overlap existing appointments
         $availableSlots = [];
         foreach ($slots as $slot) {
@@ -735,6 +739,15 @@ class ArtistController extends Controller
                 if ($slotTime->lt($aptEnd) && $slotEndTime->gt($aptStart)) {
                     $overlaps = true;
                     break;
+                }
+            }
+
+            if (!$overlaps) {
+                foreach ($externalBusy as $busy) {
+                    if ($slotTime->lt(Carbon::parse($busy['end'])) && $slotEndTime->gt(Carbon::parse($busy['start']))) {
+                        $overlaps = true;
+                        break;
+                    }
                 }
             }
 

@@ -314,6 +314,26 @@ GOOGLE_REDIRECT_URI=https://api.inkedin.dev/api/calendar/callback
 5. Delta sync pulls only changed events
 ```
 
+### External Events Block Availability
+
+Events synced in from Google are treated as busy time, so clients are never
+offered a slot the artist is already committed to elsewhere.
+
+```
+1. GET /api/artists/{id}/available-slots computes candidate slots
+2. GoogleCalendarService::getExternalBusyRanges returns busy ranges for the date
+3. Slots overlapping either an appointment or an external event are dropped
+```
+
+Rules:
+
+- Only connections with `sync_enabled = true` are consulted
+- Events with `status = cancelled` are ignored
+- All-day events block the entire day
+- Events spanning midnight are clipped to the requested date
+- Events carrying an `appointment_id` are skipped, since the InkedIn
+  appointment they mirror already blocks the slot
+
 ---
 
 ## Key Files
