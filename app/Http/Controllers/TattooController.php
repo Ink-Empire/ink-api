@@ -1148,7 +1148,20 @@ class TattooController extends Controller
             }
         }
 
-        $query->orderBy($sort, $order);
+        // The admin list exposes computed columns (artist_name, tag_names) that
+        // aren't columns on tattoos, so sorts must be mapped or rejected.
+        $order = strtolower($order) === 'asc' ? 'asc' : 'desc';
+        $sortable = ['id', 'title', 'description', 'artist_id', 'placement_id', 'is_visible', 'is_demo', 'created_at', 'updated_at'];
+
+        if ($sort === 'artist_name') {
+            $query->leftJoin('users', 'tattoos.artist_id', '=', 'users.id')
+                ->select('tattoos.*')
+                ->orderBy('users.name', $order);
+        } elseif (in_array($sort, $sortable, true)) {
+            $query->orderBy('tattoos.' . $sort, $order);
+        } else {
+            $query->orderBy('tattoos.id', 'desc');
+        }
 
         $total = $query->count();
         $tattoos = $this->paginationService->applyToQuery($query, $pagination['offset'], $pagination['per_page'])->get();

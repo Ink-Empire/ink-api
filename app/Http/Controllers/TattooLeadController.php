@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use Illuminate\Support\Facades\Schema;
 use App\Jobs\NotifyNearbyArtistsOfBeacon;
 use App\Models\TattooLead;
 use App\Models\User;
@@ -370,6 +371,12 @@ class TattooLeadController extends Controller
             });
         }
 
+        // Guard the client-supplied sort: react-admin can request computed
+        // columns that don't exist on the table, which would 500 the request.
+        $order = strtolower($order) === 'asc' ? 'asc' : 'desc';
+        if (!Schema::hasColumn($query->getModel()->getTable(), $sort)) {
+            $sort = 'id';
+        }
         $query->orderBy($sort, $order);
 
         $total = $query->count();
