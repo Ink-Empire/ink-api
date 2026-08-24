@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\UserTypes;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 
@@ -10,6 +11,24 @@ class SlackService
 {
     protected ?string $webhookUrl;
     protected ?string $supportWebhookUrl;
+
+    /**
+     * Render an instant so Slack localises it to each viewer's own timezone.
+     *
+     * Timestamps are stored in UTC, so formatting them directly shows UTC to
+     * everyone regardless of where they are. Slack's date syntax takes a unix
+     * timestamp and renders it per viewer; the text after the pipe is the
+     * fallback for clients that cannot resolve it.
+     */
+    protected function slackTime(
+        \DateTimeInterface $when,
+        string $slackFormat = '{date_short_pretty} at {time}',
+        string $fallbackFormat = 'M j, Y \a\t g:i A T'
+    ): string {
+        $moment = Carbon::instance($when);
+
+        return '<!date^' . $moment->getTimestamp() . '^' . $slackFormat . '|' . $moment->format($fallbackFormat) . '>';
+    }
 
     public function __construct()
     {
@@ -66,7 +85,7 @@ class SlackService
             . "*Name:* {$user->name}\n"
             . "*Email:* {$user->email}\n"
             . "*Photos uploaded:* {$photoCount}\n"
-            . "*Account expires if no login:* " . now()->addDays(14)->format('M j, Y') . "\n"
+            . "*Account expires if no login:* " . $this->slackTime(now()->addDays(14), '{date_short}', 'M j, Y') . "\n"
             . "_Provisional account — awaiting first login_";
 
         try {
@@ -100,7 +119,7 @@ class SlackService
             default => 'Unknown type',
         };
 
-        $timestamp = $user->created_at->format('M j, Y \a\t g:i A');
+        $timestamp = $this->slackTime($user->created_at);
 
         $message = "New User Signup!\n"
             . "━━━━━━━━━━━━━━━━━━\n"
@@ -120,7 +139,7 @@ class SlackService
             return false;
         }
 
-        $timestamp = now()->format('M j, Y \a\t g:i A');
+        $timestamp = $this->slackTime(now());
 
         $message = "New Support Request\n"
             . "━━━━━━━━━━━━━━━━━━\n"

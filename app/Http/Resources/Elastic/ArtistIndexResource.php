@@ -48,7 +48,12 @@ class ArtistIndexResource extends JsonResource
             'is_demo' => (bool) $this->is_demo,
             'saved_count' => (int) ($this->saved_count ?? 0),
             'styles' => StyleResource::collection($this->styles ?? []),
-            'type' => UserTypes::ARTIST,
+            // The artists index holds both artists and studio accounts, and the
+            // frontend picks its card and route from this field. Deriving it
+            // from type_id stops a studio being rendered as an artist.
+            'type' => $this->type_id === UserTypes::STUDIO_TYPE_ID
+                ? UserTypes::STUDIO
+                : UserTypes::ARTIST,
             'primary_image' => $this->primary_image ?? null,
             'username' => $this->username,
             'settings' => $this->settings ? $this->settings->toArray() : [],

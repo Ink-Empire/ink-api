@@ -14,6 +14,7 @@ use GuzzleHttp\Exception\GuzzleException;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Log;
 use App\Util\JSON;
+use App\Util\StringToModel;
 use Larelastic\Elastic\Facades\Elastic;
 use Larelastic\Elastic\Payloads\RawPayload;
 
@@ -176,9 +177,13 @@ class ElasticService
 
             Log::debug("rebuilding $count products");
             
-            // Handle both string class names and Model instances
+            // Handle fully qualified class names, short names ("Artist") and
+            // Model instances. Short names arrive from the admin panel and
+            // artisan commands, and must be resolved to App\Models\*.
             if (is_string($model)) {
-                $modelClass = $model;
+                $modelClass = class_exists($model)
+                    ? $model
+                    : get_class(StringToModel::convert($model));
             } else {
                 $modelClass = get_class($model);
             }

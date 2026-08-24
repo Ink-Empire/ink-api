@@ -5,6 +5,7 @@ namespace App\Services;
 use App\Exceptions\UserNotFoundException;
 use App\Models\Artist;
 use App\Models\Image;
+use App\Util\GeoQuery;
 use Illuminate\Database\Eloquent\Collection;
 
 /**
@@ -97,8 +98,10 @@ class ArtistService extends SearchService
      */
     public function getNearby(float $lat, float $lng, string $distance = '50mi', int $limit = 50): Collection
     {
-        $results = Artist::search()
-            ->whereDistance('location_lat_long', $lat, $lng, $distance)
+        $search = Artist::search();
+        $search->bool['must'][] = GeoQuery::distanceClause('location_lat_long', $lat, $lng, $distance);
+
+        $results = $search
             ->take($limit)
             ->get();
 
