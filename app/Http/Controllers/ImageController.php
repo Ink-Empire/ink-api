@@ -6,7 +6,9 @@ use App\Exceptions\UserNotFoundException;
 use App\Http\Resources\BriefImageResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
+use App\Enums\UserTypes;
 use App\Models\Artist;
+use App\Scopes\ArtistScope;
 use App\Models\Image;
 use App\Services\ImageService;
 use App\Services\StudioService;
@@ -316,11 +318,14 @@ class ImageController extends Controller
 
         // Re-index any artists that use this as their profile image
         $artistIds = $image->artists()
-            ->where('type_id', 2)
+            ->whereIn('type_id', [UserTypes::ARTIST_TYPE_ID, UserTypes::STUDIO_TYPE_ID])
             ->pluck('id');
 
         if ($artistIds->isNotEmpty()) {
-            Artist::whereIn('id', $artistIds)->get()->searchable();
+            Artist::withoutGlobalScope(ArtistScope::class)
+                ->whereIn('id', $artistIds)
+                ->get()
+                ->searchable();
         }
 
         return $this->returnResponse('image', new BriefImageResource($image->fresh()));

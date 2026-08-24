@@ -2,19 +2,28 @@
 
 namespace App\Util;
 
+use App\Enums\UserTypes;
 use App\Models\Artist;
 use App\Models\Studio;
 use App\Models\User;
+use App\Scopes\ArtistScope;
 
 class ModelLookup
 {
     /**
-     * Find an artist by ID (numeric) or slug (string)
+     * Find an artist or studio account by ID (numeric) or slug (string)
      * Loads relationships needed for full API responses
+     *
+     * ArtistScope pins queries to type_id = 2, which left studio accounts
+     * unable to load their own profile and settings. Clients stay excluded.
      */
     public static function findArtist($identifier, bool $withSchedule = true)
     {
-        $query = Artist::query();
+        $query = Artist::withoutGlobalScope(ArtistScope::class)
+            ->whereIn('type_id', [
+                UserTypes::ARTIST_TYPE_ID,
+                UserTypes::STUDIO_TYPE_ID,
+            ]);
 
         if ($withSchedule) {
             $query->with(['working_hours', 'appointments', 'styles']);

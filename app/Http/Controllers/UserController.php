@@ -10,6 +10,7 @@ use App\Http\Resources\SelfUserResource;
 use App\Http\Resources\UserResource;
 use App\Models\Artist;
 use App\Models\ArtistSettings;
+use App\Scopes\ArtistScope;
 use App\Models\Image;
 use App\Models\Tattoo;
 use App\Models\TattooLead;
@@ -447,7 +448,7 @@ class UserController extends Controller
             if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
                 // Remove artist from ES (single, fast call)
                 try {
-                    $artist = Artist::find($user->id);
+                    $artist = Artist::withoutGlobalScope(ArtistScope::class)->find($user->id);
                     if ($artist) {
                         $artist->unsearchable();
                     }
@@ -718,9 +719,9 @@ class UserController extends Controller
 
         $user->save();
 
-        // Re-index in Elasticsearch if this is an artist
-        if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
-            $artist = Artist::find($user->id);
+        // Re-index in Elasticsearch if this is an artist or studio account
+        if (in_array($user->type_id, [UserTypes::ARTIST_TYPE_ID, UserTypes::STUDIO_TYPE_ID], true)) {
+            $artist = Artist::withoutGlobalScope(ArtistScope::class)->find($user->id);
             if ($artist) {
                 $artist->searchable();
             }

@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Exceptions\UserNotFoundException;
 use App\Models\Artist;
+use App\Scopes\ArtistScope;
 use App\Models\Image;
 use App\Util\GeoQuery;
 use Illuminate\Database\Eloquent\Collection;
@@ -110,7 +111,11 @@ class ArtistService extends SearchService
             ->filter()
             ->all();
 
-        return Artist::whereIn('id', $ids)->get();
+        // The index holds studio accounts too, so rehydrate without the scope
+        // or they are dropped after the geo search has already matched them.
+        return Artist::withoutGlobalScope(ArtistScope::class)
+            ->whereIn('id', $ids)
+            ->get();
     }
 
     /**

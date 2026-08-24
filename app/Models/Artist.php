@@ -120,6 +120,8 @@ class Artist extends User
 
         $query->with([
             'primaryStudio.image',
+            'ownedStudio.image',
+            'ownedStudio.owner.image',
             'styles',
             'primary_image',
             'settings',

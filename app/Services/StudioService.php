@@ -38,7 +38,11 @@ class StudioService
      */
     public function get()
     {
-        return Studio::paginate(25);
+        return Studio::with([
+            'image',
+            'owner.image',
+            'business_hours.business_days',
+        ])->paginate(25);
     }
 
 

@@ -2,8 +2,10 @@
 
 namespace App\Http\Controllers\Auth;
 
+use App\Enums\UserTypes;
 use App\Http\Controllers\Controller;
 use App\Http\Resources\SelfUserResource;
+use App\Jobs\IndexArtistJob;
 use App\Jobs\SendWelcomeNotification;
 use App\Models\User;
 use Illuminate\Auth\Events\Verified;
@@ -63,6 +65,12 @@ class VerifyEmailController extends Controller
 
             // Send welcome email now that they're verified
             SendWelcomeNotification::dispatch($user->id);
+
+            // Artist and studio accounts become searchable once verified, so an
+            // unverified signup never reaches the index.
+            if (in_array($user->type_id, [UserTypes::ARTIST_TYPE_ID, UserTypes::STUDIO_TYPE_ID], true)) {
+                IndexArtistJob::dispatch($user->id);
+            }
         }
 
         // Upgrade any temporary registration token to a permanent auth token
