@@ -39,13 +39,19 @@ class StudioResource extends JsonResource
 
     private function getImage()
     {
-        if(!$this->image_id){
-            $image = new Image();
-            $image->setUriAttribute(); //i wish this would automatically trigger but it wont unless you set it
-            return $image;
-        } else {
+        if ($this->image_id) {
             return $this->image;
         }
+
+        // Studio accounts upload their photo to the owning user rather than the
+        // venue row, so prefer that over the placeholder.
+        if ($this->owner?->image) {
+            return $this->owner->image;
+        }
+
+        $image = new Image();
+        $image->setUriAttribute(); //i wish this would automatically trigger but it wont unless you set it
+        return $image;
     }
 
     private function getFormattedHours(): array
