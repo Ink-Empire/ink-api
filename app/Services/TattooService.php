@@ -268,6 +268,43 @@ class TattooService extends SearchService
     }
 
     /**
+     * Get the tattoos that belong on a studio's page.
+     *
+     * A tattoo qualifies when it was stamped with the studio or when its artist
+     * is affiliated with the studio now. Affiliation is passed in from the
+     * database rather than read from the index, so a new artist shows up
+     * without waiting for a reindex.
+     *
+     * Goes through applyCommonFilters so the shop page obeys the same
+     * visibility and demo rules as every other tattoo surface.
+     */
+    public function getByStudio(int $studioId, array $artistIds, array $params = []): array
+    {
+        $this->filters = $params;
+        $this->initializeSearch();
+        $this->applyCommonFilters();
+
+        $this->search->orWhere(function ($query, $boolean) use ($studioId, $artistIds) {
+            $query->where('studio_id', '=', $studioId, $boolean);
+
+            if (!empty($artistIds)) {
+                $query->where('artist_id', 'in', $artistIds, $boolean);
+            }
+        });
+
+        $this->search->sort('is_featured', 'desc');
+        $this->search->sort('created_at', 'desc');
+
+        $pagination = $this->paginationService->extractParams($this->filters);
+        $paginator = $this->search->paginate($pagination['per_page'], 'page', $pagination['page']);
+
+        return [
+            'response' => $paginator->getCollection(),
+            'total' => $paginator->total(),
+        ];
+    }
+
+    /**
      * Get all tattoos for a specific artist from the tattoos index
      * Sorted by: featured first, then newest first
      */

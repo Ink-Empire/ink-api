@@ -23,6 +23,12 @@ class TattooIndexResource extends JsonResource
 {
     public function toArray($request)
     {
+        // A tattoo is stamped with a studio when it is uploaded. Older work and
+        // work uploaded before the artist joined a shop has none, so fall back
+        // to where the artist works now. An explicit studio always wins, so a
+        // piece stays credited to the shop it was made at.
+        $studio = $this->studio ?? $this->artist?->primary_studio;
+
         return [
             'id' => $this->id,
             'artist_id' => $this->artist?->id,
@@ -33,13 +39,13 @@ class TattooIndexResource extends JsonResource
             'artist_books_open' => $this->artist?->settings?->books_open ?? false,
             'artist_location' => $this->artist?->location ?? '',
             'artist_location_lat_long' => $this->artist?->location_lat_long ?? null,
-            'studio_id' => $this->studio?->id ?? null,
-            'studio_name' => $this->studio?->name ?? '',
+            'studio_id' => $studio?->id ?? null,
+            'studio_name' => $studio?->name ?? '',
             'title' => $this->title,
             'description' => $this->description,
             'placement' => $this->placement,
             'duration' => $this->duration,
-            'studio' => $this->studio ? new StudioResource($this->studio) : null,
+            'studio' => $studio ? new StudioResource($studio) : null,
             'primary_style' => $this->primary_style?->name ?? '',
             'primary_subject' => $this->subject?->name ?? '',
             'primary_image' => $this->primary_image ? [

@@ -5,7 +5,9 @@ namespace App\Http\Controllers;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Elastic\ArtistResource;
 use App\Http\Resources\WorkingHoursResource;
+use App\Enums\QueueNames;
 use App\Jobs\IndexArtistJob;
+use App\Jobs\ReindexArtistAffiliationJob;
 use App\Jobs\NotifyWishlistUsersOfBooksOpen;
 use App\Models\Appointment;
 use App\Models\Artist;
@@ -913,6 +915,10 @@ class ArtistController extends Controller
             // Remove the studio affiliation
             $user->affiliatedStudios()->detach($studioId);
 
+            ReindexArtistAffiliationJob::dispatch((int) $user->id)
+                ->onQueue(QueueNames::ELASTIC_REBUILD)
+                ->onConnection('redis');
+
             return response()->json([
                 'success' => true,
                 'message' => 'Studio affiliation removed',
@@ -945,20 +951,11 @@ class ArtistController extends Controller
                 return response()->json(['error' => 'You are not verified at this studio'], 404);
             }
 
-            // Re-index the artist in Elasticsearch to update the primary studio
-            if ($user instanceof \App\Models\Artist || $user->type_id === \App\Enums\UserTypes::ARTIST_TYPE_ID) {
-                try {
-                    $artist = \App\Models\Artist::find($user->id);
-                    if ($artist) {
-                        $artist->searchable();
-                    }
-                } catch (\Exception $e) {
-                    \Log::warning('Failed to re-index artist after setting primary studio', [
-                        'artist_id' => $user->id,
-                        'error' => $e->getMessage(),
-                    ]);
-                }
-            }
+            // The artist document and every one of their tattoos carry a copy
+            // of the primary studio, so both have to be rebuilt.
+            ReindexArtistAffiliationJob::dispatch((int) $user->id)
+                ->onQueue(QueueNames::ELASTIC_REBUILD)
+                ->onConnection('redis');
 
             return response()->json([
                 'success' => true,

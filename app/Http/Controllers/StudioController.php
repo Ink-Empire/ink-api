@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Schema;
+use App\Enums\QueueNames;
 use App\Enums\UserTypes;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Dashboard\StudioArtistDashboardResource;
@@ -16,9 +17,11 @@ use App\Models\StudioAnnouncement;
 use App\Models\StudioInvitation;
 use App\Models\StudioSpotlight;
 use App\Models\User;
+use App\Jobs\ReindexArtistAffiliationJob;
 use App\Services\AddressService;
 use App\Services\ImageService;
 use App\Services\StudioService;
+use App\Services\TattooService;
 use App\Services\UserService;
 use App\Services\GooglePlacesService;
 use App\Services\PaginationService;
@@ -33,7 +36,8 @@ class StudioController extends Controller
         protected StudioService $studioService,
         protected UserService $userService,
         protected GooglePlacesService $googlePlacesService,
-        protected PaginationService $paginationService
+        protected PaginationService $paginationService,
+        protected TattooService $tattooService
     ) {
     }
 
@@ -152,6 +156,11 @@ class StudioController extends Controller
         }
 
         $studio->update($updateData);
+
+        // The owner's own documents carry the studio they own.
+        ReindexArtistAffiliationJob::dispatch((int) $request->user()->id)
+            ->onQueue(QueueNames::ELASTIC_REBUILD)
+            ->onConnection('redis');
 
         return response()->json([
             'studio' => new StudioResource($studio->fresh()),
@@ -526,6 +535,10 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Artist was not associated with this studio', 404);
         }
 
+        ReindexArtistAffiliationJob::dispatch((int) $userId)
+            ->onQueue(QueueNames::ELASTIC_REBUILD)
+            ->onConnection('redis');
+
         return response()->json(['success' => true]);
     }
 
@@ -567,6 +580,10 @@ class StudioController extends Controller
             }
         }
 
+        ReindexArtistAffiliationJob::dispatch((int) $userId)
+            ->onQueue(QueueNames::ELASTIC_REBUILD)
+            ->onConnection('redis');
+
         return response()->json([
             'success' => true,
             'message' => 'Artist verified successfully',
@@ -595,6 +612,10 @@ class StudioController extends Controller
             'verified_at' => null,
         ]);
 
+        ReindexArtistAffiliationJob::dispatch((int) $userId)
+            ->onQueue(QueueNames::ELASTIC_REBUILD)
+            ->onConnection('redis');
+
         return response()->json([
             'success' => true,
             'message' => 'Artist verification removed',
@@ -609,43 +630,25 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Studio not found', 404);
         }
 
-        // Get artist IDs from verified affiliated artists
-        $artistIds = $studio->verifiedArtists()->pluck('users.id')->toArray();
+        $params = $request->all();
 
-        // Also include the studio owner if they are an artist
-        if ($studio->owner_id) {
-            $owner = User::find($studio->owner_id);
-            if ($owner && $owner->type_id === \App\Enums\UserTypes::ARTIST_TYPE_ID) {
-                $artistIds[] = $studio->owner_id;
-                $artistIds = array_unique($artistIds);
-            }
+        // The frontend sends limit, the pagination service reads per_page.
+        if ($request->has('limit')) {
+            $params['per_page'] = $request->get('limit');
         }
 
-        // Use Elasticsearch for speed
-        $limit = $request->get('limit', 20);
-        $page = $request->get('page', 1);
+        // Demo users see demo and real work, everyone else sees real work only.
+        $params['is_demo'] = $request->user()?->is_demo ? true : false;
 
-        $search = \App\Models\Tattoo::search();
+        $results = $this->tattooService->getByStudio(
+            $studio->id,
+            $this->galleryArtistIds($studio),
+            $params
+        );
 
-        // Filter by studio_id OR affiliated artist IDs
-        $search->orWhere(function ($query, $boolean) use ($artistIds, $studio) {
-            $query->where('studio_id', '=', $studio->id, $boolean);
-            if (!empty($artistIds)) {
-                $query->where('artist_id', 'in', $artistIds, $boolean);
-            }
-        });
-
-        // Sort by featured first, then newest
-        $search->sort('is_featured', 'desc');
-        $search->sort('created_at', 'desc');
-
-        // Pagination
-        $search->take($limit);
-
-        $results = $search->get();
-
-        $tattoos = $results['response'] ?? collect();
+        $tattoos = collect($results['response'] ?? []);
         $total = $results['total'] ?? 0;
+        $pagination = $this->paginationService->extractParams($params);
 
         // Mix tattoos from different artists together (shuffle within featured/non-featured groups)
         // This prevents one artist's work from being stacked together
@@ -659,13 +662,33 @@ class StudioController extends Controller
         // So we return it directly without passing through TattooResource again
         return response()->json([
             'gallery' => $tattoos,
-            'meta' => [
-                'current_page' => $page,
-                'last_page' => ceil($total / $limit) ?: 1,
-                'per_page' => $limit,
-                'total' => $total,
-            ],
+            'meta' => $this->paginationService->buildMeta($total, $pagination['page'], $pagination['per_page']),
         ]);
+    }
+
+    /**
+     * Everyone whose work belongs on this studio's page.
+     *
+     * Verified affiliates plus the owner. The owner is included whether they
+     * hold an artist account or a studio account, since both can upload.
+     */
+    private function galleryArtistIds(Studio $studio): array
+    {
+        $artistIds = $studio->verifiedArtists()->pluck('users.id')->toArray();
+
+        if ($studio->owner_id) {
+            $owner = User::find($studio->owner_id);
+            $ownerCanUpload = $owner && in_array($owner->type_id, [
+                UserTypes::ARTIST_TYPE_ID,
+                UserTypes::STUDIO_TYPE_ID,
+            ], true);
+
+            if ($ownerCanUpload) {
+                $artistIds[] = $studio->owner_id;
+            }
+        }
+
+        return array_values(array_unique($artistIds));
     }
 
     // Announcements
