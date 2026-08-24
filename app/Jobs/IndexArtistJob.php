@@ -3,6 +3,7 @@
 namespace App\Jobs;
 
 use App\Models\Artist;
+use App\Scopes\ArtistScope;
 use Illuminate\Bus\Queueable;
 use Illuminate\Contracts\Queue\ShouldQueue;
 use Illuminate\Foundation\Bus\Dispatchable;
@@ -27,7 +28,9 @@ class IndexArtistJob implements ShouldQueue
 
     public function handle(): void
     {
-        $artist = Artist::find($this->artistId);
+        // ArtistScope pins lookups to type_id = 2, which would make this a no-op
+        // for studio accounts.
+        $artist = Artist::withoutGlobalScope(ArtistScope::class)->find($this->artistId);
 
         if (!$artist) {
             Log::warning("IndexArtistJob: Artist not found", ['artist_id' => $this->artistId]);
@@ -35,6 +38,10 @@ class IndexArtistJob implements ShouldQueue
         }
 
         $artist->searchable();
+
+        // Studio accounts also own a venue row that lives in the studios index.
+        $artist->ownedStudio?->searchable();
+
         IndexTattooJob::bustArtistCaches($artist->id, $artist->slug);
 
         Log::info("IndexArtistJob: Indexed artist", ['artist_id' => $this->artistId]);

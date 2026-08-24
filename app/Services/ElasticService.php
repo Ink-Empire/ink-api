@@ -166,57 +166,41 @@ class ElasticService
     }
 
     /**
-     * @param $ids
+     * Rebuild the given ids for a model.
+     *
+     * @param  array|\Illuminate\Support\Collection $ids
+     * @param  string|Model $model Short name ("Artist"), class name or instance
      * @return array
      */
     public function rebuild($ids, $model): array
     {
         set_time_limit(1500);
         try {
-            $count = count((array)$ids);
+            $ids = collect($ids)->values();
+            $count = $ids->count();
 
-            Log::debug("rebuilding $count products");
-            
-            // Handle fully qualified class names, short names ("Artist") and
-            // Model instances. Short names arrive from the admin panel and
-            // artisan commands, and must be resolved to App\Models\*.
-            if (is_string($model)) {
-                $modelClass = class_exists($model)
-                    ? $model
-                    : get_class(StringToModel::convert($model));
-            } else {
-                $modelClass = get_class($model);
-            }
-            
-            $results = $modelClass::whereIn('id', $ids)->get();
+            Log::debug("rebuilding $count records");
 
-            if ($results) {
+            $instance = $this->resolveModel($model);
+            $modelClass = get_class($instance);
+
+            // The index membership rule lives in searchableQuery(), not in the
+            // model's default query. Artist carries a global scope pinning it to
+            // type_id = 2, while its index is built from artists AND studio
+            // accounts, so a plain whereIn() silently misses every studio.
+            $query = method_exists($instance, 'searchableQuery')
+                ? $instance->searchableQuery()
+                : $modelClass::query();
+
+            $results = $query->whereIn('id', $ids)->get();
+
+            if ($results->isNotEmpty()) {
                 $results->searchable();
             }
 
-            $toRemove = collect($ids)->diff($results->pluck('id')); //remove any ids not found in db
+            $missing = $ids->diff($results->pluck('id'))->values();
+            $removed = $this->removeFromIndex($missing, $this->indexFor($instance));
 
-            if (count($toRemove) > 0) {
-                foreach ($toRemove as $remove) {
-                    try {
-                        Elastic::delete(
-                            [
-                                'index' => $this->elastic_index,
-                                'id' => $remove
-                            ]
-                        );
-                    } catch (Exception $e) {
-                        if ($e->getCode() != 404) { //if it wasn't in the index and we tried to delete it, no biggie, no need to log
-                            Log::error(
-                                "Failed to delete inactive item $remove.",
-                                [
-                                    'error' => $e->getMessage(),
-                                ]
-                            );
-                        }
-                    }
-                }
-            }
         } catch (\Exception $e) {
             Log::error(
                 'Failed to index.',
@@ -232,7 +216,69 @@ class ElasticService
 
         return [
             'status' => true,
+            'requested' => $count,
+            'indexed' => $results->count(),
+            'removed' => $removed,
+            'missing_ids' => $missing->all(),
         ];
+    }
+
+    /**
+     * Accept a short name ("Artist"), a class name or an instance.
+     * Short names arrive from the admin panel and artisan commands.
+     */
+    private function resolveModel($model): Model
+    {
+        if ($model instanceof Model) {
+            return $model;
+        }
+
+        if (is_string($model) && class_exists($model)) {
+            return new $model;
+        }
+
+        return StringToModel::convert($model);
+    }
+
+    /**
+     * The index a model actually writes to. Falls back to the configured
+     * default only for models that are not searchable.
+     */
+    private function indexFor(Model $instance): string
+    {
+        return method_exists($instance, 'searchableAs')
+            ? $instance->searchableAs()
+            : $this->elastic_index;
+    }
+
+    /**
+     * Drop ids that no longer exist in the database from their own index.
+     */
+    private function removeFromIndex($ids, string $index): int
+    {
+        $removed = 0;
+
+        foreach ($ids as $id) {
+            try {
+                Elastic::delete([
+                    'index' => $index,
+                    'id' => $id
+                ]);
+                $removed++;
+            } catch (Exception $e) {
+                //if it wasn't in the index and we tried to delete it, no biggie, no need to log
+                if ($e->getCode() != 404) {
+                    Log::error(
+                        "Failed to delete inactive item $id from $index.",
+                        [
+                            'error' => $e->getMessage(),
+                        ]
+                    );
+                }
+            }
+        }
+
+        return $removed;
     }
 
     protected function getMaxAlias(string $index)

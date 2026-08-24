@@ -38,7 +38,15 @@ class ElasticRebuildJob implements ShouldQueue
         ]);
 
         if (!empty($this->ids)) {
-            $elasticService->rebuild($this->ids, $this->model);
+            $result = $elasticService->rebuild($this->ids, $this->model);
+
+            \Log::info("JOB LOG finished rebuilding elastic ids", [
+                'model' => $this->model,
+                'requested' => $result['requested'] ?? 0,
+                'indexed' => $result['indexed'] ?? 0,
+                'removed' => $result['removed'] ?? 0,
+                'missing_ids' => $result['missing_ids'] ?? [],
+            ]);
         }
     }
 

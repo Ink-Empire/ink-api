@@ -48,7 +48,8 @@ class Tattoo extends Model
     protected array $searchableRelations = [
         'tags',
         'artist',
-        'studio',
+        'studio.image',
+        'studio.owner.image',
         'images',
         'primary_style',
         'primary_image',

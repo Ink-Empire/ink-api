@@ -9,9 +9,11 @@
  * nothing had been indexed.
  */
 
+use App\Enums\UserTypes;
 use App\Models\Artist;
 use App\Models\User;
 use App\Services\ElasticService;
+use Larelastic\Elastic\Facades\Elastic;
 
 beforeEach(function () {
     $this->artist = User::factory()->asArtist()->create(['email_verified_at' => now()]);
@@ -42,4 +44,46 @@ it('throws rather than silently succeeding for an unknown model', function () {
     // unresolvable class raises \Error, which escapes that catch.
     expect(fn () => $this->service->rebuild([$this->artist->id], 'NotARealModel'))
         ->toThrow(\Error::class);
+});
+
+it('indexes studio accounts, which the artist scope hides', function () {
+    $studioAccount = User::factory()->create([
+        'type_id' => UserTypes::STUDIO_TYPE_ID,
+        'email_verified_at' => now(),
+    ]);
+
+    // The global scope pins Artist to type_id = 2, but the artists index is
+    // built from searchableQuery(), which includes studio accounts.
+    expect(Artist::find($studioAccount->id))->toBeNull();
+
+    $result = $this->service->rebuild([$studioAccount->id], 'Artist');
+
+    expect($result['indexed'])->toBe(1)
+        ->and($result['missing_ids'])->toBeEmpty();
+});
+
+it('reports how many records it indexed', function () {
+    Elastic::swap(Mockery::mock()->shouldReceive('delete')->once()->getMock());
+
+    $result = $this->service->rebuild([$this->artist->id, 999999], 'Artist');
+
+    expect($result['requested'])->toBe(2)
+        ->and($result['indexed'])->toBe(1)
+        ->and($result['missing_ids'])->toEqual([999999]);
+});
+
+it('deletes missing ids from the model index, not the default index', function () {
+    // The default index is tattoos, so an artist rebuild used to delete the
+    // tattoo that happened to share the id.
+    Elastic::swap(
+        Mockery::mock()
+            ->shouldReceive('delete')
+            ->once()
+            ->withArgs(fn ($params) => $params['index'] === 'artists' && (int) $params['id'] === 999999)
+            ->getMock()
+    );
+
+    $result = $this->service->rebuild([999999], 'Artist');
+
+    expect($result['removed'])->toBe(1);
 });

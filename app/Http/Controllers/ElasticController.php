@@ -108,14 +108,50 @@ class ElasticController
 
             if (count($ids) > 200) {
                 return response("Count sent cannot exceed 200, please reduce the count and try again", 400);
-            } else {
-                $model = StringToModel::convert($model);
-                $this->elasticService->rebuild($ids, $model);
             }
+
+            $model = StringToModel::convert($model);
+            $result = $this->elasticService->rebuild($ids, $model);
         } catch (Exception $e) {
             return response()->json(['message' => 'Error updating item(s). Message: ' . $e->getMessage()], 500);
         }
-        return response()->json(['message' => 'Rebuild completed']);
+
+        if (!($result['status'] ?? false)) {
+            return response()->json(['message' => 'Error updating item(s). Message: ' . ($result['message'] ?? 'unknown error')], 500);
+        }
+
+        return response()->json([
+            'message' => $this->describeRebuild($result),
+            'indexed' => $result['indexed'] ?? 0,
+            'removed' => $result['removed'] ?? 0,
+            'missing_ids' => $result['missing_ids'] ?? [],
+        ]);
+    }
+
+    /**
+     * Say what actually happened. A rebuild that matched nothing used to
+     * report the same success message as one that reindexed every record.
+     */
+    private function describeRebuild(array $result): string
+    {
+        $requested = $result['requested'] ?? 0;
+        $indexed = $result['indexed'] ?? 0;
+        $removed = $result['removed'] ?? 0;
+        $missing = count($result['missing_ids'] ?? []);
+
+        if ($indexed === 0 && $requested > 0) {
+            return "No records indexed. $missing of $requested ids were not found in the database"
+                . ($removed > 0 ? " and $removed were removed from the index." : ".");
+        }
+
+        $message = "Rebuild completed. Indexed $indexed of $requested.";
+
+        if ($missing > 0) {
+            $message .= " $missing not found in the database"
+                . ($removed > 0 ? ", $removed removed from the index." : ".");
+        }
+
+        return $message;
     }
 
     /**
