@@ -11,6 +11,7 @@ use App\Http\Requests\MigrateElasticAliasRequest;
 use App\Services\ElasticService;
 use App\Util\StringToModel;
 use Exception;
+use Illuminate\Database\Eloquent\Model;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -18,6 +19,18 @@ use App\Util\JSON;
 
 class ElasticController
 {
+    /**
+     * Most documents a single orphan scan will read out of an index.
+     */
+    private const ORPHAN_SCAN_LIMIT = 10000;
+
+    /**
+     * Share of an index a single orphan sweep may delete before it has to be
+     * forced. A sweep this large means the check disagrees with how the index
+     * is built, which is a mapping problem and not a cleanup job.
+     */
+    private const ORPHAN_DELETE_LIMIT = 0.2;
+
     /**
      * @var ElasticService
      */
@@ -283,35 +296,45 @@ class ElasticController
         try {
             $model = $request->get('model');
             $instance = StringToModel::convert($model);
-            $indexName = $instance->getIndexConfigurator()->getName();
-            $modelClass = get_class($instance);
+            $indexName = $this->indexFor($instance);
 
             $countResponse = $this->elasticService->post("/{$indexName}/_count", [
                 'query' => ['match_all' => (object)[]]
             ]);
             $totalEs = $countResponse['count'] ?? 0;
 
+            $scanLimit = min($totalEs, self::ORPHAN_SCAN_LIMIT);
+
             $searchResponse = $this->elasticService->post("/{$indexName}/_search", [
                 '_source' => false,
                 'query' => ['match_all' => (object)[]],
-                'size' => $totalEs,
+                'size' => $scanLimit,
             ]);
 
             $esIds = collect($searchResponse['hits']['hits'] ?? [])->pluck('_id')->map(fn($id) => (int) $id)->toArray();
 
-            $existingIds = collect();
-            foreach (array_chunk($esIds, 1000) as $chunk) {
-                $found = $modelClass::whereIn('id', $chunk)->pluck('id');
-                $existingIds = $existingIds->merge($found);
+            $orphanIds = $this->orphanIds($instance, $esIds);
+            $warnings = [];
+
+            if ($totalEs > $scanLimit) {
+                $warnings[] = "Only the first $scanLimit of $totalEs documents were checked. The rest were not scanned.";
             }
 
-            $orphanIds = collect($esIds)->diff($existingIds)->values()->toArray();
+            if ($this->exceedsOrphanLimit(count($orphanIds), $totalEs)) {
+                $warnings[] = sprintf(
+                    '%d of %d documents in this index have no matching record. That is most of the index, so treat this as a mapping problem rather than a cleanup job.',
+                    count($orphanIds),
+                    $totalEs
+                );
+            }
 
             return response()->json([
                 'es_total' => $totalEs,
-                'db_total' => $existingIds->count(),
+                'scanned' => count($esIds),
+                'db_total' => count($esIds) - count($orphanIds),
                 'orphan_count' => count($orphanIds),
                 'orphan_ids' => $orphanIds,
+                'warnings' => $warnings,
             ]);
         } catch (Exception $e) {
             Log::error("Failed to find orphans", [
@@ -327,16 +350,58 @@ class ElasticController
     {
         try {
             $model = $request->get('model');
-            $ids = $request->get('ids', []);
             $instance = StringToModel::convert($model);
-            $indexName = $instance->getIndexConfigurator()->getName();
+            $indexName = $this->indexFor($instance);
+
+            $ids = collect($request->get('ids', []))
+                ->map(fn($id) => (int) $id)
+                ->filter()
+                ->unique()
+                ->values();
+
+            // The list comes from a findOrphans run that may be minutes old, so
+            // check every id again before deleting anything.
+            $orphanIds = collect($this->orphanIds($instance, $ids->all()));
+            $skipped = $ids->diff($orphanIds)->values();
+
+            if ($orphanIds->isEmpty()) {
+                return response()->json([
+                    'deleted' => 0,
+                    'skipped' => $skipped->all(),
+                    'message' => 'Nothing deleted. Every id sent still has a record in the database.',
+                ]);
+            }
+
+            $countResponse = $this->elasticService->post("/{$indexName}/_count", [
+                'query' => ['match_all' => (object)[]]
+            ]);
+            $totalEs = $countResponse['count'] ?? 0;
+
+            if (!$request->boolean('force') && $this->exceedsOrphanLimit($orphanIds->count(), $totalEs)) {
+                return response()->json([
+                    'deleted' => 0,
+                    'message' => sprintf(
+                        'Refusing to delete %d of %d documents from the %s index in one sweep. Send force to override.',
+                        $orphanIds->count(),
+                        $totalEs,
+                        $indexName
+                    ),
+                ], 409);
+            }
 
             $response = $this->elasticService->post("/{$indexName}/_delete_by_query", [
-                'query' => ['ids' => ['values' => $ids]]
+                'query' => ['ids' => ['values' => $orphanIds->all()]]
+            ]);
+
+            Log::info("Deleted orphaned documents", [
+                'index' => $indexName,
+                'deleted' => $response['deleted'] ?? 0,
+                'skipped' => $skipped->count(),
             ]);
 
             return response()->json([
                 'deleted' => $response['deleted'] ?? 0,
+                'skipped' => $skipped->all(),
             ]);
         } catch (Exception $e) {
             Log::error("Failed to delete orphans", [
@@ -346,6 +411,54 @@ class ElasticController
             ]);
             return response()->json(['message' => 'Error deleting orphans: ' . $e->getMessage()], 500);
         }
+    }
+
+    /**
+     * Ids present in the index with no matching database record.
+     *
+     * Uses searchableQuery() for the same reason rebuild() does. Artist is
+     * scoped to type_id = 2 by default, but its index is built from artists
+     * and studio accounts, so the scoped query calls every studio an orphan.
+     */
+    private function orphanIds(Model $instance, array $esIds): array
+    {
+        if (empty($esIds)) {
+            return [];
+        }
+
+        $existingIds = collect();
+
+        foreach (array_chunk($esIds, 1000) as $chunk) {
+            $query = method_exists($instance, 'searchableQuery')
+                ? $instance->searchableQuery()
+                : get_class($instance)::query();
+
+            $existingIds = $existingIds->merge($query->whereIn('id', $chunk)->pluck('id'));
+        }
+
+        return collect($esIds)->diff($existingIds)->values()->toArray();
+    }
+
+    /**
+     * The index a model writes to.
+     */
+    private function indexFor(Model $instance): string
+    {
+        return method_exists($instance, 'searchableAs')
+            ? $instance->searchableAs()
+            : $this->elastic_index;
+    }
+
+    /**
+     * True when a sweep would take out more of the index than the limit allows.
+     */
+    private function exceedsOrphanLimit(int $orphanCount, int $totalEs): bool
+    {
+        if ($orphanCount === 0 || $totalEs === 0) {
+            return false;
+        }
+
+        return $orphanCount / $totalEs > self::ORPHAN_DELETE_LIMIT;
     }
 
     private function getIdsFromQuery($wheres, $whereIns, $model)
