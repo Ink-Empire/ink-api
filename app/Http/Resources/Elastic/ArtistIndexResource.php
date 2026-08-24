@@ -30,8 +30,12 @@ class ArtistIndexResource extends JsonResource
 
     public function toArray($request)
     {
-        // Use the explicitly passed primary studio, or fall back to the attribute
-        $studio = $this->primaryStudio ?? $this->resource->primary_studio;
+        // Use the explicitly passed primary studio, or fall back to the attribute.
+        // Studio accounts own their venue rather than joining it through the
+        // members pivot, so fall back to the owned studio for them.
+        $studio = $this->primaryStudio
+            ?? $this->resource->primary_studio
+            ?? $this->resource->ownedStudio;
 
         return [
             'id' => $this->id,
@@ -54,6 +58,10 @@ class ArtistIndexResource extends JsonResource
             'type' => $this->type_id === UserTypes::STUDIO_TYPE_ID
                 ? UserTypes::STUDIO
                 : UserTypes::ARTIST,
+            // Every account in this index is a real signup; the unclaimed stubs
+            // built from Google Places are never indexed here. Without this the
+            // studio card falls back to its "hasn't joined yet" layout.
+            'is_claimed' => $this->type_id === UserTypes::STUDIO_TYPE_ID,
             'primary_image' => $this->primary_image ?? null,
             'username' => $this->username,
             'settings' => $this->settings ? $this->settings->toArray() : [],

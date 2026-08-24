@@ -109,7 +109,15 @@ class Artist extends User
 
     public function searchableQuery()
     {
-        $query = $this->newQuery();
+        // ArtistScope pins the query to type_id = 2, which would exclude every
+        // studio account from a bulk import of this index.
+        $query = $this->newQuery()
+            ->withoutGlobalScope(ArtistScope::class)
+            ->whereIn('type_id', [
+                UserTypes::ARTIST_TYPE_ID,
+                UserTypes::STUDIO_TYPE_ID,
+            ]);
+
         $query->with([
             'primaryStudio.image',
             'styles',
@@ -123,7 +131,12 @@ class Artist extends User
 
     public function shouldBeSearchable()
     {
-        return $this['type_id'] === UserTypes::ARTIST_TYPE_ID;
+        // The artists index holds studio accounts as well as artists. Gating on
+        // the artist type alone made searchable() a silent no-op for studios.
+        return in_array($this['type_id'], [
+            UserTypes::ARTIST_TYPE_ID,
+            UserTypes::STUDIO_TYPE_ID,
+        ], true);
     }
 
     public function toSearchableArray()
