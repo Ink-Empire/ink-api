@@ -135,10 +135,16 @@ class Artist extends User
     {
         // The artists index holds studio accounts as well as artists. Gating on
         // the artist type alone made searchable() a silent no-op for studios.
-        return in_array($this['type_id'], [
+        if (!in_array($this['type_id'], [
             UserTypes::ARTIST_TYPE_ID,
             UserTypes::STUDIO_TYPE_ID,
-        ], true);
+        ], true)) {
+            return false;
+        }
+
+        // The user observer indexes on create, so without this an account is
+        // searchable before it has confirmed its email address.
+        return $this['email_verified_at'] !== null;
     }
 
     public function toSearchableArray()

@@ -445,7 +445,7 @@ class UserController extends Controller
         \DB::beginTransaction();
 
         try {
-            if ($user->type_id === UserTypes::ARTIST_TYPE_ID) {
+            if (in_array($user->type_id, [UserTypes::ARTIST_TYPE_ID, UserTypes::STUDIO_TYPE_ID], true)) {
                 // Remove artist from ES (single, fast call)
                 try {
                     $artist = Artist::withoutGlobalScope(ArtistScope::class)->find($user->id);
