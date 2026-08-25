@@ -42,9 +42,12 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
-        // Refresh demo data dates so they always appear current
+        // Refresh demo data dates so they always appear current.
+        // everyTwoWeeks() is Laravel 11; on 10 it throws while the schedule is
+        // being registered, which stops every task below it from registering at
+        // all.
         $schedule->command('demo:refresh-dates --force')
-            ->everyTwoWeeks()
+            ->twiceMonthly()
             ->withoutOverlapping()
             ->onOneServer();
 
@@ -59,13 +62,17 @@ class Kernel extends ConsoleKernel
                 ->each(function ($connection) {
                     SyncUserCalendar::dispatch($connection->id);
                 });
-        })->hourly()->withoutOverlapping()->onOneServer();
+        })->name('sync-due-calendars')->hourly()->withoutOverlapping()->onOneServer();
 
         // Production health checks. Alerts the ops channel when a check changes
         // state, so an index that has quietly stopped updating is noticed
         // without anyone going looking for it.
+        // sentryMonitor checks in at the start and end of every run. Without it
+        // a dead scheduler is indistinguishable from a healthy system, since
+        // every other check here runs on the machine it is checking.
         $schedule->command('ops:health-check')
             ->hourly()
+            ->sentryMonitor(checkInMargin: 10, maxRuntime: 5)
             ->withoutOverlapping()
             ->onOneServer()
             ->environments(['production']);
