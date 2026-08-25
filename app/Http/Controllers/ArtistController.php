@@ -915,9 +915,19 @@ class ArtistController extends Controller
             // Remove the studio affiliation
             $user->affiliatedStudios()->detach($studioId);
 
-            ReindexArtistAffiliationJob::dispatch((int) $user->id)
-                ->onQueue(QueueNames::ELASTIC_REBUILD)
-                ->onConnection('redis');
+            // The affiliation is already gone. A queue failure here must not be
+            // reported as a missing affiliation, or the caller retries a change
+            // that already succeeded.
+            try {
+                ReindexArtistAffiliationJob::dispatch((int) $user->id)
+                    ->onQueue(QueueNames::ELASTIC_REBUILD);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to queue affiliation reindex after leaving studio', [
+                    'user_id' => $user->id,
+                    'studio_id' => $studioId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'success' => true,
@@ -952,10 +962,19 @@ class ArtistController extends Controller
             }
 
             // The artist document and every one of their tattoos carry a copy
-            // of the primary studio, so both have to be rebuilt.
-            ReindexArtistAffiliationJob::dispatch((int) $user->id)
-                ->onQueue(QueueNames::ELASTIC_REBUILD)
-                ->onConnection('redis');
+            // of the primary studio, so both have to be rebuilt. The change is
+            // already committed, so a queue failure must not be reported back as
+            // an unverified affiliation.
+            try {
+                ReindexArtistAffiliationJob::dispatch((int) $user->id)
+                    ->onQueue(QueueNames::ELASTIC_REBUILD);
+            } catch (\Throwable $e) {
+                \Log::error('Failed to queue affiliation reindex after setting primary studio', [
+                    'user_id' => $user->id,
+                    'studio_id' => $studioId,
+                    'error' => $e->getMessage(),
+                ]);
+            }
 
             return response()->json([
                 'success' => true,

@@ -157,10 +157,18 @@ class StudioController extends Controller
 
         $studio->update($updateData);
 
-        // The owner's own documents carry the studio they own.
-        ReindexArtistAffiliationJob::dispatch((int) $request->user()->id)
-            ->onQueue(QueueNames::ELASTIC_REBUILD)
-            ->onConnection('redis');
+        // The owner's own documents carry the studio they own. The claim is
+        // already committed, so a queue failure must not fail the request.
+        try {
+            ReindexArtistAffiliationJob::dispatch((int) $request->user()->id)
+                ->onQueue(QueueNames::ELASTIC_REBUILD);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to queue affiliation reindex after claiming studio', [
+                'user_id' => $request->user()->id,
+                'studio_id' => $studio->id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'studio' => new StudioResource($studio->fresh()),
@@ -535,9 +543,18 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Artist was not associated with this studio', 404);
         }
 
-        ReindexArtistAffiliationJob::dispatch((int) $userId)
-            ->onQueue(QueueNames::ELASTIC_REBUILD)
-            ->onConnection('redis');
+        // The artist is already removed, so a queue failure must not fail the
+        // request and invite a retry of a change that already happened.
+        try {
+            ReindexArtistAffiliationJob::dispatch((int) $userId)
+                ->onQueue(QueueNames::ELASTIC_REBUILD);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to queue affiliation reindex after removing artist', [
+                'user_id' => $userId,
+                'studio_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json(['success' => true]);
     }
@@ -580,9 +597,18 @@ class StudioController extends Controller
             }
         }
 
-        ReindexArtistAffiliationJob::dispatch((int) $userId)
-            ->onQueue(QueueNames::ELASTIC_REBUILD)
-            ->onConnection('redis');
+        // The artist is already verified, so a queue failure must not fail the
+        // request and invite a retry of a change that already happened.
+        try {
+            ReindexArtistAffiliationJob::dispatch((int) $userId)
+                ->onQueue(QueueNames::ELASTIC_REBUILD);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to queue affiliation reindex after verifying artist', [
+                'user_id' => $userId,
+                'studio_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
@@ -612,9 +638,18 @@ class StudioController extends Controller
             'verified_at' => null,
         ]);
 
-        ReindexArtistAffiliationJob::dispatch((int) $userId)
-            ->onQueue(QueueNames::ELASTIC_REBUILD)
-            ->onConnection('redis');
+        // The verification is already removed, so a queue failure must not fail
+        // the request and invite a retry of a change that already happened.
+        try {
+            ReindexArtistAffiliationJob::dispatch((int) $userId)
+                ->onQueue(QueueNames::ELASTIC_REBUILD);
+        } catch (\Throwable $e) {
+            \Log::error('Failed to queue affiliation reindex after unverifying artist', [
+                'user_id' => $userId,
+                'studio_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+        }
 
         return response()->json([
             'success' => true,
