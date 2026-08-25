@@ -4,7 +4,6 @@ namespace App\Services;
 
 use App\Enums\SearchContext;
 use App\Models\Tattoo;
-use App\Util\GeoQuery;
 use App\Util\StringToModel;
 
 abstract class SearchService
@@ -354,7 +353,7 @@ abstract class SearchService
             $distance = $this->filters['distance'] . $this->filters['distanceUnit'];
             $latLongArray = explode(",", $latLongString);
 
-            $this->search->bool['must'][] = GeoQuery::distanceClause($field, $latLongArray[0], $latLongArray[1], $distance);
+            $this->search->whereDistance($field, $latLongArray[0], $latLongArray[1], $distance);
         } catch (\Exception $e) {
             \Log::error("Unable to build distance param", [
                 'error' => $e->getMessage(),
@@ -412,7 +411,7 @@ abstract class SearchService
         $distance = '25mi';
         $latLongArray = explode(",", $this->user->location_lat_long);
 
-        $distanceSearch->bool['must'][] = GeoQuery::distanceClause('artist_location_lat_long', $latLongArray[0], $latLongArray[1], $distance);
+        $distanceSearch->whereDistance('artist_location_lat_long', $latLongArray[0], $latLongArray[1], $distance);
 
         $distanceResponse = $distanceSearch->get();
 
@@ -482,7 +481,7 @@ abstract class SearchService
     {
         $latLongArray = explode(",", $this->user->location_lat_long);
 
-        $response['bool']['must'] = [GeoQuery::distanceClause('artist_location_lat_long', $latLongArray[0], $latLongArray[1], '25mi')];
+        $response['bool']['must'] = $this->search->whereDistanceSyntax('artist_location_lat_long', $latLongArray[0], $latLongArray[1], '25mi');
 
         return $response;
     }
