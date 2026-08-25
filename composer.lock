@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "f7b38294962acf232ba9a5d1ebe50824",
+    "content-hash": "05ea8eac0dec51f6b27704ee09bdf56a",
     "packages": [
         {
             "name": "aws/aws-crt-php",
@@ -2363,16 +2363,16 @@
         },
         {
             "name": "ink-empire/elastic",
-            "version": "2.0.5",
+            "version": "2.0.6",
             "source": {
                 "type": "git",
                 "url": "https://github.com/ccennis/larelastic.git",
-                "reference": "1e4c520d240a603ec15f115b795a19f17eb69f49"
+                "reference": "bc7ee9304c4d950c2bbcf00e20cc5c8fd362a8ce"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/ccennis/larelastic/zipball/1e4c520d240a603ec15f115b795a19f17eb69f49",
-                "reference": "1e4c520d240a603ec15f115b795a19f17eb69f49",
+                "url": "https://api.github.com/repos/ccennis/larelastic/zipball/bc7ee9304c4d950c2bbcf00e20cc5c8fd362a8ce",
+                "reference": "bc7ee9304c4d950c2bbcf00e20cc5c8fd362a8ce",
                 "shasum": ""
             },
             "require": {
@@ -2397,10 +2397,10 @@
             },
             "description": "Generic Wrapper for elasticsearch and indexing",
             "support": {
-                "source": "https://github.com/ccennis/larelastic/tree/v2.0.5",
+                "source": "https://github.com/ccennis/larelastic/tree/v2.0.6",
                 "issues": "https://github.com/ccennis/larelastic/issues"
             },
-            "time": "2026-03-13T23:09:43+00:00"
+            "time": "2026-08-25T14:12:42+00:00"
         },
         {
             "name": "intervention/gif",
@@ -15116,5 +15116,5 @@
     "platform-overrides": {
         "php": "8.3.29"
     },
-    "plugin-api-version": "2.6.0"
+    "plugin-api-version": "2.9.0"
 }
