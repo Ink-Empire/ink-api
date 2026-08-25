@@ -105,8 +105,8 @@ class TattooController extends Controller
         $params = $request->all();
         $pagination = $this->paginationService->extractParams($params);
 
-        $isDemo = $request->user()?->is_demo ? true : false;
-        $params['is_demo'] = $isDemo;
+        $isDemo = $this->wantsDemoData($request);
+        $params['include_demo'] = $isDemo;
         $cacheKey = 'es:tattoos:search:' . md5(($isDemo ? '1' : '0') . json_encode($params));
         $response = Cache::remember($cacheKey, 120, function () use ($params) {
             $parentSpan = \Sentry\SentrySdk::getCurrentHub()->getSpan();
@@ -157,7 +157,7 @@ class TattooController extends Controller
         $params = $request->all();
 
         // Don't hit Google Places API when viewing demo data
-        if (!empty($params['is_demo'])) {
+        if ($this->wantsDemoData($request)) {
             return response()->json(['unclaimed_studios' => []]);
         }
 

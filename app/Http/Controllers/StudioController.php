@@ -637,8 +637,8 @@ class StudioController extends Controller
             $params['per_page'] = $request->get('limit');
         }
 
-        // Demo users see demo and real work, everyone else sees real work only.
-        $params['is_demo'] = $request->user()?->is_demo ? true : false;
+        // Demo work shows only when the viewer asked for it.
+        $params['include_demo'] = $this->wantsDemoData($request);
 
         $results = $this->tattooService->getByStudio(
             $studio->id,

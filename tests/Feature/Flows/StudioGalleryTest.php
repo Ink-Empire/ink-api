@@ -45,24 +45,28 @@ it('asks TattooService for the gallery rather than building its own query', func
     expect($captured)->not->toBeNull()
         ->and($captured[0])->toBe($studio->id)
         ->and($captured[2]['per_page'])->toBe(10)
-        ->and($captured[2]['is_demo'])->toBeFalse();
+        ->and($captured[2]['include_demo'])->toBeFalse();
 });
 
-it('marks the viewer as a demo user so demo work stays visible to them', function () {
+it('passes the demo toggle through, not the viewer account flag', function () {
     $studio = Studio::factory()->create();
-    $demoViewer = User::factory()->create(['is_demo' => true]);
+    // A viewer flagged is_demo who has not switched the toggle on. This used to
+    // force demo work into the gallery with no way to turn it off.
+    $flaggedViewer = User::factory()->create(['is_demo' => true]);
 
     $captured = null;
     $this->mock(TattooService::class, function ($mock) use (&$captured) {
-        $mock->shouldReceive('getByStudio')->once()->andReturnUsing(function (...$args) use (&$captured) {
+        $mock->shouldReceive('getByStudio')->twice()->andReturnUsing(function (...$args) use (&$captured) {
             $captured = $args;
             return ['response' => collect(), 'total' => 0];
         });
     });
 
-    app(StudioController::class)->getGallery(galleryRequest([], $demoViewer), $studio->id);
+    app(StudioController::class)->getGallery(galleryRequest([], $flaggedViewer), $studio->id);
+    expect($captured[2]['include_demo'])->toBeFalse();
 
-    expect($captured[2]['is_demo'])->toBeTrue();
+    app(StudioController::class)->getGallery(galleryRequest(['include_demo' => 1], $flaggedViewer), $studio->id);
+    expect($captured[2]['include_demo'])->toBeTrue();
 });
 
 it('counts a studio account owner among the gallery artists', function () {
@@ -106,6 +110,8 @@ it('reindexes an artist when a studio verifies them', function () {
     $artist = User::factory()->asArtist()->create();
     $studio->artists()->attach($artist->id, ['is_verified' => false, 'initiated_by' => 'artist']);
 
+    $this->actingAs($owner);
+
     app(StudioController::class)->verifyArtist(galleryRequest([], $owner), $studio->id, $artist->id);
 
     Queue::assertPushed(
@@ -121,6 +127,8 @@ it('reindexes an artist when a studio removes their verification', function () {
     $studio = Studio::factory()->create(['owner_id' => $owner->id]);
     $artist = User::factory()->asArtist()->create();
     $studio->artists()->attach($artist->id, ['is_verified' => true, 'initiated_by' => 'studio']);
+
+    $this->actingAs($owner);
 
     app(StudioController::class)->unverifyArtist(galleryRequest([], $owner), $studio->id, $artist->id);
 

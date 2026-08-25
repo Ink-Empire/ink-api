@@ -161,12 +161,11 @@ abstract class SearchService
             $this->search->whereNot('is_visible', false);
         }
 
-        // Handle demo mode filtering:
-        // Demo users see all data (demo + real), non-demo users only see real data
-        if (isset($this->filters['is_demo']) && $this->filters['is_demo']) {
-            // Demo user: no filter, show both demo and real data
-        } elseif (!isset($this->filters['include_demo']) || !$this->filters['include_demo']) {
-            // Non-demo user: filter out demo data
+        // Demo content is hidden unless the viewer asked for it. include_demo is
+        // the only switch. A viewer's own is_demo column used to override it,
+        // so the 56 accounts carrying that flag without a demo slug saw demo
+        // data everywhere with no way to turn it off.
+        if (empty($this->filters['include_demo'])) {
             $this->search->where('is_demo', 'in', [false]);
         }
 

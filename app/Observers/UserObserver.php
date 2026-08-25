@@ -41,4 +41,21 @@ class UserObserver
             $artist->unsearchable();
         }
     }
+
+    public function deleted(User $user)
+    {
+        if (!in_array($user->type_id, [UserTypes::ARTIST_TYPE_ID, UserTypes::STUDIO_TYPE_ID], true)) {
+            return;
+        }
+
+        // The row is gone by now, so a lookup finds nothing. Scout only needs
+        // the key to remove the document. Without this, deletions that do not
+        // go through the account deletion endpoint leave the account visible
+        // in search.
+        $artist = new Artist();
+        $artist->exists = true;
+        $artist->forceFill(['id' => $user->id]);
+
+        $artist->unsearchable();
+    }
 }
