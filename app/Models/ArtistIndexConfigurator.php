@@ -172,6 +172,7 @@ class ArtistIndexConfigurator extends IndexConfigurator
             'is_featured' => Datatypes::BOOLEAN,
             'is_demo' => Datatypes::BOOLEAN,
             'is_claimed' => Datatypes::BOOLEAN,
+            'is_platform_account' => Datatypes::BOOLEAN,
             'saved_count' => Datatypes::INTEGER,
             'created_at' => self::DATE,
             'rating' => Datatypes::FLOAT,

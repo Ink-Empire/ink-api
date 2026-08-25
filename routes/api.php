@@ -29,6 +29,7 @@ use App\Http\Controllers\DeviceTokenController;
 use App\Http\Controllers\NotificationPreferenceController;
 use App\Http\Controllers\UserProfileController;
 use App\Http\Controllers\SupportController;
+use App\Http\Controllers\HealthController;
 
 /*
 |--------------------------------------------------------------------------
@@ -40,6 +41,12 @@ use App\Http\Controllers\SupportController;
 | be assigned to the "api" middleware group. Make something great!
 |
 */
+
+// Health. The shallow check is public for external uptime monitoring and
+// returns no detail. The deep check carries counts and ids, so it stays behind
+// the app token.
+Route::get('/health', [HealthController::class, 'shallow']);
+Route::get('/health/deep', [HealthController::class, 'deep']);
 
 // Public routes — static/reference data (cached aggressively, changes rarely)
 Route::middleware('cache.headers:public;max_age=3600;etag')->group(function () {

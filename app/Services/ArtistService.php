@@ -45,6 +45,22 @@ class ArtistService extends SearchService
     }
 
     /**
+     * Rank people who signed up above studios imported from Google Places.
+     *
+     * Sorting runs before relevance here, so this is a sort key rather than a
+     * boost. Imported studio records carry no is_platform_account field and the
+     * sort builder places missing values last, which is the behaviour we want.
+     * It is applied ahead of the shared sorts so it takes precedence on every
+     * option, not just the default.
+     */
+    protected function applySorting(): void
+    {
+        $this->search->sort('is_platform_account', 'desc');
+
+        parent::applySorting();
+    }
+
+    /**
      * Apply artist-specific filters
      */
     protected function applySpecificFilters()

@@ -60,6 +60,15 @@ class Kernel extends ConsoleKernel
                     SyncUserCalendar::dispatch($connection->id);
                 });
         })->hourly()->withoutOverlapping()->onOneServer();
+
+        // Production health checks. Alerts the ops channel when a check changes
+        // state, so an index that has quietly stopped updating is noticed
+        // without anyone going looking for it.
+        $schedule->command('ops:health-check')
+            ->hourly()
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->environments(['production']);
     }
 
     /**

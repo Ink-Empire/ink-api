@@ -156,4 +156,26 @@ class SlackService
 
         return $this->send($message, [], $this->supportWebhookUrl);
     }
+
+    /**
+     * Post a health check result to the ops channel.
+     */
+    public function notifyOps(string $title, string $body): bool
+    {
+        $webhookUrl = config('services.slack.ops_webhook_url');
+
+        if (empty($webhookUrl)) {
+            Log::warning('Slack ops_webhook_url not configured');
+            return false;
+        }
+
+        $timestamp = $this->slackTime(now());
+
+        $message = "{$title}\n"
+            . "━━━━━━━━━━━━━━━━━━\n"
+            . "{$body}\n"
+            . "*Time:* {$timestamp}";
+
+        return $this->send($message, [], $webhookUrl);
+    }
 }

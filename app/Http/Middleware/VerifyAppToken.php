@@ -22,6 +22,7 @@ class VerifyAppToken
         'api/webhooks/*',
         'api/calendar/callback',
         'api/places/config',
+        'api/health',
         'api/register',
         'api/login',
         'api/forgot-password',

@@ -240,10 +240,14 @@ This component bridges the gap between Laravel's ORM and Elasticsearch, making m
 
 ### Index Configurators
 
-Two primary index configurators define the structure of the search indices:
+Two primary index configurators define the structure of the search indices.
+`StudioIndexConfigurator` also exists, but the index it names has no reader:
+studios are searched through the artists index, as described under Studios in
+the Artists Index below.
 
 1. **ArtistIndexConfigurator** (`app/Models/ArtistIndexConfigurator.php`)
    - Maps artist data including profiles, styles, and portfolio information
+   - Holds studio accounts as well as artists, separated by the `type` field
    - Includes nested structures for related entities (studios, tattoos, styles)
    - Configures geo-point fields for location-based searches
 
@@ -286,6 +290,60 @@ Key search methods:
 ### Client User Search Fallback
 
 Artists and tattoos are searchable via Elasticsearch. Client users are not indexed in ES. When an artist search returns no results, the frontend automatically falls back to a lightweight database query (`POST /api/users/search`) that searches client users by name and username. This provides basic discoverability for non-artist users without the overhead of maintaining a separate ES index.
+
+### Studios in the Artists Index
+
+Studios do not have their own index. They live in the artists index and are told
+apart by the `type` field, which `ArtistIndexResource` derives from `type_id`:
+`studio` for a studio account, `artist` for everyone else. The artists page
+returns both and the frontend filters on that field, which is what its
+include-studios toggle switches.
+
+`ArtistService::search()` queries the artists index alone. Anything that has to
+appear on that page has to be a document in it.
+
+There are two kinds of studio record, and they do not arrive the same way:
+
+| Kind | Written by | Has `is_platform_account` |
+|------|------------|---------------------------|
+| Studio account, someone signed up | `ArtistIndexResource` | yes |
+| Imported from Google Places, unclaimed | `StudioIndexResource` | no |
+
+Imported studios are saved to the `studios` table on first sight so the same
+place is not fetched from Google repeatedly. That caching is deliberate. It
+also means an imported record can be claimed later by its real owner, which is
+what the claim flow acts on.
+
+### Ranking Real Accounts Above Imported Studios
+
+People who signed up rank above studios imported from Google. A search should
+surface the studio that is actually on the platform before a listing scraped
+from a map.
+
+This is a sort key, not a relevance boost. `SearchService::applySorting()` sorts
+on explicit fields for every option, so `_score` never decides the order and a
+query-time boost would have no effect. `ArtistService::applySorting()` puts
+`is_platform_account` ahead of the shared sorts, so the rule holds for the
+default ordering and for popular, recent and nearest alike.
+
+`ArtistIndexResource` sets `is_platform_account` to true on everything it
+writes. Imported studio documents carry no such field, and the sort builder
+places missing values last, so they fall below every real account without
+needing to be rewritten.
+
+Adding a document to this index from anywhere other than `ArtistIndexResource`
+means deciding where it should rank. Leaving the field off is what sends it to
+the bottom.
+
+### A Caution on Document Ids
+
+Documents in the artists index are keyed by the id of the record they came
+from: a user id for accounts, a studio id for imported studios. Those two
+sequences are independent, so a user and a studio can share an id and therefore
+a document id, and the later write wins.
+
+Before indexing studio records here in bulk, namespace the ids. Nothing does
+that today, which is the one thing keeping the collision theoretical.
 
 ## Maintenance and Operations
 

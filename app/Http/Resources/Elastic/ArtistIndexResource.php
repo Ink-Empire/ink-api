@@ -62,6 +62,10 @@ class ArtistIndexResource extends JsonResource
             // built from Google Places are never indexed here. Without this the
             // studio card falls back to its "hasn't joined yet" layout.
             'is_claimed' => $this->type_id === UserTypes::STUDIO_TYPE_ID,
+            // Separates people who signed up from studios imported off Google
+            // Places, so search can rank real accounts first. The imported
+            // records carry no such field and sort last.
+            'is_platform_account' => true,
             'primary_image' => $this->primary_image ?? null,
             'username' => $this->username,
             'settings' => $this->settings ? $this->settings->toArray() : [],

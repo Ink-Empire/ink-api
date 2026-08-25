@@ -46,6 +46,7 @@ return [
         'webhook_url'         => env('SLACK_NEW_CONTACT_WEBHOOK_URL'),
         'new_contact_webhook' => env('SLACK_NEW_CONTACT_WEBHOOK_URL'),
         'support_webhook_url' => env('SLACK_SUPPORT_WEBHOOK_URL'),
+        'ops_webhook_url'     => env('SLACK_OPS_WEBHOOK_URL'),
     ],
 
     'inbound_imap' => [
