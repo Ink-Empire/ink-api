@@ -163,8 +163,13 @@ class HealthCheckService
                     'database' => Tattoo::query()->count(),
                     'optional' => false,
                 ],
+                // Counted against platform accounts only. The artists index also
+                // holds studios imported from Google Places, which have no user
+                // row to compare with, so including them reads as permanent
+                // drift.
                 'artists' => [
                     'index' => $this->indexFor(new Artist()),
+                    'query' => ['term' => ['is_platform_account' => true]],
                     'database' => User::query()
                         ->whereIn('type_id', [UserTypes::ARTIST_TYPE_ID, UserTypes::STUDIO_TYPE_ID])
                         ->whereNotNull('email_verified_at')
@@ -196,7 +201,10 @@ class HealthCheckService
                     continue;
                 }
 
-                $indexed = $this->countDocuments($expectation['index']);
+                $indexed = $this->countDocuments(
+                    $expectation['index'],
+                    $expectation['query'] ?? []
+                );
                 $database = $expectation['database'];
                 $difference = abs($indexed - $database);
 
@@ -291,22 +299,26 @@ class HealthCheckService
             $sample = (int) config('health.sample_size');
 
             $targets = [
-                'tattoos' => [$this->indexFor(new Tattoo()), Tattoo::query()],
-                'studios' => [$this->indexFor(new Studio()), Studio::query()],
+                'tattoos' => [$this->indexFor(new Tattoo()), Tattoo::query(), []],
+                'studios' => [$this->indexFor(new Studio()), Studio::query(), []],
+                // Restricted to platform accounts. An imported studio's document
+                // is keyed by its studios row id, so checking it against users
+                // would report every one of them as orphaned.
                 'artists' => [
                     $this->indexFor(new Artist()),
                     Artist::withoutGlobalScope(ArtistScope::class),
+                    ['term' => ['is_platform_account' => true]],
                 ],
             ];
 
             $orphans = [];
 
-            foreach ($targets as $label => [$index, $query]) {
+            foreach ($targets as $label => [$index, $query, $filter]) {
                 if (! $this->elastic->indexExists($index)) {
                     continue;
                 }
 
-                $ids = $this->recentDocumentIds($index, $sample);
+                $ids = $this->recentDocumentIds($index, $sample, $filter);
 
                 if (empty($ids)) {
                     continue;
@@ -572,15 +584,21 @@ class HealthCheckService
         return $documents;
     }
 
-    private function recentDocumentIds(string $index, int $size): array
+    private function recentDocumentIds(string $index, int $size, array $filter = []): array
     {
+        $body = [
+            'size' => $size,
+            '_source' => false,
+            'sort' => [['_doc' => 'asc']],
+        ];
+
+        if ($filter !== []) {
+            $body['query'] = $filter;
+        }
+
         $response = Elastic::search([
             'index' => $index,
-            'body' => [
-                'size' => $size,
-                '_source' => false,
-                'sort' => [['_doc' => 'asc']],
-            ],
+            'body' => $body,
         ])->asArray();
 
         return array_map(
