@@ -13,6 +13,7 @@ use Carbon\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Illuminate\Support\Facades\Redis;
+use Larelastic\Elastic\Facades\Elastic;
 use Throwable;
 
 /**
@@ -342,9 +343,9 @@ class HealthCheckService
         return $this->attempt('canonical_search', function () {
             $term = (string) config('health.canonical_search_term');
 
-            $response = $this->elastic->post(
-                '/' . $this->indexFor(new Tattoo()) . '/_search',
-                [
+            $response = Elastic::search([
+                'index' => $this->indexFor(new Tattoo()),
+                'body' => [
                     'size' => 0,
                     'query' => [
                         'multi_match' => [
@@ -352,8 +353,8 @@ class HealthCheckService
                             'fields' => ['title', 'description', 'tags.name', 'styles.name'],
                         ],
                     ],
-                ]
-            );
+                ],
+            ])->asArray();
 
             $hits = (int) data_get($response, 'hits.total.value', 0);
 
@@ -379,19 +380,12 @@ class HealthCheckService
     private function checkStudioDocumentsCarryClaimFlag(): array
     {
         return $this->attempt('studio_claim_flag', function () {
-            $response = $this->elastic->post(
-                '/' . $this->indexFor(new Artist()) . '/_count',
-                [
-                    'query' => [
-                        'bool' => [
-                            'must' => [['term' => ['type' => UserTypes::STUDIO]]],
-                            'must_not' => [['exists' => ['field' => 'is_claimed']]],
-                        ],
-                    ],
-                ]
-            );
-
-            $missing = (int) data_get($response, 'count', 0);
+            $missing = $this->countDocuments($this->indexFor(new Artist()), [
+                'bool' => [
+                    'must' => [['term' => ['type' => UserTypes::STUDIO]]],
+                    'must_not' => [['exists' => ['field' => 'is_claimed']]],
+                ],
+            ]);
 
             if ($missing === 0) {
                 return $this->ok('studio_claim_flag', 'Studio documents carry is_claimed.');
@@ -519,9 +513,21 @@ class HealthCheckService
         return $model->getIndexConfigurator()->getName();
     }
 
-    private function countDocuments(string $index): int
+    /**
+     * All Elasticsearch reads go through the Elastic client rather than
+     * ElasticService::post(). That method builds its own URL from
+     * elastic.client.base_url, which carries the scheme from the host env var
+     * and sends no API key, so it cannot reach a managed cluster.
+     */
+    private function countDocuments(string $index, array $query = []): int
     {
-        return (int) data_get($this->elastic->post('/' . $index . '/_count'), 'count', 0);
+        $params = ['index' => $index];
+
+        if ($query !== []) {
+            $params['body'] = ['query' => $query];
+        }
+
+        return (int) data_get(Elastic::count($params)->asArray(), 'count', 0);
     }
 
     /**
@@ -529,11 +535,14 @@ class HealthCheckService
      */
     private function documentIdsPresent(string $index, array $ids): array
     {
-        $response = $this->elastic->post('/' . $index . '/_search', [
-            'size' => count($ids),
-            '_source' => false,
-            'query' => ['ids' => ['values' => array_map('strval', $ids)]],
-        ]);
+        $response = Elastic::search([
+            'index' => $index,
+            'body' => [
+                'size' => count($ids),
+                '_source' => false,
+                'query' => ['ids' => ['values' => array_map('strval', $ids)]],
+            ],
+        ])->asArray();
 
         return array_map(
             static fn ($hit) => (int) $hit['_id'],
@@ -546,10 +555,13 @@ class HealthCheckService
      */
     private function documents(string $index, array $ids): array
     {
-        $response = $this->elastic->post('/' . $index . '/_search', [
-            'size' => count($ids),
-            'query' => ['ids' => ['values' => array_map('strval', $ids)]],
-        ]);
+        $response = Elastic::search([
+            'index' => $index,
+            'body' => [
+                'size' => count($ids),
+                'query' => ['ids' => ['values' => array_map('strval', $ids)]],
+            ],
+        ])->asArray();
 
         $documents = [];
 
@@ -562,11 +574,14 @@ class HealthCheckService
 
     private function recentDocumentIds(string $index, int $size): array
     {
-        $response = $this->elastic->post('/' . $index . '/_search', [
-            'size' => $size,
-            '_source' => false,
-            'sort' => [['_doc' => 'asc']],
-        ]);
+        $response = Elastic::search([
+            'index' => $index,
+            'body' => [
+                'size' => $size,
+                '_source' => false,
+                'sort' => [['_doc' => 'asc']],
+            ],
+        ])->asArray();
 
         return array_map(
             static fn ($hit) => (int) $hit['_id'],
