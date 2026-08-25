@@ -4,10 +4,13 @@ namespace App\Services;
 
 use App\Enums\UserTypes;
 use App\Exceptions\UserNotFoundException;
+use App\Models\ClientNote;
 use App\Models\Image;
 use App\Models\Style;
 use App\Models\Tattoo;
 use App\Models\User;
+use App\Models\UserTag;
+use App\Models\UserTagCategory;
 use App\Util\ModelLookup;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
@@ -148,6 +151,16 @@ class UserService
         $user->artistWishlists()->delete();
         $user->conversationParticipants()->delete();
         $user->profileViews()->delete();
+
+        // Client insight records reference a user from either side, and their
+        // foreign keys restrict deletes. Registration seeds tag categories for
+        // every artist and studio, so without this no such account can be
+        // deleted. Tags in a deleted category are removed by cascade.
+        UserTag::where('client_id', $user->id)->delete();
+        UserTagCategory::where('studio_user_id', $user->id)->delete();
+        ClientNote::where('client_id', $user->id)
+            ->orWhere('studio_user_id', $user->id)
+            ->delete();
 
         // Delete artist settings if exists
         if ($user->settings) {

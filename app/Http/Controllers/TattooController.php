@@ -354,7 +354,12 @@ class TattooController extends Controller
                     $tattooData['seeking_radius_unit'] = $request->input('seeking_radius_unit', 'mi');
                 }
 
-                $tattoo = $this->tattooService->createTattoo($user, $tattooData);
+                // Indexing on save would write a document before the images,
+                // styles and tags below are attached, leaving the post in search
+                // with an empty gallery. IndexTattooJob indexes it once complete.
+                $tattoo = Tattoo::withoutSyncingToSearch(
+                    fn () => $this->tattooService->createTattoo($user, $tattooData)
+                );
 
                 // Attach ALL images to the pivot table (including the primary image)
                 $imageIds = collect($images)->pluck('id')->toArray();
