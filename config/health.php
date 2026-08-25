@@ -1,5 +1,7 @@
 <?php
 
+use App\Enums\HealthStatus;
+
 return [
 
     /*
@@ -89,6 +91,13 @@ return [
         'enabled' => env('HEALTH_ALERTS_ENABLED', true),
         'repeat_after_hours' => env('HEALTH_ALERT_REPEAT_HOURS', 6),
         'state_ttl_hours' => env('HEALTH_ALERT_STATE_TTL_HOURS', 72),
+
+        /*
+        | Lowest status worth interrupting someone for. Warnings still appear in
+        | the command output and the weekly report, they just do not ping the
+        | channel. Set to warn to be told about everything.
+        */
+        'minimum_severity' => env('HEALTH_ALERT_MIN_SEVERITY', HealthStatus::CRITICAL),
     ],
 
 ];

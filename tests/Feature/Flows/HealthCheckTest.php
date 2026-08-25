@@ -101,6 +101,10 @@ function opsMessages(array &$sent): void
 }
 
 it('alerts once when a check starts failing and stays quiet while it keeps failing', function () {
+    // Exercises the transition machinery, so it lowers the bar to warnings.
+    // The severity gate itself is covered separately.
+    config()->set('health.alerts.minimum_severity', HealthStatus::WARN);
+
     $sent = [];
     opsMessages($sent);
 
@@ -120,6 +124,8 @@ it('alerts once when a check starts failing and stays quiet while it keeps faili
 });
 
 it('posts a recovery message when a failing check comes back', function () {
+    config()->set('health.alerts.minimum_severity', HealthStatus::WARN);
+
     $sent = [];
     opsMessages($sent);
 
@@ -139,6 +145,50 @@ it('posts a recovery message when a failing check comes back', function () {
     expect($forCheck)->toHaveCount(2)
         ->and($forCheck[0])->toContain('Health check failing')
         ->and($forCheck[1])->toContain('Health check recovered');
+});
+
+it('does not ping the channel for a warning', function () {
+    // A studio with no owner is a warning. Worth seeing in the weekly report,
+    // not worth waking anyone for.
+    $sent = [];
+    opsMessages($sent);
+
+    Studio::factory()->create(['is_claimed' => true, 'owner_id' => null]);
+
+    $this->artisan('ops:health-check');
+
+    $forCheck = array_filter(
+        $sent,
+        fn ($message) => str_contains($message, 'claimed_studios_have_owners')
+    );
+
+    expect($forCheck)->toBeEmpty();
+});
+
+it('still pings the channel for a critical', function () {
+    $sent = [];
+    opsMessages($sent);
+
+    // Elasticsearch is unavailable in tests, so its check is critical.
+    $this->artisan('ops:health-check');
+
+    $critical = array_filter($sent, fn ($message) => str_contains($message, 'CRITICAL'));
+
+    expect($critical)->not->toBeEmpty();
+});
+
+it('reports every check in the weekly summary, warnings included', function () {
+    $sent = [];
+    opsMessages($sent);
+
+    Studio::factory()->create(['is_claimed' => true, 'owner_id' => null]);
+
+    $this->artisan('ops:health-check --summary');
+
+    expect($sent)->toHaveCount(1)
+        ->and($sent[0])->toContain('Weekly health report')
+        ->and($sent[0])->toContain('claimed_studios_have_owners')
+        ->and($sent[0])->toContain('passing');
 });
 
 it('sends nothing to slack when alerting is disabled', function () {

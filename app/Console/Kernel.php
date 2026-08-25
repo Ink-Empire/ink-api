@@ -76,6 +76,16 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer()
             ->environments(['production']);
+
+        // A full report every Monday morning, whatever the state. The hourly run
+        // stays quiet unless something breaks, so this is the standing proof it
+        // is still running, and where warnings that never reach alert severity
+        // get seen.
+        $schedule->command('ops:health-check --summary')
+            ->weeklyOn(1, '9:00')
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->environments(['production']);
     }
 
     /**

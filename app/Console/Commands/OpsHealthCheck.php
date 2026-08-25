@@ -12,7 +12,8 @@ use Illuminate\Support\Facades\Cache;
 class OpsHealthCheck extends Command
 {
     protected $signature = 'ops:health-check
-        {--no-alert : Run the checks and print them without posting to Slack}';
+        {--no-alert : Run the checks and print them without posting to Slack}
+        {--summary : Post a full report of every check instead of alerting on changes}';
 
     protected $description = 'Run production health checks and alert the ops channel when one changes state';
 
@@ -33,11 +34,50 @@ class OpsHealthCheck extends Command
             return $result['status'] === HealthStatus::CRITICAL ? self::FAILURE : self::SUCCESS;
         }
 
+        if ($this->option('summary')) {
+            $this->postSummary($result);
+
+            return $result['status'] === HealthStatus::CRITICAL ? self::FAILURE : self::SUCCESS;
+        }
+
         foreach ($result['checks'] as $check) {
             $this->alertOnChange($check);
         }
 
         return $result['status'] === HealthStatus::CRITICAL ? self::FAILURE : self::SUCCESS;
+    }
+
+    /**
+     * The scheduled report. Posts every check regardless of state, so the
+     * channel gets a sign of life even in a quiet week and a warning that never
+     * reaches alert severity still gets seen.
+     */
+    private function postSummary(array $result): void
+    {
+        $counts = array_count_values(array_column($result['checks'], 'status'));
+
+        $body = sprintf(
+            "*%d passing, %d warning, %d critical*",
+            $counts[HealthStatus::OK] ?? 0,
+            $counts[HealthStatus::WARN] ?? 0,
+            $counts[HealthStatus::CRITICAL] ?? 0
+        );
+
+        $failing = array_filter(
+            $result['checks'],
+            fn ($check) => HealthStatus::isFailing($check['status'])
+        );
+
+        if (empty($failing)) {
+            $body .= "\nNothing needs attention.";
+        } else {
+            foreach ($failing as $check) {
+                $label = $check['status'] === HealthStatus::CRITICAL ? 'CRITICAL' : 'WARNING';
+                $body .= "\n\n*{$label}: {$check['name']}*\n{$check['message']}";
+            }
+        }
+
+        $this->slack->notifyOps('Weekly health report', $body);
     }
 
     /**
@@ -51,8 +91,10 @@ class OpsHealthCheck extends Command
         $previous = Cache::get($key);
         $status = $check['status'];
 
-        $wasFailing = $previous && HealthStatus::isFailing($previous['status']);
-        $isFailing = HealthStatus::isFailing($status);
+        // Only statuses at or above the configured severity are worth a ping.
+        // A warning still lands in the command output and the weekly report.
+        $wasFailing = $previous && $this->worthAlerting($previous['status']);
+        $isFailing = $this->worthAlerting($status);
 
         $shouldAlert = false;
 
@@ -74,6 +116,18 @@ class OpsHealthCheck extends Command
         }
 
         $this->remember($key, $status, $shouldAlert);
+    }
+
+    /**
+     * Whether a status is severe enough to interrupt someone.
+     */
+    private function worthAlerting(string $status): bool
+    {
+        if (config('health.alerts.minimum_severity') === HealthStatus::WARN) {
+            return HealthStatus::isFailing($status);
+        }
+
+        return $status === HealthStatus::CRITICAL;
     }
 
     private function repeatDue(?array $previous): bool
