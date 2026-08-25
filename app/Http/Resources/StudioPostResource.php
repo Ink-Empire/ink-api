@@ -24,10 +24,16 @@ class StudioPostResource extends JsonResource
             'published_at' => $this->published_at,
 
             // Only the substantive types get a page of their own; ephemeral
-            // notices render inline and nowhere else.
+            // notices render inline and nowhere else. Announcements and guides
+            // live under different segments, so the family picks the path.
             'url' => $this->when(
                 $this->type->hasPublicPage() && $this->slug && $this->studio,
-                fn () => "/studios/{$this->studio->slug}/news/{$this->slug}"
+                fn () => sprintf(
+                    '/studios/%s/%s/%s',
+                    $this->studio->slug,
+                    $this->type->isGuide() ? 'guides' : 'news',
+                    $this->slug
+                )
             ),
         ];
     }

@@ -200,3 +200,18 @@ describe('Sending aftercare', function () {
             ->assertJsonPath('error', 'No aftercare guide yet');
     });
 });
+
+test('a guide links under guides, not news', function () {
+    guide($this->studio);
+
+    $this->getJson("/api/studios/{$this->studio->slug}/guides")
+        ->assertOk()
+        ->assertJsonPath('guides.0.url', "/studios/{$this->studio->slug}/guides/healing-your-new-tattoo");
+});
+
+test('a guide is not reachable under the news segment', function () {
+    guide($this->studio);
+
+    $this->getJson("/api/studios/{$this->studio->slug}/news/healing-your-new-tattoo")
+        ->assertNotFound();
+});

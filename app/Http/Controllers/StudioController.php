@@ -617,6 +617,7 @@ class StudioController extends Controller
         }
 
         $post = $studio->posts()
+            ->announcements()
             ->where('slug', $postSlug)
             ->where('is_active', true)
             ->where('status', StudioPostStatus::Published->value)
