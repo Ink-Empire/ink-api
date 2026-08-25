@@ -4,16 +4,22 @@ namespace App\Http\Controllers;
 
 use Illuminate\Support\Facades\Schema;
 use App\Enums\QueueNames;
+use App\Enums\SpotlightType;
+use App\Enums\StudioPostStatus;
+use App\Enums\StudioPostType;
+use App\Enums\StudioTemplate;
 use App\Enums\UserTypes;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Dashboard\StudioArtistDashboardResource;
 use App\Http\Resources\Dashboard\WorkingHoursDashboardResource;
+use App\Http\Resources\StudioPostResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
 use App\Models\Address;
+use App\Models\Image;
 use App\Models\StudioAvailability;
 use App\Models\Studio;
-use App\Models\StudioAnnouncement;
+use App\Models\StudioPost;
 use App\Models\StudioInvitation;
 use App\Models\StudioSpotlight;
 use App\Models\User;
@@ -27,6 +33,9 @@ use App\Services\GooglePlacesService;
 use App\Services\PaginationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Str;
+use Illuminate\Validation\ValidationException;
+use Illuminate\Validation\Rule;
 
 class StudioController extends Controller
 {
@@ -127,9 +136,13 @@ class StudioController extends Controller
             return response()->json(['error' => 'This studio has already been claimed. If you believe this is in error, contact us at info@getinked.in'], 422);
         }
 
+        if ($request->filled('slug')) {
+            $request->merge(['slug' => Str::slug($request->input('slug'))]);
+        }
+
         $request->validate([
             'name' => 'nullable|string|max:255',
-            'slug' => 'nullable|string|max:255',
+            'slug' => ['nullable', 'string', 'max:255', Rule::unique('studios', 'slug')->ignore($studio->id)],
             'about' => 'nullable|string',
             'location' => 'nullable|string',
             'location_lat_long' => 'nullable|string',
@@ -238,6 +251,15 @@ class StudioController extends Controller
     public function getById($id)
     {
         $studio = $this->studioService->getById($id);
+
+        if (! $studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        // StudioResource exposes announcements through whenLoaded, so without
+        // this the public page never received them and the section was dead.
+        $studio->load('activeAnnouncements', 'bannerImage');
+
         return $this->returnResponse('studio', new StudioResource($studio));
     }
 
@@ -264,7 +286,7 @@ class StudioController extends Controller
 
             $studio = new Studio([
                 'name' => $data['name'],
-                'slug' => $data['slug'] ?? null,
+                'slug' => $this->studioService->generateSlug($data['slug'] ?? $data['name']),
                 'email' => $data['email'] ?? null,
                 'about' => $data['about'] ?? null,
                 'phone' => $data['phone'] ?? null,
@@ -295,6 +317,24 @@ class StudioController extends Controller
     {
         $data = $request->all();
         $studio = $this->studioService->getById($id);
+
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $this->authorize('manage', $studio);
+
+        if (array_key_exists('slug', $data)) {
+            $slug = Str::slug((string) $data['slug']);
+
+            if ($slug === '') {
+                unset($data['slug']);
+            } elseif ($this->studioService->isSlugTaken($slug, $studio->id)) {
+                return $this->returnErrorResponse('That studio URL is already taken.', 422);
+            } else {
+                $data['slug'] = $slug;
+            }
+        }
 
         // Handle address fields - create or update Address record
         $addressFields = ['address', 'address2', 'city', 'state', 'postal_code', 'country'];
@@ -331,10 +371,6 @@ class StudioController extends Controller
             }
 
             switch ($fieldName) {
-                case 'days':
-                    $this->studioService->setBusinessDays($data, $studio);
-                    $studio->load('business_hours');
-                    break;
                 case 'styles':
                     $this->studioService->updateStyles($studio, $fieldVal);
                     break;
@@ -353,20 +389,6 @@ class StudioController extends Controller
 
         return $this->returnResponse('studio', new StudioResource($studio));
 
-    }
-
-    public function updateBusinessHours(Request $request, $id)
-    {
-        $data = $request->all();
-
-        $studio = $this->studioService->getById($id);
-
-        if (isset($data['days'])) {
-            $this->studioService->setBusinessDays($data, $studio);
-            $studio->load('business_hours');
-        }
-
-        return $this->returnResponse('studio', new StudioResource($studio));
     }
 
     /**
@@ -396,11 +418,7 @@ class StudioController extends Controller
             return response()->json(['error' => 'Studio not found'], 404);
         }
 
-        // Verify the current user owns this studio
-        $user = $request->user();
-        if (!$user || $studio->owner_id !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
+        $this->authorize('manage', $studio);
 
         $availabilityArray = $request->get('availability');
 
@@ -435,6 +453,8 @@ class StudioController extends Controller
             if (!$studio) {
                 return $this->returnErrorResponse('Studio not found');
             }
+
+            $this->authorize('manage', $studio);
 
             // Check for presigned URL flow (faster) - image already uploaded to S3
             if ($request->has('image_id')) {
@@ -483,6 +503,281 @@ class StudioController extends Controller
     }
 
     // Artist Management
+    /**
+     * Every studio page worth indexing, with the news pages beneath it.
+     *
+     * Exists for the sitemap: without it, studio profiles and their
+     * announcements were reachable only by someone who already had the link.
+     *
+     * Only studios someone has actually claimed are offered. Auto-imported
+     * listings carry a name and a location and little else, and thin pages are
+     * worth less than no pages. Ownership rather than is_claimed is the test:
+     * that column defaults to true, so legacy rows carry it without an owner.
+     */
+    public function directory(Request $request): JsonResponse
+    {
+        $perPage = min((int) $request->input('size', 500), 1000);
+        $page = max((int) $request->input('page', 1), 1);
+
+        $indexable = fn ($query) => $query
+            ->where('is_demo', false)
+            ->whereNotNull('owner_id')
+            ->whereNotNull('slug')
+            ->where('slug', '!=', '');
+
+        $studios = Studio::query()
+            ->tap($indexable)
+            ->with(['posts' => fn ($query) => $query->visible()])
+            ->orderBy('id')
+            ->forPage($page, $perPage)
+            ->get();
+
+        $total = Studio::query()->tap($indexable)->count();
+
+        return response()->json([
+            'studios' => $studios->map(function (Studio $studio) {
+                $linkable = $studio->posts
+                    ->filter(fn (StudioPost $post) => $post->slug && $post->type->hasPublicPage());
+
+                $entry = fn (StudioPost $post) => [
+                    'slug' => $post->slug,
+                    'updated_at' => $post->updated_at,
+                ];
+
+                return [
+                    'slug' => $studio->slug,
+                    'updated_at' => $studio->updated_at,
+                    'news' => $linkable
+                        ->filter(fn (StudioPost $post) => $post->type->isAnnouncement())
+                        ->map($entry)
+                        ->values(),
+                    'guides' => $linkable
+                        ->filter(fn (StudioPost $post) => $post->type->isGuide())
+                        ->map($entry)
+                        ->values(),
+                ];
+            })->values(),
+            'has_more' => $page * $perPage < $total,
+            'total' => $total,
+        ]);
+    }
+
+    /**
+     * The studio's published guides.
+     */
+    public function getGuides($id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+
+        if (! $studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $guides = $studio->posts()->guides()->visible()->latest('published_at')->get();
+        $guides->each(fn (StudioPost $guide) => $guide->setRelation('studio', $studio));
+
+        return $this->returnResponse('guides', StudioPostResource::collection($guides));
+    }
+
+    /**
+     * A single guide at its own URL.
+     */
+    public function getGuide($id, $guideSlug): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+
+        if (! $studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $guide = $studio->posts()->guides()->visible()->where('slug', $guideSlug)->first();
+
+        if (! $guide) {
+            return $this->returnErrorResponse('Guide not found', 404);
+        }
+
+        $guide->setRelation('studio', $studio);
+
+        return $this->returnResponse('guide', new StudioPostResource($guide));
+    }
+
+    /**
+     * A single announcement or guide at its own URL.
+     *
+     * Only types that carry a public page resolve here. An expired
+     * announcement still resolves: the page stays up as an archive even once
+     * it has dropped off the studio page.
+     */
+    public function getPost($id, $postSlug): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+
+        if (! $studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $post = $studio->posts()
+            ->where('slug', $postSlug)
+            ->where('is_active', true)
+            ->where('status', StudioPostStatus::Published->value)
+            ->where(fn ($query) => $query->whereNull('published_at')->orWhere('published_at', '<=', now()))
+            ->first();
+
+        if (! $post || ! $post->type->hasPublicPage()) {
+            return $this->returnErrorResponse('Post not found', 404);
+        }
+
+        $post->setRelation('studio', $studio);
+
+        return $this->returnResponse('post', new StudioPostResource($post));
+    }
+
+    /**
+     * Publish a whole studio page edit at once.
+     *
+     * The editor holds every change client side until the owner presses
+     * Publish, so this applies them in a single transaction rather than the
+     * long sequence of requests it used to take.
+     */
+    public function publishPage(Request $request, $id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+
+        if (! $studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $this->authorize('manage', $studio);
+
+        if ($request->filled('slug')) {
+            $request->merge(['slug' => Str::slug($request->input('slug'))]);
+        }
+
+        $validated = $request->validate([
+            'name' => 'nullable|string|max:255',
+            'about' => 'nullable|string',
+            'template' => ['nullable', Rule::in(StudioTemplate::values())],
+            'phone' => 'nullable|string|max:255',
+            'email' => 'nullable|email',
+            'website' => 'nullable|string|max:255',
+            'address' => 'nullable|string|max:255',
+            'address2' => 'nullable|string|max:255',
+            'city' => 'nullable|string|max:255',
+            'state' => 'nullable|string|max:255',
+            'postal_code' => 'nullable|string|max:32',
+
+            'working_hours' => 'nullable|array',
+            'working_hours.*.day_of_week' => 'required|integer|between:0,6',
+            'working_hours.*.start_time' => 'nullable|string',
+            'working_hours.*.end_time' => 'nullable|string',
+            'working_hours.*.is_day_off' => 'nullable|boolean',
+
+            'announcements' => 'nullable|array',
+            'announcements.*.id' => 'nullable|integer',
+            'announcements.*.type' => ['nullable', Rule::in(StudioPostType::announcementValues())],
+            'announcements.*.title' => 'required|string|max:255',
+            'announcements.*.content' => 'required|string',
+            'announcements.*.starts_at' => 'nullable|date',
+            'announcements.*.ends_at' => 'nullable|date|after_or_equal:announcements.*.starts_at',
+
+            'guides' => 'nullable|array',
+            'guides.*.id' => 'nullable|integer',
+            'guides.*.type' => ['nullable', Rule::in([StudioPostType::Aftercare->value, StudioPostType::Prep->value])],
+            'guides.*.title' => 'required|string|max:255',
+            'guides.*.content' => 'required|string',
+            'guides.*.excerpt' => 'nullable|string|max:500',
+            'guides.*.is_default' => 'nullable|boolean',
+
+            'spotlights' => 'nullable|array',
+            'spotlights.*.type' => ['required', Rule::in(SpotlightType::values())],
+            'spotlights.*.item_id' => 'required|integer',
+        ]);
+
+        $studio = $this->studioService->publishPage($studio, $validated);
+
+        $studio->load('activeAnnouncements', 'bannerImage', 'availability');
+
+        return $this->returnResponse('studio', new StudioResource($studio));
+    }
+
+    /**
+     * Attach an already-uploaded image as the studio's page banner.
+     */
+    public function uploadBanner(Request $request, $id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $this->authorize('manage', $studio);
+
+        try {
+            // Presigned flow: the image is already stored, just link it.
+            if ($request->has('image_id')) {
+                $request->validate([
+                    'image_id' => 'required|exists:images,id',
+                ]);
+
+                $image = Image::find($request->input('image_id'));
+                $studio = $this->studioService->setStudioBanner($id, $image);
+
+                return $this->returnResponse('studio', new StudioResource($studio->load('bannerImage')));
+            }
+
+            // Legacy flow: process the file through the server, as the studio
+            // image endpoint does.
+            if ($request->hasFile('image')) {
+                $file = $request->file('image');
+                $extension = $file->getClientOriginalExtension() ?: 'jpeg';
+                $filename = 'studio_banner_' . $id . '_' . date('Ymdi') . '.' . $extension;
+
+                $image = $this->imageService->processImage(
+                    base64_encode(file_get_contents($file->getRealPath())),
+                    $filename
+                );
+            } elseif ($request->has('image')) {
+                $filename = 'studio_banner_' . $id . '_' . date('Ymdi') . '.jpeg';
+                $image = $this->imageService->processImage($request->image, $filename);
+            } else {
+                return $this->returnErrorResponse('No image provided', 422);
+            }
+
+            $studio = $this->studioService->setStudioBanner($id, $image);
+
+            return $this->returnResponse('studio', new StudioResource($studio->load('bannerImage')));
+        } catch (ValidationException $e) {
+            throw $e;
+        } catch (\Exception $e) {
+            \Log::error('Unable to upload studio banner', [
+                'studio_id' => $id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return $this->returnErrorResponse('Unable to upload banner', 500);
+        }
+    }
+
+    /**
+     * Remove the studio's page banner.
+     */
+    public function removeBanner($id): JsonResponse
+    {
+        $studio = $this->studioService->getById($id);
+
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $this->authorize('manage', $studio);
+
+        $studio->banner_image_id = null;
+        $studio->save();
+
+        return $this->returnResponse('studio', new StudioResource($studio));
+    }
+
     public function getArtists($id): JsonResponse
     {
         $studio = $this->studioService->getById($id);
@@ -501,6 +796,8 @@ class StudioController extends Controller
         if (!$studio) {
             return $this->returnErrorResponse('Studio not found', 404);
         }
+
+        $this->authorize('manage', $studio);
 
         // Accept either username or email
         $identifier = $request->input('username') ?? $request->input('email') ?? $request->input('identifier');
@@ -538,6 +835,8 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Studio not found', 404);
         }
 
+        $this->authorize('manage', $studio);
+
         $removed = $this->studioService->removeArtist($studio, $userId);
         if (!$removed) {
             return $this->returnErrorResponse('Artist was not associated with this studio', 404);
@@ -568,6 +867,8 @@ class StudioController extends Controller
         if (!$studio) {
             return $this->returnErrorResponse('Studio not found', 404);
         }
+
+        $this->authorize('manage', $studio);
 
         // Check if artist is associated with this studio
         $artist = $studio->artists()->where('users.id', $userId)->first();
@@ -625,6 +926,8 @@ class StudioController extends Controller
         if (!$studio) {
             return $this->returnErrorResponse('Studio not found', 404);
         }
+
+        $this->authorize('manage', $studio);
 
         // Check if artist is associated with this studio
         $artist = $studio->artists()->where('users.id', $userId)->first();
@@ -744,6 +1047,8 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Studio not found', 404);
         }
 
+        $this->authorize('manage', $studio);
+
         $request->validate([
             'title' => 'required|string|max:255',
             'content' => 'required|string',
@@ -755,7 +1060,14 @@ class StudioController extends Controller
 
     public function updateAnnouncement(Request $request, $id, $announcementId): JsonResponse
     {
-        $announcement = StudioAnnouncement::where('studio_id', $id)
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $this->authorize('manage', $studio);
+
+        $announcement = StudioPost::where('studio_id', $id)
             ->where('id', $announcementId)
             ->first();
 
@@ -769,7 +1081,14 @@ class StudioController extends Controller
 
     public function deleteAnnouncement($id, $announcementId): JsonResponse
     {
-        $announcement = StudioAnnouncement::where('studio_id', $id)
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $this->authorize('manage', $studio);
+
+        $announcement = StudioPost::where('studio_id', $id)
             ->where('id', $announcementId)
             ->first();
 
@@ -800,8 +1119,10 @@ class StudioController extends Controller
             return $this->returnErrorResponse('Studio not found', 404);
         }
 
+        $this->authorize('manage', $studio);
+
         $request->validate([
-            'type' => 'required|in:artist,tattoo',
+            'type' => ['required', Rule::in(SpotlightType::values())],
             'item_id' => 'required|integer',
         ]);
 
@@ -817,6 +1138,13 @@ class StudioController extends Controller
 
     public function removeSpotlight($id, $spotlightId): JsonResponse
     {
+        $studio = $this->studioService->getById($id);
+        if (!$studio) {
+            return $this->returnErrorResponse('Studio not found', 404);
+        }
+
+        $this->authorize('manage', $studio);
+
         $spotlight = StudioSpotlight::where('studio_id', $id)
             ->where('id', $spotlightId)
             ->first();
@@ -886,7 +1214,7 @@ class StudioController extends Controller
 
         $studio = Studio::create([
             'name' => $request->input('name'),
-            'slug' => $request->input('slug', strtolower(str_replace(' ', '-', $request->input('name')))),
+            'slug' => $this->studioService->generateSlug($request->input('slug') ?: $request->input('name')),
             'email' => $request->input('email'),
             'phone' => $request->input('phone'),
             'location' => $request->input('location', ''),
@@ -933,6 +1261,21 @@ class StudioController extends Controller
         }
 
         $data = $request->all();
+
+        if (array_key_exists('slug', $data)) {
+            $slug = Str::slug((string) $data['slug']);
+
+            if ($slug === '') {
+                unset($data['slug']);
+            } elseif ($this->studioService->isSlugTaken($slug, $studio->id)) {
+                return response()->json([
+                    'success' => false,
+                    'message' => 'That studio URL is already taken.',
+                ], 422);
+            } else {
+                $data['slug'] = $slug;
+            }
+        }
 
         foreach ($data as $fieldName => $fieldVal) {
             if (in_array($fieldName, $studio->getFillable())) {

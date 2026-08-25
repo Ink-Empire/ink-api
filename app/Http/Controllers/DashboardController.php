@@ -30,17 +30,13 @@ class DashboardController extends Controller
      */
     public function getStudioDashboard(Request $request, int $id): JsonResponse
     {
-        $studio = Studio::with(['image', 'address', 'announcements', 'business_hours'])->find($id);
+        $studio = Studio::with(['image', 'address', 'announcements', 'availability'])->find($id);
 
         if (!$studio) {
             return response()->json(['error' => 'Studio not found'], 404);
         }
 
-        // Validate that the authenticated user is the studio owner
-        $user = $request->user();
-        if (!$user || $studio->owner_id !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
+        $this->authorize('manage', $studio);
 
         $data = $this->dashboardService->getStudioDashboardData($studio);
 
@@ -63,11 +59,7 @@ class DashboardController extends Controller
             return response()->json(['error' => 'Studio not found'], 404);
         }
 
-        // Validate that the authenticated user is the studio owner
-        $user = $request->user();
-        if (!$user || $studio->owner_id !== $user->id) {
-            return response()->json(['error' => 'Unauthorized'], 403);
-        }
+        $this->authorize('manage', $studio);
 
         $stats = $this->dashboardService->getStudioStatsData($studio);
 

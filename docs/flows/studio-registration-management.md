@@ -405,13 +405,166 @@ Route: `/studios/[slug]`
 | Table | Description |
 |-------|-------------|
 | `users` | User accounts (type_id=3 for studios) |
-| `studios` | Studio records (has `image_id`, `owner_id`) |
+| `studios` | Studio records (has `image_id`, `banner_image_id`, `template`, `owner_id`; `slug` is unique) |
 | `images` | Image records (uri points to S3) |
 | `addresses` | Physical addresses |
 | `studio_availability` | Weekly working hours (studio_id, day_of_week 0-6, start_time, end_time, is_day_off) |
 | `artists_studios` | Artist-studio relationships with verification (user_id, studio_id, is_verified, verified_at, initiated_by) |
-| `studio_announcements` | Studio announcements |
+| `studio_posts` | Everything a studio publishes: announcements and guides (`StudioPostType`) |
+| `studio_spotlights` | Artists and tattoos pinned to the studio page (`SpotlightType`) |
 | `profile_views` | Polymorphic view tracking |
+
+## Authorization
+
+Every studio write endpoint, plus the two studio dashboard reads, authorize
+through `StudioPolicy::manage`: the acting user must be the studio's
+`owner_id`. Artists verified at the studio do not qualify - working at a studio
+is not the same as speaking for it.
+
+`claim` and `invite` are deliberately open to any authenticated user, since
+both act on unclaimed studios.
+
+On the web dashboard the studio tab is gated on `user.owned_studio`. It must
+not fall back to `user.studio`, which is the artist's primary studio and may
+belong to someone else.
+
+## Hours
+
+Studio hours live in **studio_availability** only. That is what the dashboard
+Business Hours modal writes (`POST /studios/{id}/working-hours`) and what both
+the public page and `StudioResource.hours` read, via `Studio::formattedHours()`.
+
+The old `business_hours` / `business_days` tables are no longer read or
+written. They were reachable only through a legacy endpoint no client called,
+so a studio that set hours in the dashboard published none at all. The
+remaining rows were moved into `studio_availability` by
+`2026_08_25_000004_backfill_studio_availability_from_business_hours`.
+
+Public studio reads are **not** cached. They previously sat behind
+`cache.headers:public;max_age=60`, which served an owner their old page for up
+to a minute after saving - it read as though the save had failed.
+
+## Studio posts
+
+Announcements and guides share one table, `studio_posts`, because they share a
+publishing envelope: title, slug, body, status, published_at and SEO fields.
+They differ only in the type-specific columns - `starts_at` / `ends_at` for
+announcements, `is_default` for the aftercare guide a studio sends after an
+appointment.
+
+`StudioPostType` separates the two families. It also carries `hasPublicPage()`:
+ephemeral notices such as walk-ins get no URL of their own, since a permanently
+indexed "walk-ins available today" page is a liability rather than an asset.
+
+`StudioPost::scopeVisible()` is what a visitor may see - active, published, and
+inside its date window. Slugs are unique per studio rather than globally,
+because announcement titles repeat across years.
+
+The API still exposes these as `announcements`, so web and mobile were
+unaffected by the move.
+
+## Announcement types and dates
+
+Announcements carry a `StudioPostType` and an optional `starts_at` / `ends_at`
+window. The window controls **placement, not existence**: once `ends_at` passes
+the announcement comes off the studio page, but its own page stays up as an
+archive so a link shared at the time still resolves.
+
+Types that pass `hasPublicPage()` are readable at
+`/studios/{slug}/news/{post-slug}`. Ephemeral notices - a plain announcement, a
+walk-ins notice - render inline only, since a permanently indexed
+"walk-ins available today" page is a liability.
+
+`StudioPostResource` carries `url` for the types that have one, so clients
+never have to work out which types are linkable.
+
+## Discovery and the sitemap
+
+`GET /studios/directory` is what the Next sitemap walks. It returns every
+owned, non-demo studio with a slug, each carrying its `news` and `guides` - the
+announcements and guides that have a page of their own. Ephemeral notices and
+drafts are filtered out server side, so anything it returns is worth indexing.
+
+Only studios someone has actually claimed appear. Ownership rather than
+`is_claimed` is the test, since that column defaults to true and legacy rows
+carry it without an owner. Auto-imported listings are thin, and thin pages are
+worth less than no pages.
+
+The route is registered **before** `/{id}`, or the wildcard would swallow it.
+
+The sitemap at `inked-in-www/nextjs/pages/sitemap.xml.ts` walks artists and
+this directory, and carries `lastmod` for studios and news pages.
+
+## Guides and aftercare
+
+Guides are the practical writing a studio only does once: aftercare and
+preparation. They live in `studio_posts` alongside announcements and publish
+through the same transactional call, reconciled the same way.
+
+One aftercare guide can be flagged `is_default`. `Studio::defaultAftercareGuide()`
+returns it, falling back to the most recent published aftercare guide so a
+studio that wrote one and never set the flag still gets it sent.
+
+`POST /conversations/{id}/messages/aftercare` sends that guide into a
+conversation as an `aftercare` message carrying the guide's own URL, so the
+client can return to it later. The artist never retypes healing instructions.
+
+This replaced `MessageService::sendAftercare`, which was written before
+`ConversationService::sendTypedMessage` and duplicated it. It had never been
+called from anywhere.
+
+## Publishing the studio page
+
+The studio editor at `/studios/{slug}/edit` holds every change client side
+until the owner presses Publish. Publish then makes one transactional call to
+`PUT /studios/{id}/page`, which applies details, hours, announcements and
+spotlights together via `StudioService::publishPage`.
+
+Announcements and spotlights are **reconciled against the lists sent**:
+anything missing from the payload is deleted. An announcement with an `id` is
+kept, one without is created.
+
+Image uploads stay separate and run first. They are their own resources, so a
+failure there leaves the studio record untouched rather than half-edited.
+
+## Page layouts
+
+`StudioTemplate` is a small set of hand-built arrangements rather than a block
+builder: a marketplace's value partly comes from listings being comparable, and
+a studio owner should not have to design a page.
+
+- **Portfolio** leads with the work. The default, and the layout every studio
+  page had before templates existed.
+- **Team** promotes the artist roster above the tabs and drops it from the
+  sidebar, so it appears once.
+- **Storefront** puts hours and contact above the tabs, answering "are you
+  open" and "how do I reach you" before anything else.
+
+Everything below the tabs is identical across all three. The layout publishes
+with the rest of the page, so it is covered by the same transaction.
+
+React Native ignores `template` and renders its own single layout.
+
+## Studio page presentation
+
+The public studio page degrades to its original layout when nothing is
+configured, which is the state most studios are in:
+
+- No banner: the header renders exactly as it always has.
+- No spotlights: the strip is absent, not an empty state.
+- A spotlight whose artist or tattoo was deleted is dropped in
+  `StudioService::getSpotlightsWithData`, so the page never renders a gap.
+
+Spotlights are fetched in `getServerSideProps` alongside the studio, since they
+render above the fold on an SEO surface.
+
+## Slugs
+
+`studios.slug` is unique and is the root of the public studio URL, so it is
+also the root of anything nested beneath it. Every write path builds slugs
+through `StudioService::generateSlug`, which runs `Str::slug` and appends a
+numeric suffix on collision. A slug a user picks explicitly (claim, update) is
+rejected with a 422 on conflict rather than silently adjusted.
 
 ## Key API Endpoints
 
@@ -422,6 +575,17 @@ Route: `/studios/[slug]`
 | POST | `/api/studios/{id}/claim` | Claim existing studio (accepts `image_id`) |
 | PUT | `/api/studios/studio/{id}` | Update studio details |
 | POST | `/api/studios/{id}/image` | Upload/link studio image |
+| POST | `/api/studios/{id}/banner` | Set the studio page banner (accepts `image_id`) |
+| DELETE | `/api/studios/{id}/banner` | Remove the studio page banner |
+| PUT | `/api/studios/{id}/page` | Publish a whole studio page edit in one transaction |
+| GET | `/api/studios/{id}/spotlights` | Pinned artists and tattoos, resolved |
+| GET | `/api/studios/{id}/news/{postSlug}` | A single announcement at its own URL |
+| GET | `/api/studios/{id}/guides` | The studio's published guides |
+| GET | `/api/studios/{id}/guides/{guideSlug}` | A single guide at its own URL |
+| POST | `/api/conversations/{id}/messages/aftercare` | Send the studio's aftercare guide to a client |
+| POST | `/api/studios/{id}/spotlights` | Pin an artist or tattoo |
+| DELETE | `/api/studios/{id}/spotlights/{spotlightId}` | Unpin |
+| GET | `/api/studios/directory` | Studios worth indexing, with their news pages, for the sitemap |
 | GET | `/api/studios/{id}` | Get studio by ID or slug |
 | GET | `/api/studios/{id}/artists` | Get studio artists with verification status |
 | POST | `/api/studios/{id}/artists` | Add artist by username or email |
@@ -443,8 +607,13 @@ Route: `/studios/[slug]`
 | Studio Details Form (Web) | `inked-in-www/nextjs/components/Onboarding/StudioDetails.tsx` |
 | Studio Details Form (RN) | `inked-in-www/reactnative/app/components/onboarding/StudioDetailsStep.tsx` |
 | Dashboard (Web) | `inked-in-www/nextjs/pages/dashboard.tsx` |
+| Studio Dashboard Hook | `inked-in-www/nextjs/hooks/useStudioDashboard.ts` |
+| Studio Side Column | `inked-in-www/nextjs/components/dashboard/StudioSideColumn.tsx` |
+| Studio Artists Card | `inked-in-www/nextjs/components/dashboard/StudioArtistsCard.tsx` |
 | Edit Studio Modal | `inked-in-www/nextjs/components/EditStudioModal.tsx` |
 | Add Artist Modal | `inked-in-www/nextjs/components/AddArtistModal.tsx` |
+| Spotlight Modal | `inked-in-www/nextjs/components/SpotlightModal.tsx` |
+| Studio Policy | `ink-api/app/Policies/StudioPolicy.php` |
 | Working Hours Modal | `inked-in-www/nextjs/components/WorkingHoursModal.tsx` |
 | Studio Profile Page | `inked-in-www/nextjs/pages/studios/[slug].tsx` |
 | Studio Service (Web) | `inked-in-www/nextjs/services/studioService.ts` |

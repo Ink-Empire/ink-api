@@ -113,6 +113,7 @@ Route::prefix('api')->group(function () {
             Route::post('/{id}/messages/booking-card', [ConversationController::class, 'sendBookingCard']);
             Route::post('/{id}/messages/deposit-request', [ConversationController::class, 'sendDepositRequest']);
             Route::post('/{id}/messages/design-share', [ConversationController::class, 'sendDesignShare']);
+            Route::post('/{id}/messages/aftercare', [ConversationController::class, 'sendAftercare']);
             Route::post('/{id}/messages/price-quote', [ConversationController::class, 'sendPriceQuote']);
             Route::post('/{id}/messages/cancellation', [ConversationController::class, 'sendCancellationRequest']);
             Route::post('/{id}/messages/reschedule', [ConversationController::class, 'sendRescheduleRequest']);
@@ -135,22 +136,29 @@ Route::prefix('api')->group(function () {
     });
 
     Route::group(['prefix' => 'studios'], function () {
-        // Public studio routes - for guests to view (public cache, safe to share)
-        Route::middleware('cache.headers:public;max_age=60;etag')->group(function () {
-            Route::get('/{id}', [StudioController::class, 'getById']);
-            Route::get('/{id}/announcements', [StudioController::class, 'getAnnouncements']);
-            Route::get('/{id}/spotlights', [StudioController::class, 'getSpotlights']);
-            Route::get('/{id}/artists', [StudioController::class, 'getArtists']);
-            Route::get('/{id}/working-hours', [StudioController::class, 'getAvailability']);
-        });
+        // Public studio reads. Deliberately uncached: every one of these is
+        // owner-editable, and a public max-age meant an owner who saved a change
+        // and reloaded their page was served the old version for up to a minute.
+        // Registered before /{id} so the wildcard does not swallow it.
+        Route::get('/directory', [StudioController::class, 'directory']);
+        Route::get('/{id}', [StudioController::class, 'getById']);
+        Route::get('/{id}/announcements', [StudioController::class, 'getAnnouncements']);
+        Route::get('/{id}/news/{postSlug}', [StudioController::class, 'getPost']);
+        Route::get('/{id}/guides', [StudioController::class, 'getGuides']);
+        Route::get('/{id}/guides/{guideSlug}', [StudioController::class, 'getGuide']);
+        Route::get('/{id}/spotlights', [StudioController::class, 'getSpotlights']);
+        Route::get('/{id}/artists', [StudioController::class, 'getArtists']);
+        Route::get('/{id}/working-hours', [StudioController::class, 'getAvailability']);
 
         // Protected studio routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {
             Route::post('/', [StudioController::class, 'create']);
             Route::post('/{id}/claim', [StudioController::class, 'claim']);
             Route::post('/{id}/image', [StudioController::class, 'uploadImage']);
+            Route::post('/{id}/banner', [StudioController::class, 'uploadBanner']);
+            Route::delete('/{id}/banner', [StudioController::class, 'removeBanner']);
             Route::put('/studio/{id}', [StudioController::class, 'update']);
-            Route::put('/studios/studio-hours/{id}', [StudioController::class, 'updateBusinessHours']);
+            Route::put('/{id}/page', [StudioController::class, 'publishPage']);
             Route::post('/{id}/working-hours', [StudioController::class, 'setAvailability']);
             Route::get('/{id}/dashboard-stats', [DashboardController::class, 'getStudioStats']);
             Route::get('/{id}/dashboard', [DashboardController::class, 'getStudioDashboard']);

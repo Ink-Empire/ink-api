@@ -127,31 +127,6 @@ class MessageService
     }
 
     /**
-     * Send aftercare instructions.
-     */
-    public function sendAftercare(
-        int $conversationId,
-        int $senderId,
-        array $instructions,
-        string $pdfUrl = null
-    ): Message {
-        $conversation = Conversation::findOrFail($conversationId);
-        $otherParticipant = $conversation->getOtherParticipant($senderId);
-
-        return Message::create([
-            'conversation_id' => $conversationId,
-            'sender_id' => $senderId,
-            'recipient_id' => $otherParticipant?->id,
-            'content' => 'Here are your aftercare instructions',
-            'type' => 'aftercare',
-            'metadata' => [
-                'instructions' => $instructions,
-                'pdf_url' => $pdfUrl,
-            ],
-        ]);
-    }
-
-    /**
      * Send a generic system notification.
      */
     public function sendSystemNotification(

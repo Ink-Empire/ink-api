@@ -2,6 +2,7 @@
 
 namespace App\Http\Resources\Dashboard;
 
+use App\Enums\StudioTemplate;
 use App\Http\Resources\BriefImageResource;
 use App\Models\Image;
 use Illuminate\Http\Resources\Json\JsonResource;
@@ -31,10 +32,11 @@ class StudioDashboardResource extends JsonResource
             'email' => $this->email,
             'phone' => $this->phone,
             'image' => $this->getImage(),
+            'banner' => $this->bannerImage,
+            'template' => ($this->template ?? StudioTemplate::Portfolio)->value,
             'is_verified' => $this->is_verified,
             'is_claimed' => (bool) $this->is_claimed,
-            'business_hours' => $this->business_hours,
-            'hours' => $this->getFormattedHours(),
+            'hours' => $this->formattedHours(),
             'owner_id' => $this->owner_id,
             'seeking_guest_artists' => (bool) $this->seeking_guest_artists,
             'guest_spot_details' => $this->guest_spot_details,
@@ -53,26 +55,6 @@ class StudioDashboardResource extends JsonResource
             return new BriefImageResource($image);
         }
         return new BriefImageResource($this->image);
-    }
-
-    private function getFormattedHours(): array
-    {
-        if (!$this->business_hours || $this->business_hours->isEmpty()) {
-            return [];
-        }
-
-        return $this->business_hours->map(function ($hour) {
-            $openTime = $hour->open_time ? date('g:i A', strtotime($hour->open_time)) : null;
-            $closeTime = $hour->close_time ? date('g:i A', strtotime($hour->close_time)) : null;
-
-            return [
-                'day' => $hour->day,
-                'day_id' => $hour->day_id,
-                'open_time' => $hour->open_time,
-                'close_time' => $hour->close_time,
-                'hours' => $openTime && $closeTime ? "{$openTime} - {$closeTime}" : 'Closed',
-            ];
-        })->toArray();
     }
 
     private function getArtists()
