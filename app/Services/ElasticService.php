@@ -25,6 +25,7 @@ class ElasticService
 
     protected $elastic_index;
     protected $elastic_index_write;
+    protected $url;
 
     /**
      * ElasticService constructor.
@@ -157,12 +158,33 @@ class ElasticService
         $response = $this->client->post(
             $this->url . $path,
             [
-                'headers' => ['Content-Type' => 'application/json'],
+                'headers' => $this->requestHeaders(),
                 'body' => $body
             ]
         );
 
         return JSON::stringToArray($response->getBody()->getContents());
+    }
+
+    /**
+     * Headers for the direct HTTP calls.
+     *
+     * Username and password auth is carried in the URL itself, but an API key
+     * has to travel as a header. Without it these calls reach a managed cluster
+     * unauthenticated. The key is stored URL-safe, so it is converted back the
+     * same way the Elastic client does before use.
+     */
+    protected function requestHeaders(): array
+    {
+        $headers = ['Content-Type' => 'application/json'];
+
+        $apiKey = config('elastic.client.api_key');
+
+        if (!empty($apiKey)) {
+            $headers['Authorization'] = 'ApiKey ' . str_replace(['-', '_'], ['+', '/'], $apiKey);
+        }
+
+        return $headers;
     }
 
     /**

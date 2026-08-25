@@ -96,7 +96,10 @@ class HealthCheckService
     private function checkElasticsearch(): array
     {
         return $this->attempt('elasticsearch', function () {
-            $this->countDocuments($this->indexFor(new Tattoo()));
+            // Cluster level on purpose. Probing a named index would report the
+            // cluster as unreachable when it is fine and the index is simply
+            // missing, which hides the real fault behind a wrong one.
+            Elastic::info();
 
             return $this->ok('elasticsearch', 'Reachable and authenticated.');
         });
@@ -190,12 +193,15 @@ class HealthCheckService
             $detail = [];
 
             foreach ($expectations as $label => $expectation) {
-                if (! $this->elastic->indexExists($expectation['index'])) {
-                    if ($expectation['optional']) {
-                        $detail[$label] = 'no index, not required';
-                        continue;
-                    }
+                // An optional index has no reader, so its contents are not worth
+                // grading. Whether it happens to exist does not change that, and
+                // reporting an empty one as drift is noise about nothing.
+                if ($expectation['optional']) {
+                    $detail[$label] = 'not required, no reader';
+                    continue;
+                }
 
+                if (! $this->elastic->indexExists($expectation['index'])) {
                     $statuses[] = HealthStatus::CRITICAL;
                     $detail[$label] = 'index missing';
                     continue;

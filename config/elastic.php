@@ -11,7 +11,10 @@ return [
         'auth_string' => env('ELASTICSEARCH_USERNAME') && env('ELASTICSEARCH_PASSWORD')
             ? env('ELASTICSEARCH_SCHEME', 'https') . '://' . env('ELASTICSEARCH_USERNAME') . ":" . env('ELASTICSEARCH_PASSWORD') . "@" . str_replace(['http://', 'https://'], '', env('ELASTICSEARCH_HOST', 'localhost')) . ":" . env('ELASTICSEARCH_PORT', '443')
             : null,
-        'base_url' => env('ELASTICSEARCH_HOST') . ":" . env('ELASTICSEARCH_PORT', 443),
+        // Built the same way as hosts above. Taking the host env verbatim meant
+        // the scheme came from whatever that variable happened to carry, so a
+        // host written as http://... reached a TLS cluster over plain HTTP.
+        'base_url' => env('ELASTICSEARCH_SCHEME', 'http') . '://' . str_replace(['http://', 'https://'], '', env('ELASTICSEARCH_HOST', 'localhost')) . ':' . env('ELASTICSEARCH_PORT', 9200),
         'index' => env('ELASTICSEARCH_INDEX', 'tattoos'),
         'artists_index' => env('ELASTICSEARCH_ARTISTS_INDEX', 'artists'),
         'studios_index' => env('ELASTICSEARCH_STUDIOS_INDEX', 'studios'),
