@@ -39,11 +39,13 @@ it('rebuilds when given a model instance', function () {
     expect($result['status'])->toBeTrue();
 });
 
-it('throws rather than silently succeeding for an unknown model', function () {
-    // Documents current behaviour: rebuild() catches \Exception, but an
-    // unresolvable class raises \Error, which escapes that catch.
-    expect(fn () => $this->service->rebuild([$this->artist->id], 'NotARealModel'))
-        ->toThrow(\Error::class);
+it('reports a failure rather than blowing up on an unknown model', function () {
+    // An unresolvable name used to raise \Error, which escaped the catch and
+    // reached the browser as a 500.
+    $result = $this->service->rebuild([$this->artist->id], 'NotARealModel');
+
+    expect($result['status'])->toBeFalse()
+        ->and($result['message'])->toContain('NotARealModel');
 });
 
 it('indexes studio accounts, which the artist scope hides', function () {

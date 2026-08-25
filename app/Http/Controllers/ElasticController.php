@@ -12,6 +12,7 @@ use App\Services\ElasticService;
 use App\Util\StringToModel;
 use Exception;
 use Illuminate\Database\Eloquent\Model;
+use InvalidArgumentException;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Artisan;
 use Illuminate\Support\Facades\Log;
@@ -19,6 +20,13 @@ use App\Util\JSON;
 
 class ElasticController
 {
+    /**
+     * Models these endpoints will act on. Anything else is rejected before it
+     * reaches a queue or an index, so a typo comes back as a clear 422 rather
+     * than a class-not-found further down.
+     */
+    private const SEARCHABLE_MODELS = ['Artist', 'Studio', 'Tattoo'];
+
     /**
      * Most documents a single orphan scan will read out of an index.
      */
@@ -123,9 +131,11 @@ class ElasticController
                 return response("Count sent cannot exceed 200, please reduce the count and try again", 400);
             }
 
-            $model = StringToModel::convert($model);
+            $model = $this->resolveSearchableModel($model);
             $result = $this->elasticService->rebuild($ids, $model);
-        } catch (Exception $e) {
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
             return response()->json(['message' => 'Error updating item(s). Message: ' . $e->getMessage()], 500);
         }
 
@@ -180,6 +190,10 @@ class ElasticController
 
             $model = $request->get('model');
 
+            // Validate before anything reaches the queue. A bad name used to
+            // fail inside the worker, out of sight of whoever clicked rebuild.
+            $this->resolveSearchableModel($model);
+
             if ($request->get('params')) {
                 $jobName = "Rebuild By Query";
                 $params = $request->get('params');
@@ -214,7 +228,9 @@ class ElasticController
                 return response()->json(['message' => 'No items updated -- no matching ids found']);
             }
 
-        } catch (Exception $e) {
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
             return response()->json(['message' => 'Error updating item(s). Message: ' . $e->getMessage()], 500);
         }
         return response()->json(['message' => 'Rebuild queued']);
@@ -257,21 +273,18 @@ class ElasticController
     public function reindex(Request $request)
     {
         $model = $request->get('model');
-        $class = 'App\\Models\\' . $model;
-
-        $models = [$class];
 
         try {
-            $imported = [];
-            foreach ($models as $modelClass) {
-                Artisan::call('scout:import', [
-                    'model' => $modelClass,
-                ]);
-                $imported[] = class_basename($modelClass);
-            }
+            $modelClass = get_class($this->resolveSearchableModel($model));
 
-            return response()->json(['message' => 'Reindex completed for ' . implode(', ', $imported)]);
-        } catch (\Exception $e) {
+            Artisan::call('scout:import', [
+                'model' => $modelClass,
+            ]);
+
+            return response()->json(['message' => 'Reindex completed for ' . class_basename($modelClass)]);
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
             Log::error("Reindex failed for {$model}", [
                 'error' => $e->getMessage(),
                 'trace' => $e->getTraceAsString()
@@ -295,7 +308,7 @@ class ElasticController
     {
         try {
             $model = $request->get('model');
-            $instance = StringToModel::convert($model);
+            $instance = $this->resolveSearchableModel($model);
             $indexName = $this->indexFor($instance);
 
             $countResponse = $this->elasticService->post("/{$indexName}/_count", [
@@ -336,7 +349,9 @@ class ElasticController
                 'orphan_ids' => $orphanIds,
                 'warnings' => $warnings,
             ]);
-        } catch (Exception $e) {
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
             Log::error("Failed to find orphans", [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
@@ -350,7 +365,7 @@ class ElasticController
     {
         try {
             $model = $request->get('model');
-            $instance = StringToModel::convert($model);
+            $instance = $this->resolveSearchableModel($model);
             $indexName = $this->indexFor($instance);
 
             $ids = collect($request->get('ids', []))
@@ -403,7 +418,9 @@ class ElasticController
                 'deleted' => $response['deleted'] ?? 0,
                 'skipped' => $skipped->all(),
             ]);
-        } catch (Exception $e) {
+        } catch (InvalidArgumentException $e) {
+            return response()->json(['message' => $e->getMessage()], 422);
+        } catch (\Throwable $e) {
             Log::error("Failed to delete orphans", [
                 'error' => $e->getMessage(),
                 'file' => $e->getFile(),
@@ -437,6 +454,27 @@ class ElasticController
         }
 
         return collect($esIds)->diff($existingIds)->values()->toArray();
+    }
+
+    /**
+     * Resolve a model name from a request into an instance these endpoints
+     * are allowed to touch.
+     *
+     * @throws InvalidArgumentException
+     */
+    private function resolveSearchableModel($model): Model
+    {
+        $name = ucfirst((string) $model);
+
+        if (!in_array($name, self::SEARCHABLE_MODELS, true)) {
+            throw new InvalidArgumentException(sprintf(
+                'Unknown model "%s". Supported models are %s.',
+                $model,
+                implode(', ', self::SEARCHABLE_MODELS)
+            ));
+        }
+
+        return StringToModel::convert($name);
     }
 
     /**

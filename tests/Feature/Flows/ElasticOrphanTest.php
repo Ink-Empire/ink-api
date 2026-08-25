@@ -123,3 +123,23 @@ it('deletes a small orphan set', function () {
 
     expect($response->getData(true)['deleted'])->toBe(1);
 });
+
+it('rejects an unknown model with a 422 instead of a class not found', function () {
+    $service = Mockery::mock(ElasticService::class);
+    $service->shouldNotReceive('post');
+
+    $response = (new ElasticController($service))->findOrphans(orphanRequest(['model' => 'Sculpture']));
+
+    expect($response->getStatusCode())->toBe(422)
+        ->and($response->getData(true)['message'])->toContain('Sculpture');
+});
+
+it('rejects a real model that these endpoints do not index', function () {
+    $service = Mockery::mock(ElasticService::class);
+    $service->shouldNotReceive('post');
+
+    // App\Models\Image exists but has no index behind it.
+    $response = (new ElasticController($service))->findOrphans(orphanRequest(['model' => 'Image']));
+
+    expect($response->getStatusCode())->toBe(422);
+});

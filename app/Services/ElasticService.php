@@ -201,7 +201,9 @@ class ElasticService
             $missing = $ids->diff($results->pluck('id'))->values();
             $removed = $this->removeFromIndex($missing, $this->indexFor($instance));
 
-        } catch (\Exception $e) {
+            // Throwable, not Exception. An unresolvable model raises \Error,
+            // which used to escape this catch and reach the browser as a 500.
+        } catch (\Throwable $e) {
             Log::error(
                 'Failed to index.',
                 [
