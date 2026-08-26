@@ -85,6 +85,55 @@ describe('Publishing guides', function () {
             ->assertStatus(422);
     });
 
+    test('a general article publishes as a guide with its own page', function () {
+        $this->actingAs($this->owner)
+            ->putJson("/api/studios/{$this->studio->id}/page", [
+                'guides' => [[
+                    'type' => StudioPostType::Article->value,
+                    'title' => 'Our booking policy',
+                    'content' => 'Deposits are non-refundable.',
+                ]],
+            ])
+            ->assertOk();
+
+        $saved = $this->studio->guides()->first();
+
+        expect($saved->type)->toBe(StudioPostType::Article)
+            ->and($saved->slug)->toBe('our-booking-policy')
+            ->and($saved->type->isGuide())->toBeTrue()
+            ->and($saved->type->hasPublicPage())->toBeTrue();
+
+        $this->getJson("/api/studios/{$this->studio->id}/guides/{$saved->slug}")
+            ->assertOk()
+            ->assertJsonPath('guide.type', StudioPostType::Article->value);
+    });
+
+    test('a general article cannot claim the slot an aftercare guide needs', function () {
+        $this->actingAs($this->owner)
+            ->putJson("/api/studios/{$this->studio->id}/page", [
+                'guides' => [
+                    [
+                        'type' => StudioPostType::Article->value,
+                        'title' => 'Our booking policy',
+                        'content' => 'Deposits are non-refundable.',
+                        'is_default' => true,
+                    ],
+                    [
+                        'type' => StudioPostType::Aftercare->value,
+                        'title' => 'Healing your new tattoo',
+                        'content' => 'Keep it clean.',
+                        'is_default' => true,
+                    ],
+                ],
+            ])
+            ->assertOk();
+
+        $article = $this->studio->guides()->where('title', 'Our booking policy')->first();
+
+        expect($article->is_default)->toBeFalse()
+            ->and($this->studio->defaultAftercareGuide()->title)->toBe('Healing your new tattoo');
+    });
+
     test('guides missing from the payload are removed', function () {
         $kept = guide($this->studio, ['title' => 'Keep', 'slug' => 'keep']);
         guide($this->studio, ['title' => 'Drop', 'slug' => 'drop']);

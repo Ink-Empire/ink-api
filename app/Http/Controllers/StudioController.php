@@ -7,6 +7,10 @@ use App\Enums\QueueNames;
 use App\Enums\SpotlightType;
 use App\Enums\StudioPostStatus;
 use App\Enums\StudioPostType;
+use App\Enums\StudioSection;
+use App\Enums\StudioSectionBand;
+use App\Enums\StudioSectionColumn;
+use App\Enums\StudioSectionWidth;
 use App\Enums\StudioTemplate;
 use App\Enums\UserTypes;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
@@ -658,6 +662,16 @@ class StudioController extends Controller
             'name' => 'nullable|string|max:255',
             'about' => 'nullable|string',
             'template' => ['nullable', Rule::in(StudioTemplate::values())],
+            'section_order' => 'nullable|array',
+            'section_order.*' => ['string', 'distinct', Rule::in(StudioSection::values())],
+            'section_widths' => ['nullable', 'array:'.implode(',', StudioSection::values())],
+            'section_widths.*' => ['string', Rule::in(StudioSectionWidth::values())],
+            'section_columns' => ['nullable', 'array:'.implode(',', StudioSection::values())],
+            'section_columns.*' => ['string', Rule::in(StudioSectionColumn::values())],
+            'section_bands' => ['nullable', 'array:'.implode(',', StudioSection::values())],
+            'section_bands.*' => ['string', Rule::in(StudioSectionBand::values())],
+            'section_rows' => ['nullable', 'array:'.implode(',', StudioSection::values())],
+            'section_rows.*' => ['integer', 'min:0', 'max:32'],
             'phone' => 'nullable|string|max:255',
             'email' => 'nullable|email',
             'website' => 'nullable|string|max:255',
@@ -683,7 +697,7 @@ class StudioController extends Controller
 
             'guides' => 'nullable|array',
             'guides.*.id' => 'nullable|integer',
-            'guides.*.type' => ['nullable', Rule::in([StudioPostType::Aftercare->value, StudioPostType::Prep->value])],
+            'guides.*.type' => ['nullable', Rule::in(StudioPostType::guideValues())],
             'guides.*.title' => 'required|string|max:255',
             'guides.*.content' => 'required|string',
             'guides.*.excerpt' => 'nullable|string|max:500',

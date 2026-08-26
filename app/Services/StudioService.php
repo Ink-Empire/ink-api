@@ -139,7 +139,8 @@ class StudioService
             $details = array_filter(
                 $data,
                 fn ($key) => in_array($key, [
-                    'name', 'about', 'template', 'phone', 'email', 'website',
+                    'name', 'about', 'template', 'section_order', 'section_widths', 'section_columns', 'section_bands', 'section_rows',
+                    'phone', 'email', 'website',
                     'address', 'address2', 'city', 'state', 'postal_code',
                 ], true),
                 ARRAY_FILTER_USE_KEY
@@ -272,11 +273,19 @@ class StudioService
         $defaultAssigned = false;
 
         foreach ($guides as $guide) {
-            $isDefault = ! $defaultAssigned && (bool) ($guide['is_default'] ?? false);
+            $type = $guide['type'] ?? StudioPostType::Aftercare->value;
+
+            // Only an aftercare guide is sent after an appointment. Any other
+            // kind carrying the flag would store it inertly and, worse, use up
+            // the slot an aftercare guide later in the list should have had.
+            $isDefault = $type === StudioPostType::Aftercare->value
+                && ! $defaultAssigned
+                && (bool) ($guide['is_default'] ?? false);
+
             $defaultAssigned = $defaultAssigned || $isDefault;
 
             $attributes = [
-                'type' => $guide['type'] ?? StudioPostType::Aftercare->value,
+                'type' => $type,
                 'title' => $guide['title'],
                 'excerpt' => $guide['excerpt'] ?? null,
                 'content' => $guide['content'],

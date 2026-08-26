@@ -22,6 +22,7 @@ enum StudioPostType: string
     // Guides
     case Aftercare = 'aftercare';
     case Prep = 'prep';
+    case Article = 'article';
 
     public function label(): string
     {
@@ -34,6 +35,7 @@ enum StudioPostType: string
             self::WalkIns => 'Walk-ins',
             self::Aftercare => 'Aftercare guide',
             self::Prep => 'Preparation guide',
+            self::Article => 'Guide',
         };
     }
 
@@ -49,7 +51,8 @@ enum StudioPostType: string
     }
 
     /**
-     * Evergreen writing, such as aftercare instructions.
+     * Evergreen writing: aftercare, preparation, or anything else the studio
+     * wants to write once and keep.
      */
     public function isGuide(): bool
     {
@@ -83,6 +86,17 @@ enum StudioPostType: string
         return array_values(array_map(
             fn (self $case) => $case->value,
             array_filter(self::cases(), fn (self $case) => $case->isAnnouncement())
+        ));
+    }
+
+    /**
+     * @return list<string>
+     */
+    public static function guideValues(): array
+    {
+        return array_values(array_map(
+            fn (self $case) => $case->value,
+            array_filter(self::cases(), fn (self $case) => $case->isGuide())
         ));
     }
 }
