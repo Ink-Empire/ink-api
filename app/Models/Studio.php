@@ -2,6 +2,13 @@
 
 namespace App\Models;
 
+use App\Enums\StudioPostType;
+use App\Enums\StudioSection;
+use App\Enums\StudioSectionBand;
+use App\Enums\StudioSectionColumn;
+use App\Enums\StudioSectionWidth;
+use App\Enums\StudioTemplate;
+
 use App\Enums\UserTypes;
 use App\Http\Resources\Elastic\ArtistIndexResource;
 use App\Http\Resources\Elastic\StudioIndexResource;
@@ -18,13 +25,20 @@ class Studio extends Model
 
     protected $touches = ['artists'];
 
-    protected $with = ['image', 'address', 'business_hours'];
+    protected $with = ['image', 'address', 'availability'];
 
     protected $fillable = [
         'name',
         'slug',
         'address_id',
         'image_id',
+        'banner_image_id',
+        'template',
+        'section_order',
+        'section_widths',
+        'section_columns',
+        'section_bands',
+        'section_rows',
         'about',
         'location',
         'location_lat_long',
@@ -41,6 +55,12 @@ class Studio extends Model
     ];
 
     protected $casts = [
+        'template' => StudioTemplate::class,
+        'section_order' => 'array',
+        'section_widths' => 'array',
+        'section_columns' => 'array',
+        'section_bands' => 'array',
+        'section_rows' => 'array',
         'seeking_guest_artists' => 'boolean',
         'is_claimed' => 'boolean',
         'rating' => 'decimal:1',
@@ -59,6 +79,15 @@ class Studio extends Model
     public function image()
     {
         return $this->belongsTo(Image::class);
+    }
+
+    /**
+     * The wide header image on the public studio page, distinct from the
+     * square studio mark held by image().
+     */
+    public function bannerImage()
+    {
+        return $this->belongsTo(Image::class, 'banner_image_id');
     }
 
     public function styles()
@@ -139,19 +168,219 @@ class Studio extends Model
         Cache::forget("studio_{$this->id}_tattoos");
     }
 
-    public function business_hours()
+    public function availability()
     {
-        return $this->hasMany(BusinessHours::class);
+        return $this->hasMany(StudioAvailability::class)->orderBy('day_of_week');
     }
 
+    /**
+     * Opening hours in the shape the web and mobile clients render.
+     *
+     * Sourced from studio_availability, which is the table the dashboard
+     * writes. The old business_hours table is no longer read.
+     *
+     * @return list<array<string, mixed>>
+     */
+    public function formattedHours(): array
+    {
+        $dayNames = ['Sunday', 'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday'];
+
+        return $this->availability
+            ->map(function (StudioAvailability $slot) use ($dayNames) {
+                $day = $dayNames[$slot->day_of_week] ?? '';
+
+                if ($slot->is_day_off) {
+                    return [
+                        'day' => $day,
+                        'day_id' => $slot->day_of_week,
+                        'open_time' => null,
+                        'close_time' => null,
+                        'hours' => 'Closed',
+                    ];
+                }
+
+                $open = date('g:i A', strtotime($slot->start_time));
+                $close = date('g:i A', strtotime($slot->end_time));
+
+                return [
+                    'day' => $day,
+                    'day_id' => $slot->day_of_week,
+                    'open_time' => $slot->start_time,
+                    'close_time' => $slot->end_time,
+                    'hours' => "{$open} - {$close}",
+                ];
+            })
+            ->values()
+            ->all();
+    }
+
+    /**
+     * Everything the studio has published: announcements and guides alike.
+     */
+    public function posts()
+    {
+        return $this->hasMany(StudioPost::class);
+    }
+
+    /**
+     * Announcements the studio manages in its dashboard, newest first.
+     */
     public function announcements()
     {
-        return $this->hasMany(StudioAnnouncement::class);
+        return $this->hasMany(StudioPost::class)->announcements()->latest();
     }
 
+    /**
+     * Announcements visitors see, newest first: the studio page leads with the
+     * most recent one and quietens the rest.
+     */
     public function activeAnnouncements()
     {
-        return $this->hasMany(StudioAnnouncement::class)->where('is_active', true);
+        return $this->hasMany(StudioPost::class)->announcements()->visible()->latest();
+    }
+
+    /**
+     * Guides the studio has written, such as aftercare instructions.
+     */
+    public function guides()
+    {
+        return $this->hasMany(StudioPost::class)->guides();
+    }
+
+    /**
+     * The order the page's movable sections render in.
+     *
+     * Reconciled against the current section list on read, so a section added
+     * after a studio saved its arrangement still appears - at the end - rather
+     * than silently vanishing from their page.
+     *
+     * @return list<string>
+     */
+    public function sectionOrder(): array
+    {
+        $known = StudioSection::values();
+
+        $saved = array_values(array_unique(
+            array_intersect((array) ($this->section_order ?? []), $known)
+        ));
+
+        return array_merge($saved, array_values(array_diff($known, $saved)));
+    }
+
+    /**
+     * How wide each movable section renders, as a complete map.
+     *
+     * Stored overrides are sparse - only a section the studio actually resized
+     * is written - so this fills the rest in from each section's own default
+     * and callers never have to know which is which.
+     *
+     * @return array<string, string>
+     */
+    public function sectionWidths(): array
+    {
+        $stored = (array) ($this->section_widths ?? []);
+        $widths = [];
+
+        foreach (StudioSection::cases() as $section) {
+            $saved = StudioSectionWidth::tryFrom((string) ($stored[$section->value] ?? ''));
+
+            $widths[$section->value] = ($saved ?? $section->defaultWidth())->value;
+        }
+
+        return $widths;
+    }
+
+    /**
+     * Explicit column placements, as stored.
+     *
+     * Unlike widths this stays sparse rather than being filled in: the default
+     * is positional, alternating down the band, so it depends on where a
+     * section sits rather than on which section it is. The client owns that
+     * fallback because only it knows the band layout.
+     *
+     * @return array<string, string>
+     */
+    public function sectionColumns(): array
+    {
+        $stored = (array) ($this->section_columns ?? []);
+        $placed = [];
+
+        foreach (StudioSection::cases() as $section) {
+            $column = StudioSectionColumn::tryFrom((string) ($stored[$section->value] ?? ''));
+
+            if ($column !== null) {
+                $placed[$section->value] = $column->value;
+            }
+        }
+
+        return $placed;
+    }
+
+    /**
+     * Explicit band moves, as stored.
+     *
+     * Sparse for the same reason as columns: the layout decides where a
+     * section starts, and filling this in would erase which of those were
+     * actually the studio's choice.
+     *
+     * @return array<string, string>
+     */
+    public function sectionBands(): array
+    {
+        $stored = (array) ($this->section_bands ?? []);
+        $moved = [];
+
+        foreach (StudioSection::cases() as $section) {
+            $band = StudioSectionBand::tryFrom((string) ($stored[$section->value] ?? ''));
+
+            if ($band !== null) {
+                $moved[$section->value] = $band->value;
+            }
+        }
+
+        return $moved;
+    }
+
+    /**
+     * Explicit row placements, as stored.
+     *
+     * Sparse like the rest of the arrangement: a section with no entry is
+     * packed in order behind whatever comes before it, which is what every
+     * page did before rows existed.
+     *
+     * @return array<string, int>
+     */
+    public function sectionRows(): array
+    {
+        $stored = (array) ($this->section_rows ?? []);
+        $placed = [];
+
+        foreach (StudioSection::cases() as $section) {
+            $row = $stored[$section->value] ?? null;
+
+            if (is_numeric($row) && (int) $row >= 0) {
+                $placed[$section->value] = (int) $row;
+            }
+        }
+
+        return $placed;
+    }
+
+    /**
+     * The aftercare guide sent to a client after their appointment.
+     *
+     * A studio can write several; one is flagged as the one to send. Without a
+     * flag the most recent published aftercare guide stands in, so a studio
+     * that wrote one and never thought about the flag still gets it sent.
+     */
+    public function defaultAftercareGuide(): ?StudioPost
+    {
+        return $this->posts()
+            ->where('type', StudioPostType::Aftercare->value)
+            ->visible()
+            ->orderByDesc('is_default')
+            ->orderByDesc('published_at')
+            ->first();
     }
 
     public function spotlights()

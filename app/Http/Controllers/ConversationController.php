@@ -350,6 +350,49 @@ class ConversationController extends Controller
     }
 
     /**
+     * Send the studio's aftercare guide to the client.
+     *
+     * The guide is written once on the studio page and sent from here, so an
+     * artist never retypes healing instructions into a chat. The message
+     * carries the guide's own URL, so the client can come back to it later.
+     */
+    public function sendAftercare(Request $request, int $id, ConversationService $conversationService): JsonResponse
+    {
+        $user = $request->user();
+        $studio = $user->ownedStudio ?? $user->primary_studio;
+
+        if (! $studio) {
+            return response()->json([
+                'error' => 'No studio found for this account',
+                'message' => 'Aftercare guides are written on a studio page.',
+            ], 422);
+        }
+
+        $guide = $studio->defaultAftercareGuide();
+
+        if (! $guide) {
+            return response()->json([
+                'error' => 'No aftercare guide yet',
+                'message' => 'Write an aftercare guide on your studio page and it can be sent from here.',
+            ], 422);
+        }
+
+        return $this->sendTypedMessageResponse(
+            $request,
+            $id,
+            $conversationService,
+            'Here are your aftercare instructions',
+            'aftercare',
+            [
+                'guide_id' => $guide->id,
+                'title' => $guide->title,
+                'content' => $guide->content,
+                'url' => "/studios/{$studio->slug}/guides/{$guide->slug}",
+            ]
+        );
+    }
+
+    /**
      * Send a price quote message.
      */
     public function sendPriceQuote(Request $request, int $id, ConversationService $conversationService): JsonResponse

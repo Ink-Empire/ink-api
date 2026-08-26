@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Models\Address;
 use App\Models\Studio;
+use App\Services\StudioService;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
@@ -131,7 +132,7 @@ class GooglePlacesService
 
         $studio = Studio::create([
             'name' => $place['name'] ?? 'Unknown Studio',
-            'slug' => Str::slug($place['name'] ?? 'studio') . '-' . Str::random(6),
+            'slug' => app(StudioService::class)->generateSlug($place['name'] ?? 'studio'),
             'location' => $place['vicinity'] ?? null,
             'location_lat_long' => $lat && $lng ? "{$lat},{$lng}" : null,
             'google_place_id' => $placeId,
@@ -264,7 +265,7 @@ class GooglePlacesService
 
         $studio = Studio::create([
             'name' => $details['name'] ?? 'Unknown Studio',
-            'slug' => Str::slug($details['name'] ?? 'studio') . '-' . Str::random(6),
+            'slug' => app(StudioService::class)->generateSlug($details['name'] ?? 'studio'),
             'location' => $details['formatted_address'] ?? null,
             'location_lat_long' => $lat && $lng ? "{$lat},{$lng}" : null,
             'phone' => $details['formatted_phone_number'] ?? null,
