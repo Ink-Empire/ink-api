@@ -8,7 +8,10 @@
 return [
 
     // @see https://docs.sentry.io/product/sentry-basics/dsn-explainer/
-    'dsn' => env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
+    // Local runs never report. A DSN copied into a local .env used to send
+    // every development error and a full performance trace to the shared
+    // project, mixed in with production.
+    'dsn' => env('APP_ENV') === 'local' ? null : env('SENTRY_LARAVEL_DSN', env('SENTRY_DSN')),
 
     // @see https://spotlightjs.com/
     // 'spotlight' => env('SENTRY_SPOTLIGHT', false),

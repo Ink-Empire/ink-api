@@ -2,6 +2,7 @@
 
 namespace App\Jobs;
 
+use App\Exceptions\CalendarReauthRequiredException;
 use App\Models\CalendarConnection;
 use App\Services\GoogleCalendarService;
 use Illuminate\Bus\Queueable;
@@ -55,6 +56,11 @@ class SyncUserCalendar implements ShouldQueue
 
             Log::info("Calendar sync completed for connection {$this->connectionId}", $stats);
 
+        } catch (CalendarReauthRequiredException $e) {
+            // The owner has to reconnect the calendar. Retrying cannot fix it,
+            // and the connection has already been taken out of the rotation, so
+            // this is not treated as a job failure.
+            Log::warning("Calendar sync skipped for connection {$this->connectionId}: " . $e->getMessage());
         } catch (\Exception $e) {
             Log::error("Calendar sync failed for connection {$this->connectionId}: " . $e->getMessage(), [
                 'trace' => $e->getTraceAsString(),

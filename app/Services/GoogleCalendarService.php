@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Exceptions\CalendarReauthRequiredException;
 use App\Models\CalendarConnection;
 use App\Models\ExternalCalendarEvent;
 use App\Models\Appointment;
@@ -104,6 +105,23 @@ class GoogleCalendarService
     {
         $this->client->refreshToken($connection->refresh_token);
         $newToken = $this->client->getAccessToken();
+
+        // Google returns nothing when the refresh token has expired or been
+        // revoked. No amount of retrying fixes that, so the connection is
+        // marked for reauth and taken out of the sync rotation rather than
+        // failing on the hour, every hour.
+        if (empty($newToken['access_token'])) {
+            Log::warning("Calendar connection {$connection->id} could not refresh its token, marking for reauth");
+
+            $connection->update([
+                'sync_enabled' => false,
+                'requires_reauth' => true,
+            ]);
+
+            throw new CalendarReauthRequiredException(
+                "Calendar connection {$connection->id} requires re-authorisation."
+            );
+        }
 
         $connection->update([
             'access_token' => $newToken['access_token'],

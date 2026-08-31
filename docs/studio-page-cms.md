@@ -174,9 +174,10 @@ than showing a placeholder.
 | Dashboard studio surface | `inked-in-www/nextjs/components/dashboard/StudioSideColumn.tsx` |
 | Studio dashboard state | `inked-in-www/nextjs/hooks/useStudioDashboard.ts` |
 | Posts model and types | `ink-api/app/Models/StudioPost.php`, `app/Enums/StudioPost*.php` |
-| Arrangement rules | `ink-api/app/Enums/StudioSection*.php`, `nextjs/components/studio/sectionOrder.ts` |
+| Arrangement rules | `ink-api/app/Enums/StudioSection*.php`, `shared/utils/studioSections.ts` |
 | Band renderer, no drag | `nextjs/components/studio/SectionBand.tsx` |
 | Drag wrapper | `nextjs/components/studio/edit/SectionLane.tsx`, `SortableSection.tsx` |
+| React Native page | `reactnative/app/screens/StudioDetailScreen.tsx`, `StudioPostScreen.tsx` |
 | Authorization | `ink-api/app/Policies/StudioPolicy.php` |
 
 The editor renders the public section components inside `EditableSection`,
@@ -328,10 +329,21 @@ whether the count moves, not by whether it is zero.
 - **The editor's Portfolio tab is representative, not exact.** It carries the
   real portfolio grid and sidebar cards, but not the style filter or the quick
   actions, which are read-only for an owner anyway.
-- **React Native has no guides, news pages, template or section-order
-  awareness.** Parity is marked critical in `inked-in-www/CLAUDE.md`. The order
-  arrives resolved from `StudioResource`, so honouring it there is a render
-  change rather than new logic.
+- **React Native is read-only, by decision.** It renders whatever a studio
+  arranged on the web; there is no mobile editor and none is planned. The
+  layout model moved to `shared/utils/studioSections.ts` so both platforms
+  compute placement from the same code rather than agreeing by hand.
+
+  A phone is one column, so a band's grid collapses to its reading order -
+  each row's left cell then its right. Widths and columns still decide that
+  order, they just stop deciding anything visual, which is why none of the
+  grid work needed a React Native equivalent. Bands become vertical position:
+  feature is what sits under the header, info is further down, carrying the
+  same meaning as above-the-tabs versus behind-the-tab without inventing
+  mobile tabs.
+
+  `StudioPostScreen` serves both guides and announcements, because they are
+  one model on the server and differ only in the route they answer on.
 - **No automated coverage of the gestures.** The algorithms and the publish
   round-trip are covered by the backend suites and by permutation checks, and
   every gesture has now been driven by hand in a signed-in browser, but the web

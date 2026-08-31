@@ -59,6 +59,15 @@ class FetchInboundEmails extends Command
             $error = imap_last_error();
             $this->error("Could not connect to IMAP: {$error}");
             Log::error('FetchInboundEmails: IMAP connection failed', ['error' => $error]);
+
+            // imap_open queues its errors internally and PHP re-emits them as
+            // warnings at shutdown, where the @ suppression no longer applies
+            // and Laravel turns them into exceptions. Draining the queue keeps
+            // an unreachable mailbox to the log line above rather than a
+            // reported error every time the schedule runs.
+            imap_errors();
+            imap_alerts();
+
             return Command::FAILURE;
         }
 
@@ -66,6 +75,8 @@ class FetchInboundEmails extends Command
             $this->processMailbox($connection);
         } finally {
             imap_close($connection, CL_EXPUNGE);
+            imap_errors();
+            imap_alerts();
         }
 
         return Command::SUCCESS;
