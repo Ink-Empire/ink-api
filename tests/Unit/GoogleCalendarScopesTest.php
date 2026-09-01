@@ -45,6 +45,41 @@ class GoogleCalendarScopesTest extends TestCase
         $this->assertStringNotContainsString('auth/calendar.readonly', $url);
     }
 
+    /**
+     * The exact token that connection 5 came back with in production, after
+     * the calendar permission was left unticked on the consent screen. It looks
+     * like a healthy grant until something tries to read a calendar.
+     */
+    public function test_it_rejects_a_grant_without_calendar_access(): void
+    {
+        $tokens = ['scope' => 'email profile https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile openid'];
+
+        $this->assertFalse((new GoogleCalendarService)->grantsCalendarAccess($tokens));
+    }
+
+    public function test_it_accepts_a_grant_that_includes_calendar_events(): void
+    {
+        $tokens = ['scope' => 'email profile https://www.googleapis.com/auth/calendar.events openid'];
+
+        $this->assertTrue((new GoogleCalendarService)->grantsCalendarAccess($tokens));
+    }
+
+    public function test_it_rejects_a_grant_with_no_scope_field_at_all(): void
+    {
+        $this->assertFalse((new GoogleCalendarService)->grantsCalendarAccess([]));
+    }
+
+    /**
+     * calendar.readonly does not permit writing, so a grant carrying it instead
+     * of calendar.events cannot sync bookings out to the artist's calendar.
+     */
+    public function test_it_rejects_a_grant_carrying_only_calendar_readonly(): void
+    {
+        $tokens = ['scope' => 'https://www.googleapis.com/auth/calendar.readonly'];
+
+        $this->assertFalse((new GoogleCalendarService)->grantsCalendarAccess($tokens));
+    }
+
     public function test_it_requests_no_other_calendar_scopes(): void
     {
         $url = urldecode((new GoogleCalendarService)->getAuthUrl());
