@@ -556,8 +556,24 @@ class GoogleCalendarService
         ]);
     }
 
+    /**
+     * A title the artist typed wins. This used to compose one unconditionally,
+     * so naming an event "Appointment with Beverly" still reached Google as
+     * "Tattoo Appointment - Client" and the artist's own wording was lost.
+     *
+     * The generic defaults the create form fills in when the field is left
+     * blank are treated as no title, because the composed version carries the
+     * client's name and is more use on a calendar.
+     */
     private function buildEventTitle(Appointment $appointment): string
     {
+        $title = trim((string) $appointment->title);
+        $generic = ['appointment', 'consultation', 'busy', ''];
+
+        if (! in_array(strtolower($title), $generic, true)) {
+            return $title;
+        }
+
         $clientName = $appointment->client?->name ?? 'Client';
         $type = $appointment->type === 'consultation' ? 'Consultation' : 'Tattoo Appointment';
 
