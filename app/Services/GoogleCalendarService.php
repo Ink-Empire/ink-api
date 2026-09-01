@@ -581,11 +581,8 @@ class GoogleCalendarService
      */
     private function buildEventTitle(Appointment $appointment): string
     {
-        $title = trim((string) $appointment->title);
-        $generic = ['appointment', 'consultation', 'busy', ''];
-
-        if (! in_array(strtolower($title), $generic, true)) {
-            return $title;
+        if ($appointment->hasCustomTitle()) {
+            return trim((string) $appointment->title);
         }
 
         $clientName = $appointment->client?->name ?? 'Client';
