@@ -158,6 +158,20 @@ class GoogleCalendarRefreshTest extends TestCase
     }
 
     /**
+     * The reconnect page is /calendar in the Next.js app, which is also where
+     * CalendarOAuthController sends people after a successful connect. An email
+     * pointing anywhere else is a dead link the artist cannot recover from.
+     */
+    public function test_the_reconnect_link_points_at_the_calendar_page(): void
+    {
+        $connection = $this->connection();
+
+        $mail = (new CalendarDisconnectedNotification($connection))->toMail($connection->user);
+
+        $this->assertStringEndsWith('/calendar', $mail->viewData['reconnectUrl']);
+    }
+
+    /**
      * The service builds its own Google client, so the mock is swapped in
      * rather than changing the constructor signature for the sake of a test.
      */

@@ -233,7 +233,24 @@ disconnect every artist on the platform at once rather than one at a time.
 When a connection is genuinely dead the owner is emailed through
 `CalendarDisconnectedNotification`, because they are the only person who can
 reconnect it. The email is sent once on the transition into `requires_reauth`
-and not repeated while the connection stays flagged.
+and not repeated while the connection stays flagged. The link points at
+`/calendar` in the Next.js app, which already renders a reconnect prompt when
+the status endpoint reports `requires_reauth`.
+
+### `app/Console/Commands/BackfillCalendarReauthNotices.php`
+
+Because the notice only fires on the transition, any connection already flagged
+`requires_reauth` before it shipped never gets one. Those artists have a
+calendar that silently stopped syncing.
+
+`php artisan calendar:backfill-reauth-notices` emails them. Use `--dry-run`
+first to see the list. Without it the command shows the same table and asks for
+confirmation before sending, and answers no under `--no-interaction`, so it
+cannot fire from a stray invocation.
+
+It is safe to run more than once. Recipients are filtered against
+`notification_log_items`, so anyone who has already had a
+`CalendarDisconnectedNotification` is skipped. `--count` limits a run.
 
 ---
 
