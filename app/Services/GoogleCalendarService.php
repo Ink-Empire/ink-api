@@ -313,26 +313,50 @@ class GoogleCalendarService
     }
 
     /**
+     * Start and end for a Google event, in the artist's own timezone.
+     *
+     * Appointment date and start_time are stored naive, meaning whatever the
+     * artist saw on screen. Parsing them without a zone treats them as UTC,
+     * which put a 9am booking on the artist's Google calendar at 5am and would
+     * have had clients arriving four hours out.
+     */
+    public function eventTimes(Appointment $appointment): array
+    {
+        $timezone = $appointment->artist?->timezone;
+
+        if (! $timezone) {
+            Log::warning("Appointment {$appointment->id} has no artist timezone, falling back to ".config('app.timezone'));
+            $timezone = config('app.timezone');
+        }
+
+        $date = $appointment->date->format('Y-m-d');
+
+        return [
+            'start' => [
+                'dateTime' => Carbon::parse($date.' '.$appointment->start_time, $timezone)->toRfc3339String(),
+                'timeZone' => $timezone,
+            ],
+            'end' => [
+                'dateTime' => Carbon::parse($date.' '.$appointment->end_time, $timezone)->toRfc3339String(),
+                'timeZone' => $timezone,
+            ],
+        ];
+    }
+
+    /**
      * Create a Google Calendar event from an InkedIn appointment
      */
     public function createEventFromAppointment(CalendarConnection $connection, Appointment $appointment): string
     {
         $this->initializeWithConnection($connection);
 
-        $startDateTime = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->start_time);
-        $endDateTime = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->end_time);
+        $times = $this->eventTimes($appointment);
 
         $event = new GoogleEvent([
             'summary' => $this->buildEventTitle($appointment),
             'description' => $this->buildEventDescription($appointment),
-            'start' => [
-                'dateTime' => $startDateTime->toRfc3339String(),
-                'timeZone' => config('app.timezone'),
-            ],
-            'end' => [
-                'dateTime' => $endDateTime->toRfc3339String(),
-                'timeZone' => config('app.timezone'),
-            ],
+            'start' => $times['start'],
+            'end' => $times['end'],
             'extendedProperties' => [
                 'private' => [
                     'inkedin_appointment_id' => (string) $appointment->id,
@@ -373,19 +397,12 @@ class GoogleCalendarService
                 $appointment->google_event_id
             );
 
-            $startDateTime = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->start_time);
-            $endDateTime = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->end_time);
+            $times = $this->eventTimes($appointment);
 
             $event->setSummary($this->buildEventTitle($appointment));
             $event->setDescription($this->buildEventDescription($appointment));
-            $event->setStart(new EventDateTime([
-                'dateTime' => $startDateTime->toRfc3339String(),
-                'timeZone' => config('app.timezone'),
-            ]));
-            $event->setEnd(new EventDateTime([
-                'dateTime' => $endDateTime->toRfc3339String(),
-                'timeZone' => config('app.timezone'),
-            ]));
+            $event->setStart(new EventDateTime($times['start']));
+            $event->setEnd(new EventDateTime($times['end']));
 
             $this->calendar->events->update(
                 $connection->calendar_id ?? 'primary',
