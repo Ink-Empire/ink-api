@@ -70,6 +70,21 @@ class GoogleCalendarService
     }
 
     /**
+     * Whether a token exchange actually came back with calendar access.
+     *
+     * Google's consent screen lets people decline individual permissions, so an
+     * exchange can succeed and still return a token with only the identity
+     * scopes. Storing one of those gives the artist a connection that looks
+     * connected and fails every sync with a 403.
+     */
+    public function grantsCalendarAccess(array $tokens): bool
+    {
+        $granted = explode(' ', (string) ($tokens['scope'] ?? ''));
+
+        return in_array(GoogleCalendar::CALENDAR_EVENTS, $granted, true);
+    }
+
+    /**
      * Get user info from Google
      */
     public function getUserInfo(string $accessToken): array

@@ -113,6 +113,30 @@ class CalendarReconnectTest extends TestCase
         $this->assertDatabaseCount('calendar_connections', 0);
     }
 
+    /**
+     * The failure that cost an afternoon in production. The exchange succeeds,
+     * the token is valid, and nothing has calendar access, so the connection
+     * stores cleanly and then 403s on every sync.
+     */
+    public function test_it_refuses_a_connection_without_calendar_access(): void
+    {
+        $user = User::factory()->create();
+
+        $this->mock(GoogleCalendarService::class, function ($mock) {
+            $mock->shouldReceive('exchangeCode')->andReturn([
+                'access_token' => 'fresh-access-token',
+                'refresh_token' => 'fresh-refresh-token',
+                'expires_in' => 3600,
+            ]);
+            $mock->shouldReceive('grantsCalendarAccess')->andReturn(false);
+        });
+
+        $this->get('/api/calendar/callback?code=auth-code&state='.encrypt($user->id))
+            ->assertRedirectContains('calendar+access+was+not+granted');
+
+        $this->assertDatabaseCount('calendar_connections', 0);
+    }
+
     private function mockGoogle(): void
     {
         $this->mock(GoogleCalendarService::class, function ($mock) {
@@ -128,6 +152,7 @@ class CalendarReconnectTest extends TestCase
                 'name' => 'Test Artist',
             ]);
 
+            $mock->shouldReceive('grantsCalendarAccess')->andReturn(true);
             $mock->shouldReceive('initializeWithConnection')->andReturnSelf();
         });
     }

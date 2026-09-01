@@ -78,6 +78,15 @@ class CalendarOAuthController extends Controller
                 return $this->redirectWithError('Google did not return a refresh token, please try again');
             }
 
+            // Declining the calendar permission on Google's consent screen still
+            // produces a valid token. Storing it would leave the artist looking
+            // connected while every sync failed with a 403.
+            if (! $this->googleCalendar->grantsCalendarAccess($tokens)) {
+                Log::warning("Google Calendar access was not granted by user {$user->id}");
+
+                return $this->redirectWithError('calendar access was not granted, please try again and allow InkedIn to see and edit your calendar events');
+            }
+
             // Get user info from Google
             $googleUser = $this->googleCalendar->getUserInfo($tokens['access_token']);
 
