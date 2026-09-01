@@ -188,9 +188,16 @@ Which connection it uses:
 2. Otherwise the most recently created Google connection that still has a
    refresh token and is not flagged `requires_reauth`.
 
-It exits non-zero and logs at error level when there is no usable connection, or
-when the refresh fails. Both cases mean the client is accruing inactivity again,
-so `google:keepalive` failures in the logs are worth acting on.
+Every failure exits non-zero, logs at error level, and posts to the ops Slack
+channel via `SlackService::notifyOps()` - no usable connection, a connection that
+can no longer refresh, a refresh that throws, or a missing `GOOGLE_CLIENT_ID`.
+All of them mean the client is accruing inactivity again, and Google deletes it
+silently once it has accrued enough, so this is not something to leave sitting in
+a log file.
+
+Unlike `ops:health-check`, this alerts every run rather than on state change. It
+runs weekly, so a persistent failure is one message a week rather than the hourly
+noise the health check has to suppress with its cache-backed state tracking.
 
 Note that a connection whose refresh fails is marked `requires_reauth` and taken
 out of the sync rotation by `GoogleCalendarService::refreshToken()`. If the

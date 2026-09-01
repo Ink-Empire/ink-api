@@ -5,6 +5,7 @@ namespace App\Console\Commands;
 use App\Exceptions\CalendarReauthRequiredException;
 use App\Models\CalendarConnection;
 use App\Services\GoogleCalendarService;
+use App\Services\SlackService;
 use Illuminate\Console\Command;
 use Illuminate\Support\Facades\Log;
 
@@ -13,7 +14,7 @@ use Illuminate\Support\Facades\Log;
  * not deleted for inactivity.
  *
  * Google deletes OAuth clients that go five months without a sign-in or a token
- * exchange. Calendar sync only touches Google when someone has a calendar
+ * exchange. Calendar sync only talks to Google when someone has a calendar
  * connected, so a quiet period on the platform is enough to put the client on
  * the deletion list. This performs one deliberate exchange on a schedule so the
  * client stays in use regardless of platform traffic.
@@ -24,56 +25,79 @@ class KeepGoogleOAuthClientAlive extends Command
 
     protected $description = 'Refresh a Google access token so the OAuth client is not deleted for inactivity';
 
-    public function handle(GoogleCalendarService $googleCalendar): int
+    public function __construct(
+        protected GoogleCalendarService $googleCalendar,
+        protected SlackService $slack
+    ) {
+        parent::__construct();
+    }
+
+    public function handle(): int
     {
         $clientId = (string) config('services.google.client_id');
 
         if ($clientId === '') {
-            $this->error('No GOOGLE_CLIENT_ID configured, nothing to keep alive.');
-            Log::error('google:keepalive: no client id configured');
-
-            return Command::FAILURE;
+            return $this->fail('No GOOGLE_CLIENT_ID is configured, so nothing is keeping the OAuth client alive.');
         }
 
         $connection = $this->connection();
 
-        if (!$connection) {
-            $this->error('No usable calendar connection to refresh. The OAuth client is at risk of deletion.');
-            Log::error('google:keepalive: no usable calendar connection', [
-                'client_id' => $this->maskedClientId($clientId),
-            ]);
-
-            return Command::FAILURE;
+        if (! $connection) {
+            return $this->fail(
+                "No calendar connection is available to refresh.\n"
+                ."*Project:* {$this->projectNumber($clientId)}"
+            );
         }
 
         try {
-            $googleCalendar->refreshToken($connection);
+            $this->googleCalendar->refreshToken($connection);
         } catch (CalendarReauthRequiredException $e) {
-            $this->error("Connection {$connection->id} ({$connection->provider_email}) needs reconnecting, no token was exchanged.");
-            Log::error('google:keepalive: connection requires reauth', [
-                'connection_id' => $connection->id,
-                'client_id'     => $this->maskedClientId($clientId),
-            ]);
-
-            return Command::FAILURE;
+            return $this->fail(
+                "Connection {$connection->id} ({$connection->provider_email}) can no longer refresh and needs reconnecting.\n"
+                ."*Project:* {$this->projectNumber($clientId)}",
+                ['connection_id' => $connection->id]
+            );
         } catch (\Throwable $e) {
-            $this->error("Token refresh failed: {$e->getMessage()}");
-            Log::error('google:keepalive: token refresh failed', [
-                'connection_id' => $connection->id,
-                'client_id'     => $this->maskedClientId($clientId),
-                'error'         => $e->getMessage(),
-            ]);
-
-            return Command::FAILURE;
+            return $this->fail(
+                "Token refresh failed for connection {$connection->id} ({$connection->provider_email}).\n"
+                ."*Project:* {$this->projectNumber($clientId)}\n"
+                ."*Error:* {$e->getMessage()}",
+                ['connection_id' => $connection->id, 'error' => $e->getMessage()]
+            );
         }
 
         $this->info("Refreshed token for connection {$connection->id} ({$connection->provider_email}).");
         Log::info('google:keepalive: token exchanged', [
             'connection_id' => $connection->id,
-            'client_id'     => $this->maskedClientId($clientId),
+            'project' => $this->projectNumber($clientId),
         ]);
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Every failure here means the OAuth client is accruing inactivity again,
+     * and Google deletes it silently once it has accrued enough. Nobody reads
+     * the logs looking for that, so it goes to the ops channel.
+     *
+     * Unlike the health check this posts every time rather than on state
+     * change. It runs weekly, so a persistent failure is one message a week
+     * rather than the hourly noise the health check has to suppress.
+     */
+    private function fail(string $reason, array $context = []): int
+    {
+        $this->error($reason);
+
+        Log::error('google:keepalive: '.$reason, $context);
+
+        $this->slack->notifyOps(
+            'Google OAuth keepalive failed',
+            "{$reason}\n\nThe OAuth client is accruing inactivity. Google deletes clients "
+            .'that go five months without a token exchange, which would break every '
+            .'connected calendar at once.'
+        );
+
+        return Command::FAILURE;
     }
 
     /**
@@ -90,10 +114,14 @@ class KeepGoogleOAuthClientAlive extends Command
                 ->first();
         }
 
+        // Two connections created in the same second would otherwise leave the
+        // choice to whatever order MySQL happens to return, so the key breaks
+        // the tie and the same connection is picked every run.
         return CalendarConnection::where('provider', 'google')
             ->where('requires_reauth', false)
             ->whereNotNull('refresh_token')
             ->latest('created_at')
+            ->latest('id')
             ->first();
     }
 
@@ -101,7 +129,7 @@ class KeepGoogleOAuthClientAlive extends Command
      * The leading digits of a client id are its Google Cloud project number,
      * which is what identifies the project this is keeping alive.
      */
-    private function maskedClientId(string $clientId): string
+    private function projectNumber(string $clientId): string
     {
         return explode('-', $clientId)[0];
     }
