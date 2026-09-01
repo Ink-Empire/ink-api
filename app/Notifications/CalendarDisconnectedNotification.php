@@ -35,7 +35,7 @@ class CalendarDisconnectedNotification extends Notification
             ->view('mail.calendar-disconnected', [
                 'name' => $notifiable->name ?? $notifiable->username,
                 'providerEmail' => $this->calendarConnection->provider_email,
-                'reconnectUrl' => $frontendUrl.'/dashboard/settings/calendar',
+                'reconnectUrl' => $frontendUrl.'/calendar',
             ]);
     }
 
