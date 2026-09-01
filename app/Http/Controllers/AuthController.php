@@ -51,6 +51,7 @@ class AuthController extends Controller
             'has_accepted_toc' => 'required|accepted',
             'has_accepted_privacy_policy' => 'required|accepted',
             'signup_platform' => 'nullable|string|in:web,ios,android',
+            'timezone' => 'nullable|string|timezone',
         ]);
 
         if (isset($request->address)) {
@@ -77,6 +78,10 @@ class AuthController extends Controller
             'has_accepted_toc' => true,
             'has_accepted_privacy_policy' => true,
             'signup_platform' => $request->signup_platform ?? null,
+            // Sent by the client from the browser or device. Appointment times
+            // are stored as the artist typed them, so without this their
+            // bookings sync to Google in UTC and land hours out.
+            'timezone' => $request->timezone ?? null,
         ]);
 
         // Store password in history
