@@ -39,6 +39,21 @@ class Appointment extends Model
         return $this->belongsTo(User::class, 'client_id');
     }
 
+    /**
+     * Whether the artist actually named this, as opposed to leaving the field
+     * blank and letting the create form fill in a generic word.
+     *
+     * Both the Google event title and the dashboard title compose something
+     * from the type and client name when there is nothing worth showing, and
+     * both need to agree on what counts as nothing.
+     */
+    public function hasCustomTitle(): bool
+    {
+        $title = strtolower(trim((string) $this->title));
+
+        return ! in_array($title, ['appointment', 'consultation', 'busy', ''], true);
+    }
+
     public function artist()
     {
         return $this->belongsTo(User::class, 'artist_id');

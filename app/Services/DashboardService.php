@@ -330,8 +330,18 @@ class DashboardService
         })->toArray();
     }
 
+    /**
+     * A title the artist typed wins. This used to compose one unconditionally,
+     * so an appointment named "appointment with lentil" still showed on the
+     * artist's own calendar as "Tattoo Appointment with Unknown Client", even
+     * once Google was showing the real name.
+     */
     private function formatAppointmentTitle($appointment): string
     {
+        if ($appointment->hasCustomTitle()) {
+            return trim((string) $appointment->title);
+        }
+
         $type = $appointment->type === 'consultation' ? 'Consultation' : 'Appointment';
         $clientName = $appointment->client?->name ?? 'Unknown Client';
 
