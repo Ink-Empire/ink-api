@@ -3,6 +3,7 @@
 namespace App\Observers;
 
 use App\Models\Appointment;
+use App\Jobs\DeleteGoogleCalendarEvent;
 use App\Jobs\SyncAppointmentToGoogle;
 use Illuminate\Support\Facades\Cache;
 
@@ -55,8 +56,10 @@ class AppointmentObserver
     {
         $this->clearScheduleCache($appointment);
 
+        // Carries the event id, because by the time this job runs the
+        // appointment row is gone and anything looking it up finds nothing.
         if ($appointment->google_event_id) {
-            SyncAppointmentToGoogle::dispatch($appointment->id, 'delete');
+            DeleteGoogleCalendarEvent::dispatch($appointment->artist_id, $appointment->google_event_id);
         }
     }
 

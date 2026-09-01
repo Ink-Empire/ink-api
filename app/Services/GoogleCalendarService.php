@@ -247,6 +247,50 @@ class GoogleCalendarService
     }
 
     /**
+     * The InkedIn appointment a Google event came from, if we created it.
+     */
+    private function inkedinAppointmentId(GoogleEvent $googleEvent): ?int
+    {
+        $private = $googleEvent->getExtendedProperties()?->getPrivate();
+
+        return isset($private['inkedin_appointment_id'])
+            ? (int) $private['inkedin_appointment_id']
+            : null;
+    }
+
+    /**
+     * An InkedIn event the artist deleted from their Google calendar.
+     *
+     * A personal block is the artist managing their own time, so removing it
+     * there removes it here. A booking belongs to a client as well, and
+     * cancelling on them because an event left a calendar is not a decision to
+     * make automatically, so that is logged and left alone.
+     */
+    private function cancelledInGoogle(int $appointmentId): string
+    {
+        $appointment = Appointment::find($appointmentId);
+
+        if (! $appointment) {
+            return 'updated';
+        }
+
+        if ($appointment->client_id) {
+            Log::warning("Appointment {$appointmentId} was deleted in Google but has a client, leaving it in place");
+
+            return 'updated';
+        }
+
+        // Clearing this first stops the deleted hook queueing a delete for an
+        // event Google has already removed.
+        $appointment->update(['google_event_id' => null]);
+        $appointment->delete();
+
+        Log::info("Deleted appointment {$appointmentId} after it was removed from Google Calendar");
+
+        return 'deleted';
+    }
+
+    /**
      * Sync a single Google event to our database
      */
     private function syncSingleEvent(CalendarConnection $connection, GoogleEvent $googleEvent): string
@@ -255,6 +299,12 @@ class GoogleCalendarService
 
         // Handle cancelled/deleted events
         if ($googleEvent->getStatus() === 'cancelled') {
+            $appointmentId = $this->inkedinAppointmentId($googleEvent);
+
+            if ($appointmentId) {
+                return $this->cancelledInGoogle($appointmentId);
+            }
+
             $deleted = ExternalCalendarEvent::where('calendar_connection_id', $connection->id)
                 ->where('vendor_event_id', $vendorId)
                 ->delete();
