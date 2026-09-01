@@ -103,10 +103,9 @@ class CalendarOAuthController extends Controller
                 ]
             );
 
-            // Get primary calendar ID
-            $this->googleCalendar->initializeWithConnection($connection);
-            $calendarId = $this->googleCalendar->getPrimaryCalendarId();
-            $connection->update(['calendar_id' => $calendarId]);
+            // calendar_id is left null so sync uses the 'primary' alias. Asking
+            // Google for the real id would need calendar.readonly, a much wider
+            // scope than anything else here requires.
 
             // Queue initial sync
             SyncUserCalendar::dispatch($connection->id);

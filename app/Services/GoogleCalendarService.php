@@ -32,8 +32,11 @@ class GoogleCalendarService
         $this->client->setRedirectUri(config('services.google.redirect'));
         $this->client->setAccessType('offline');
         $this->client->setPrompt('consent');
+        // calendar.events is the only calendar scope any call here needs. It
+        // covers reading, writing and watching events on whichever calendar is
+        // addressed. calendar.readonly would additionally grant every calendar
+        // the artist can see, which nothing uses.
         $this->client->setScopes([
-            GoogleCalendar::CALENDAR_READONLY,
             GoogleCalendar::CALENDAR_EVENTS,
             'https://www.googleapis.com/auth/userinfo.email',
             'https://www.googleapis.com/auth/userinfo.profile',
@@ -159,14 +162,6 @@ class GoogleCalendarService
         if (! $alreadyFlagged) {
             $connection->user?->notify(new CalendarDisconnectedNotification($connection));
         }
-    }
-
-    /**
-     * Get user's primary calendar ID
-     */
-    public function getPrimaryCalendarId(): string
-    {
-        return $this->calendar->calendars->get('primary')->getId();
     }
 
     /**

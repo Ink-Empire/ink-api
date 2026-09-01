@@ -129,7 +129,6 @@ class CalendarReconnectTest extends TestCase
             ]);
 
             $mock->shouldReceive('initializeWithConnection')->andReturnSelf();
-            $mock->shouldReceive('getPrimaryCalendarId')->andReturn('primary');
         });
     }
 }
