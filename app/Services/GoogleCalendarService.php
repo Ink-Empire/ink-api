@@ -2,15 +2,18 @@
 
 namespace App\Services;
 
+use App\Enums\GoogleOAuthError;
 use App\Exceptions\CalendarReauthRequiredException;
+use App\Exceptions\CalendarRefreshFailedException;
+use App\Models\Appointment;
 use App\Models\CalendarConnection;
 use App\Models\ExternalCalendarEvent;
-use App\Models\Appointment;
+use App\Notifications\CalendarDisconnectedNotification;
 use Google\Client as GoogleClient;
 use Google\Service\Calendar as GoogleCalendar;
+use Google\Service\Calendar\Channel;
 use Google\Service\Calendar\Event as GoogleEvent;
 use Google\Service\Calendar\EventDateTime;
-use Google\Service\Calendar\Channel;
 use Google\Service\Oauth2;
 use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\Log;
@@ -18,11 +21,12 @@ use Illuminate\Support\Facades\Log;
 class GoogleCalendarService
 {
     private GoogleClient $client;
+
     private ?GoogleCalendar $calendar = null;
 
     public function __construct()
     {
-        $this->client = new GoogleClient();
+        $this->client = new GoogleClient;
         $this->client->setClientId(config('services.google.client_id'));
         $this->client->setClientSecret(config('services.google.client_secret'));
         $this->client->setRedirectUri(config('services.google.redirect'));
@@ -44,6 +48,7 @@ class GoogleCalendarService
         if ($state) {
             $this->client->setState($state);
         }
+
         return $this->client->createAuthUrl();
     }
 
@@ -55,7 +60,7 @@ class GoogleCalendarService
         $token = $this->client->fetchAccessTokenWithAuthCode($code);
 
         if (isset($token['error'])) {
-            throw new \Exception('Google OAuth error: ' . ($token['error_description'] ?? $token['error']));
+            throw new \Exception('Google OAuth error: '.($token['error_description'] ?? $token['error']));
         }
 
         return $token;
@@ -103,20 +108,23 @@ class GoogleCalendarService
      */
     public function refreshToken(CalendarConnection $connection): void
     {
-        $this->client->refreshToken($connection->refresh_token);
-        $newToken = $this->client->getAccessToken();
+        $response = (array) $this->client->refreshToken($connection->refresh_token);
 
-        // Google returns nothing when the refresh token has expired or been
-        // revoked. No amount of retrying fixes that, so the connection is
-        // marked for reauth and taken out of the sync rotation rather than
-        // failing on the hour, every hour.
-        if (empty($newToken['access_token'])) {
-            Log::warning("Calendar connection {$connection->id} could not refresh its token, marking for reauth");
+        // The Google client is built with http_errors disabled, so OAuth
+        // failures come back as data rather than exceptions. invalid_grant is
+        // the only answer that means the grant is gone for good. Everything
+        // else is Google being unavailable, and disconnecting a working
+        // calendar over a bad minute would be worse than retrying.
+        if (empty($response['access_token'])) {
+            $error = $response['error'] ?? GoogleOAuthError::UNKNOWN;
 
-            $connection->update([
-                'sync_enabled' => false,
-                'requires_reauth' => true,
-            ]);
+            if ($error !== GoogleOAuthError::INVALID_GRANT) {
+                throw new CalendarRefreshFailedException(
+                    "Calendar connection {$connection->id} could not refresh its token: {$error}."
+                );
+            }
+
+            $this->markForReauth($connection);
 
             throw new CalendarReauthRequiredException(
                 "Calendar connection {$connection->id} requires re-authorisation."
@@ -124,12 +132,33 @@ class GoogleCalendarService
         }
 
         $connection->update([
-            'access_token' => $newToken['access_token'],
-            'token_expires_at' => now()->addSeconds($newToken['expires_in']),
-            'refresh_token' => $newToken['refresh_token'] ?? $connection->refresh_token,
+            'access_token' => $response['access_token'],
+            'token_expires_at' => now()->addSeconds($response['expires_in'] ?? 3600),
+            'refresh_token' => $response['refresh_token'] ?? $connection->refresh_token,
         ]);
 
         Log::info("Refreshed token for calendar connection {$connection->id}");
+    }
+
+    /**
+     * Takes a genuinely dead connection out of the sync rotation and tells the
+     * owner, who is the only one who can reconnect it. Without the notice the
+     * calendar just stops syncing and nobody finds out until a double booking.
+     */
+    private function markForReauth(CalendarConnection $connection): void
+    {
+        $alreadyFlagged = (bool) $connection->requires_reauth;
+
+        Log::warning("Calendar connection {$connection->id} returned invalid_grant, marking for reauth");
+
+        $connection->update([
+            'sync_enabled' => false,
+            'requires_reauth' => true,
+        ]);
+
+        if (! $alreadyFlagged) {
+            $connection->user?->notify(new CalendarDisconnectedNotification($connection));
+        }
     }
 
     /**
@@ -154,7 +183,7 @@ class GoogleCalendarService
         ];
 
         // Delta sync vs full sync
-        if ($connection->sync_token && !$fullSync) {
+        if ($connection->sync_token && ! $fullSync) {
             $params['syncToken'] = $connection->sync_token;
         } else {
             // Full sync: get events from now to 3 months ahead
@@ -198,6 +227,7 @@ class GoogleCalendarService
             if ($e->getCode() === 410) {
                 Log::info("Sync token expired for connection {$connection->id}, doing full resync");
                 $connection->update(['sync_token' => null]);
+
                 return $this->syncEvents($connection, fullSync: true);
             }
             throw $e;
@@ -218,6 +248,7 @@ class GoogleCalendarService
             $deleted = ExternalCalendarEvent::where('calendar_connection_id', $connection->id)
                 ->where('vendor_event_id', $vendorId)
                 ->delete();
+
             return $deleted ? 'deleted' : 'updated';
         }
 
@@ -267,9 +298,11 @@ class GoogleCalendarService
 
         if ($existing) {
             $existing->update($data);
+
             return 'updated';
         } else {
             ExternalCalendarEvent::create($data);
+
             return 'created';
         }
     }
@@ -281,8 +314,8 @@ class GoogleCalendarService
     {
         $this->initializeWithConnection($connection);
 
-        $startDateTime = Carbon::parse($appointment->date->format('Y-m-d') . ' ' . $appointment->start_time);
-        $endDateTime = Carbon::parse($appointment->date->format('Y-m-d') . ' ' . $appointment->end_time);
+        $startDateTime = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->start_time);
+        $endDateTime = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->end_time);
 
         $event = new GoogleEvent([
             'summary' => $this->buildEventTitle($appointment),
@@ -320,9 +353,10 @@ class GoogleCalendarService
      */
     public function updateEventFromAppointment(CalendarConnection $connection, Appointment $appointment): void
     {
-        if (!$appointment->google_event_id) {
+        if (! $appointment->google_event_id) {
             // No linked event, create one instead
             $this->createEventFromAppointment($connection, $appointment);
+
             return;
         }
 
@@ -334,8 +368,8 @@ class GoogleCalendarService
                 $appointment->google_event_id
             );
 
-            $startDateTime = Carbon::parse($appointment->date->format('Y-m-d') . ' ' . $appointment->start_time);
-            $endDateTime = Carbon::parse($appointment->date->format('Y-m-d') . ' ' . $appointment->end_time);
+            $startDateTime = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->start_time);
+            $endDateTime = Carbon::parse($appointment->date->format('Y-m-d').' '.$appointment->end_time);
 
             $event->setSummary($this->buildEventTitle($appointment));
             $event->setDescription($this->buildEventDescription($appointment));
@@ -395,8 +429,8 @@ class GoogleCalendarService
     {
         $this->initializeWithConnection($connection);
 
-        $channelId = 'inkedin-' . $connection->id . '-' . time();
-        $webhookUrl = config('app.url') . '/api/webhooks/google-calendar';
+        $channelId = 'inkedin-'.$connection->id.'-'.time();
+        $webhookUrl = config('app.url').'/api/webhooks/google-calendar';
 
         $channel = new Channel([
             'id' => $channelId,
@@ -424,7 +458,7 @@ class GoogleCalendarService
      */
     public function stopWebhook(CalendarConnection $connection): void
     {
-        if (!$connection->webhook_channel_id || !$connection->webhook_resource_id) {
+        if (! $connection->webhook_channel_id || ! $connection->webhook_resource_id) {
             return;
         }
 
@@ -440,7 +474,7 @@ class GoogleCalendarService
             Log::info("Stopped webhook for calendar connection {$connection->id}");
         } catch (\Exception $e) {
             // Ignore errors when stopping webhooks
-            Log::warning("Failed to stop webhook for connection {$connection->id}: " . $e->getMessage());
+            Log::warning("Failed to stop webhook for connection {$connection->id}: ".$e->getMessage());
         }
 
         $connection->update([
@@ -454,12 +488,13 @@ class GoogleCalendarService
     {
         $clientName = $appointment->client?->name ?? 'Client';
         $type = $appointment->type === 'consultation' ? 'Consultation' : 'Tattoo Appointment';
+
         return "{$type} - {$clientName}";
     }
 
     private function buildEventDescription(Appointment $appointment): string
     {
-        $lines = ["Booked via InkedIn"];
+        $lines = ['Booked via InkedIn'];
 
         if ($appointment->client) {
             $lines[] = "Client: {$appointment->client->name}";
@@ -469,7 +504,7 @@ class GoogleCalendarService
         }
 
         if ($appointment->description) {
-            $lines[] = "";
+            $lines[] = '';
             $lines[] = "Notes: {$appointment->description}";
         }
 
@@ -508,6 +543,7 @@ class GoogleCalendarService
         foreach ($events as $event) {
             if ($event->all_day) {
                 $ranges[] = ['start' => '00:00', 'end' => '23:59'];
+
                 continue;
             }
 

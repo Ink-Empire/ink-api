@@ -199,10 +199,41 @@ Unlike `ops:health-check`, this alerts every run rather than on state change. It
 runs weekly, so a persistent failure is one message a week rather than the hourly
 noise the health check has to suppress with its cache-backed state tracking.
 
-Note that a connection whose refresh fails is marked `requires_reauth` and taken
-out of the sync rotation by `GoogleCalendarService::refreshToken()`. If the
-pinned keepalive account gets into that state, it has to be reconnected through
-the normal OAuth flow.
+Note that a connection Google rejects with `invalid_grant` is marked
+`requires_reauth` and taken out of the sync rotation by
+`GoogleCalendarService::refreshToken()`. If the pinned keepalive account gets
+into that state, it has to be reconnected through the normal OAuth flow.
+
+---
+
+## Token Refresh Failures
+
+`GoogleCalendarService::refreshToken()` separates a connection that is genuinely
+dead from Google simply being unavailable. Getting this wrong is expensive in
+both directions, so the two paths are deliberately different.
+
+The Google client is built with `http_errors` disabled, so OAuth failures come
+back as a response array rather than as exceptions. That array carries the
+reason, and the reason decides what happens:
+
+| Response | Treated as | Effect on the connection |
+|---|---|---|
+| `access_token` present | Success | Tokens updated |
+| `error: invalid_grant` | Permanent | `requires_reauth` set, `sync_enabled` cleared, owner emailed |
+| Any other `error`, for example `invalid_client` | Transient | Nothing is written, `CalendarRefreshFailedException` is thrown |
+| No `access_token` and no `error` | Transient | Nothing is written, `CalendarRefreshFailedException` is thrown |
+| Network failure | Transient | Guzzle exception propagates, nothing is written |
+
+`invalid_grant` is the only answer that means the grant is gone for good. Every
+other failure leaves the row untouched so `SyncUserCalendar` can retry on its
+existing backoff. This matters because a misconfigured `GOOGLE_CLIENT_ID`
+returns `invalid_client` on every call, and treating that as permanent would
+disconnect every artist on the platform at once rather than one at a time.
+
+When a connection is genuinely dead the owner is emailed through
+`CalendarDisconnectedNotification`, because they are the only person who can
+reconnect it. The email is sent once on the transition into `requires_reauth`
+and not repeated while the connection stays flagged.
 
 ---
 
