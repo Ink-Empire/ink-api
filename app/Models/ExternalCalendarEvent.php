@@ -17,14 +17,12 @@ class ExternalCalendarEvent extends Model
         'all_day',
         'status',
         'source',
-        'metadata',
     ];
 
     protected $casts = [
         'starts_at' => 'datetime',
         'ends_at' => 'datetime',
         'all_day' => 'boolean',
-        'metadata' => 'array',
     ];
 
     public function calendarConnection(): BelongsTo

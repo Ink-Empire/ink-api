@@ -16,12 +16,13 @@ OAuth consent screen. Google checks that the link resolves.
 
 ## Accuracy note
 
-The draft below describes the app **after** the recommended change in
-`docs/google-calendar-rollout.md` to stop storing event descriptions and
-locations. If that change has not shipped, the second bullet under What We
-Store is wrong, and the policy must instead disclose that descriptions and
-locations are stored. Do not publish a policy that understates what is
-collected.
+The draft below matches the code as it stands. Event descriptions, locations
+and links are no longer read from Google or stored, and the column that held
+them has been dropped.
+
+Keep this in step with the code. A policy that understates what is collected is
+both a verification rejection and a broken promise to the artist, so if event
+data handling changes, change this first.
 
 ---
 

@@ -63,25 +63,31 @@ never exercises this path.
 
 ## Audit findings
 
-### Data being stored that nothing uses
+### Data being stored that nothing used, now removed
 
-`GoogleCalendarService::syncSingleEvent()` stores a `metadata` payload on every
-external event containing `location`, `description` and `html_link`, taken from
-the artist's personal calendar. Nothing in the application reads that column.
-It is written and never used.
+`GoogleCalendarService::syncSingleEvent()` used to store a `metadata` payload on
+every external event containing `location`, `description` and `html_link`, taken
+from the artist's personal calendar. Nothing in the application ever read that
+column. It was written and never used.
 
-This matters twice over. It is the kind of over collection that draws pushback
-during OAuth verification, where reviewers expect data collection limited to
-what the user facing feature needs. And it means a database breach exposes the
+It mattered twice over. It was the kind of over collection that draws pushback
+during OAuth verification, where reviewers expect collection limited to what the
+user facing feature needs. And it meant a database breach would expose the
 descriptions and locations of every private appointment on every connected
 artist's calendar, for no product benefit.
 
 `title` is used. It is shown to the artist in their own calendar view through
-`CalendarOAuthController::getEvents()`. Times and status drive availability.
-Those all earn their place. The `metadata` column does not.
+`CalendarOAuthController::getEvents()`, and never to clients. Times and status
+drive availability. Those earn their place. The `metadata` column did not.
 
-Recommended before rollout: stop writing `metadata`, and clear the existing
-column.
+The sync no longer reads those fields from Google at all, and the column was
+dropped in `2026_09_01_000001_drop_metadata_from_external_calendar_events_table`.
+Restoring the column through that migration's `down()` does not restore the
+data, which was deleted deliberately.
+
+One caveat worth knowing: existing database backups taken before this shipped
+still contain the old column and its contents. Dropping the column does not
+reach into them. Handle those under whatever retention policy applies.
 
 ### Exposure check
 
