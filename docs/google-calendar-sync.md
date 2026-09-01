@@ -166,6 +166,39 @@ Syncs InkedIn appointments to Google Calendar:
 
 ---
 
+## OAuth Client Keepalive
+
+Google deletes OAuth clients that go five months without a sign-in or a token
+exchange. Nothing here talks to Google unless someone has a calendar connected,
+so a quiet period on the platform is enough to put the client on the deletion
+list and break every connected calendar at once.
+
+### `app/Console/Commands/KeepGoogleOAuthClientAlive.php`
+
+`php artisan google:keepalive` performs one refresh-token-for-access-token
+exchange, which is the activity Google looks for. Scheduled weekly in
+`app/Console/Kernel.php`, production only. The policy needs far less than
+weekly; the cadence is set so that a keepalive which has itself broken shows up
+in the logs within a week rather than months later.
+
+Which connection it uses:
+
+1. `GOOGLE_KEEPALIVE_CONNECTION_ID` when set, so a dedicated account can be
+   pinned rather than depending on whichever artist happens to be connected.
+2. Otherwise the most recently created Google connection that still has a
+   refresh token and is not flagged `requires_reauth`.
+
+It exits non-zero and logs at error level when there is no usable connection, or
+when the refresh fails. Both cases mean the client is accruing inactivity again,
+so `google:keepalive` failures in the logs are worth acting on.
+
+Note that a connection whose refresh fails is marked `requires_reauth` and taken
+out of the sync rotation by `GoogleCalendarService::refreshToken()`. If the
+pinned keepalive account gets into that state, it has to be reconnected through
+the normal OAuth flow.
+
+---
+
 ## API Routes
 
 ```php
@@ -253,6 +286,10 @@ interface AppointmentType {
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI=https://api.inkedin.dev/api/calendar/callback
+
+# Optional. Pins the connection google:keepalive refreshes.
+# Falls back to the most recent usable connection when unset.
+GOOGLE_KEEPALIVE_CONNECTION_ID=
 ```
 
 ### `config/services.php`
@@ -350,6 +387,7 @@ Rules:
 | `app/Http/Resources/AppointmentResource.php` | API response formatting |
 | `app/Jobs/SyncUserCalendar.php` | Sync from Google |
 | `app/Jobs/SyncAppointmentToGoogle.php` | Sync to Google |
+| `app/Console/Commands/KeepGoogleOAuthClientAlive.php` | Keeps the OAuth client off Google's inactivity deletion list |
 
 ### Frontend (nextjs)
 

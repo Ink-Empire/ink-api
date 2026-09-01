@@ -40,6 +40,7 @@ return [
         'client_id' => env('GOOGLE_CLIENT_ID'),
         'client_secret' => env('GOOGLE_CLIENT_SECRET'),
         'redirect' => env('GOOGLE_REDIRECT_URI'),
+        'keepalive_connection_id' => env('GOOGLE_KEEPALIVE_CONNECTION_ID'),
     ],
 
     'slack' => [

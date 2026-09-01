@@ -86,6 +86,17 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer()
             ->environments(['production']);
+
+        // Google deletes OAuth clients after five months without a token
+        // exchange, and calendar sync only talks to Google when someone has a
+        // calendar connected. Weekly is far more often than the policy needs;
+        // the point of the cadence is that a keepalive which has itself broken
+        // shows up in the logs within a week rather than months later.
+        $schedule->command('google:keepalive')
+            ->weekly()
+            ->withoutOverlapping()
+            ->onOneServer()
+            ->environments(['production']);
     }
 
     /**
