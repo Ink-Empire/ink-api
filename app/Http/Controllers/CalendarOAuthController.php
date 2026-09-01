@@ -74,6 +74,12 @@ class CalendarOAuthController extends Controller
                     'refresh_token' => $tokens['refresh_token'],
                     'token_expires_at' => now()->addSeconds($tokens['expires_in']),
                     'sync_token' => null, // Reset for fresh sync
+                    // A successful exchange is proof the grant is good again.
+                    // Without clearing these a reconnect leaves the connection
+                    // holding a working token while both the sync scheduler and
+                    // the keepalive keep filtering it out.
+                    'requires_reauth' => false,
+                    'sync_enabled' => true,
                 ]
             );
 
