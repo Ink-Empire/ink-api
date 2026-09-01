@@ -166,6 +166,77 @@ Syncs InkedIn appointments to Google Calendar:
 
 ---
 
+## OAuth Client Keepalive
+
+Google deletes OAuth clients that go five months without a sign-in or a token
+exchange. Nothing here talks to Google unless someone has a calendar connected,
+so a quiet period on the platform is enough to put the client on the deletion
+list and break every connected calendar at once.
+
+### `app/Console/Commands/KeepGoogleOAuthClientAlive.php`
+
+`php artisan google:keepalive` performs one refresh-token-for-access-token
+exchange, which is the activity Google looks for. Scheduled weekly in
+`app/Console/Kernel.php`, production only. The policy needs far less than
+weekly; the cadence is set so that a keepalive which has itself broken shows up
+in the logs within a week rather than months later.
+
+Which connection it uses:
+
+1. `GOOGLE_KEEPALIVE_CONNECTION_ID` when set, so a dedicated account can be
+   pinned rather than depending on whichever artist happens to be connected.
+2. Otherwise the most recently created Google connection that still has a
+   refresh token and is not flagged `requires_reauth`.
+
+Every failure exits non-zero, logs at error level, and posts to the ops Slack
+channel via `SlackService::notifyOps()` - no usable connection, a connection that
+can no longer refresh, a refresh that throws, or a missing `GOOGLE_CLIENT_ID`.
+All of them mean the client is accruing inactivity again, and Google deletes it
+silently once it has accrued enough, so this is not something to leave sitting in
+a log file.
+
+Unlike `ops:health-check`, this alerts every run rather than on state change. It
+runs weekly, so a persistent failure is one message a week rather than the hourly
+noise the health check has to suppress with its cache-backed state tracking.
+
+Note that a connection Google rejects with `invalid_grant` is marked
+`requires_reauth` and taken out of the sync rotation by
+`GoogleCalendarService::refreshToken()`. If the pinned keepalive account gets
+into that state, it has to be reconnected through the normal OAuth flow.
+
+---
+
+## Token Refresh Failures
+
+`GoogleCalendarService::refreshToken()` separates a connection that is genuinely
+dead from Google simply being unavailable. Getting this wrong is expensive in
+both directions, so the two paths are deliberately different.
+
+The Google client is built with `http_errors` disabled, so OAuth failures come
+back as a response array rather than as exceptions. That array carries the
+reason, and the reason decides what happens:
+
+| Response | Treated as | Effect on the connection |
+|---|---|---|
+| `access_token` present | Success | Tokens updated |
+| `error: invalid_grant` | Permanent | `requires_reauth` set, `sync_enabled` cleared, owner emailed |
+| Any other `error`, for example `invalid_client` | Transient | Nothing is written, `CalendarRefreshFailedException` is thrown |
+| No `access_token` and no `error` | Transient | Nothing is written, `CalendarRefreshFailedException` is thrown |
+| Network failure | Transient | Guzzle exception propagates, nothing is written |
+
+`invalid_grant` is the only answer that means the grant is gone for good. Every
+other failure leaves the row untouched so `SyncUserCalendar` can retry on its
+existing backoff. This matters because a misconfigured `GOOGLE_CLIENT_ID`
+returns `invalid_client` on every call, and treating that as permanent would
+disconnect every artist on the platform at once rather than one at a time.
+
+When a connection is genuinely dead the owner is emailed through
+`CalendarDisconnectedNotification`, because they are the only person who can
+reconnect it. The email is sent once on the transition into `requires_reauth`
+and not repeated while the connection stays flagged.
+
+---
+
 ## API Routes
 
 ```php
@@ -253,6 +324,10 @@ interface AppointmentType {
 GOOGLE_CLIENT_ID=your-client-id.apps.googleusercontent.com
 GOOGLE_CLIENT_SECRET=your-client-secret
 GOOGLE_REDIRECT_URI=https://api.inkedin.dev/api/calendar/callback
+
+# Optional. Pins the connection google:keepalive refreshes.
+# Falls back to the most recent usable connection when unset.
+GOOGLE_KEEPALIVE_CONNECTION_ID=
 ```
 
 ### `config/services.php`
@@ -350,6 +425,7 @@ Rules:
 | `app/Http/Resources/AppointmentResource.php` | API response formatting |
 | `app/Jobs/SyncUserCalendar.php` | Sync from Google |
 | `app/Jobs/SyncAppointmentToGoogle.php` | Sync to Google |
+| `app/Console/Commands/KeepGoogleOAuthClientAlive.php` | Keeps the OAuth client off Google's inactivity deletion list |
 
 ### Frontend (nextjs)
 
