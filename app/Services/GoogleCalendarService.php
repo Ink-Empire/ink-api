@@ -289,11 +289,6 @@ class GoogleCalendarService
             'all_day' => $allDay,
             'status' => $googleEvent->getStatus() ?? 'confirmed',
             'source' => 'google',
-            'metadata' => [
-                'location' => $googleEvent->getLocation(),
-                'description' => $googleEvent->getDescription(),
-                'html_link' => $googleEvent->getHtmlLink(),
-            ],
         ];
 
         if ($existing) {
