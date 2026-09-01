@@ -144,6 +144,93 @@ platform is closer to than the artist is.
 
 ---
 
+## United States user rights
+
+Additive, not a replacement. The New Zealand framing stays while the entity is
+still registered there. This closes a gap that exists today regardless of the
+move: the terms already carry section 19 for United States users, so there are
+United States users, and the privacy policy currently tells all of them their
+only complaint route is the New Zealand Privacy Commissioner. That is not a
+route a resident of California can actually use.
+
+Add as its own numbered section, after the existing Your Rights section.
+
+> **If you are in the United States.** Depending on where you live, you may have
+> additional rights under your state's privacy law. Where those rights apply, you
+> can ask us to tell you what personal information we hold about you and how we
+> use it, ask us to correct it, ask us to delete it, and receive a copy of it.
+> You will not be treated differently for exercising any of these rights.
+>
+> We do not sell your personal information, and we do not share it for
+> cross-context behavioural advertising.
+>
+> To make a request, contact us at the address in the Contact section. We may
+> need to verify your identity before we act on it, so that nobody else can make
+> a request about you. You may also authorise someone to make a request on your
+> behalf.
+>
+> **California residents.** The California Consumer Privacy Act gives you the
+> rights described above, along with the right to limit our use of sensitive
+> personal information. If you believe we have not handled your request
+> properly, you can contact the California Attorney General.
+
+### Two things to settle before this ships
+
+**The sale and sharing sentence needs checking against Firebase.** Under the
+CCPA, "sharing" specifically means disclosing personal information for
+cross-context behavioural advertising, and the definition is broader than most
+people expect. The privacy policy already describes Firebase as collecting
+"device identifiers and app usage data" for analytics. Whether that
+configuration amounts to sharing depends on which Firebase products are enabled
+and whether the data flows into Google's advertising products. Confirm it before
+stating a flat no, because that sentence is one of the most commonly enforced in
+the whole regime.
+
+**Sensitive personal information.** The California paragraph mentions limiting
+its use. Worth confirming whether anything collected qualifies. Uploaded tattoo
+images can reveal information some frameworks treat as sensitive, and images are
+sent to OpenAI for tagging.
+
+---
+
+## Jurisdiction migration checklist
+
+For when the entity move to the United States completes. Nothing here should
+change before then, because a governing law clause that does not match the
+contracting entity is weaker than one pointing at a jurisdiction you have left.
+
+Work through in this order.
+
+1. **Decide the state.** Everything below depends on it, and it is a business
+   and tax decision before it is a drafting one.
+2. **Privacy line 131.** Replace "a company registered in New Zealand" with the
+   new registration. Do not change this until the registration is real.
+3. **Privacy lines 136, 270 and terms line 334.** Replace New Zealand Privacy
+   Act 2020 compliance with the applicable state law. Line 270 covers
+   international transfers and its reasoning inverts once you are United States
+   based, since the servers are already there.
+4. **Privacy line 232.** Make the United States rights section primary and
+   demote the New Zealand section to a "if you are in New Zealand" block, or
+   remove it if you no longer have New Zealand users.
+5. **Privacy line 243.** Replace the New Zealand Privacy Commissioner with the
+   state Attorney General as the complaint route.
+6. **Terms line 360.** Change the liability cap from NZD 100 to a USD figure.
+   Worth revisiting the amount rather than converting it.
+7. **Terms line 361.** Replace the Consumer Guarantees Act 1993 carve-out with
+   the equivalent state consumer protection law.
+8. **Terms line 403.** Change governing law and exclusive jurisdiction to the
+   chosen state. This is the clause with the most consequence and the one most
+   worth a lawyer's time.
+9. **Terms section 19.** Once United States law governs throughout, "Additional
+   Terms for Users in the United States" is no longer an addendum. Fold it into
+   the main terms rather than leaving it reading as an exception.
+10. **Both effective dates.** Move them, and decide whether a change of
+    governing law warrants notice to existing users beyond the standard
+    posting. Changing which courts hear a dispute is the kind of change users
+    are usually told about directly.
+
+---
+
 ## Sources
 
 Every claim above traces to code, so a reviewer can verify rather than trust.
