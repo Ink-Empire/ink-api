@@ -476,6 +476,19 @@ class GoogleCalendarService
     /**
      * Delete a Google Calendar event when appointment is cancelled
      */
+    /**
+     * The event being gone is the outcome a delete wanted.
+     *
+     * Google answers 404 for an id it has never seen and 410 for one it has
+     * already deleted. Only 404 was treated as success, so deleting an event
+     * that had already been removed in Google failed, retried three times, and
+     * raised an alert for work that was in fact done.
+     */
+    private function alreadyGone(\Google\Service\Exception $e): bool
+    {
+        return in_array($e->getCode(), [404, 410], true);
+    }
+
     public function deleteEvent(CalendarConnection $connection, string $eventId): void
     {
         $this->initializeWithConnection($connection);
@@ -487,10 +500,11 @@ class GoogleCalendarService
             );
             Log::info("Deleted Google Calendar event {$eventId}");
         } catch (\Google\Service\Exception $e) {
-            // 404 = already deleted, that's fine
-            if ($e->getCode() !== 404) {
+            if (! $this->alreadyGone($e)) {
                 throw $e;
             }
+
+            Log::info("Google Calendar event {$eventId} was already gone");
         }
     }
 
