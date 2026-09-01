@@ -32,31 +32,51 @@ class CalendarOAuthController extends Controller
     public function handleCallback(Request $request): mixed
     {
         try {
+            // A person is sitting in a browser at this point, so every exit
+            // redirects to the calendar page. Returning JSON strands them on a
+            // dead end with no way back.
+            $error = $request->input('error');
+
+            if ($error) {
+                // Declining on the consent screen is a choice, not a fault.
+                return $this->redirectWithError($error === 'access_denied'
+                    ? 'you cancelled the Google consent screen'
+                    : "Google returned {$error}");
+            }
+
             $code = $request->input('code');
             $state = $request->input('state');
 
             if (!$code) {
-                return response()->json(['error' => 'No authorization code provided'], 400);
+                return $this->redirectWithError('Google did not return an authorization code');
             }
 
             if (!$state) {
-                return response()->json(['error' => 'Invalid state parameter'], 400);
+                return $this->redirectWithError('the link was invalid, please start again from your calendar page');
             }
 
             // Decrypt user ID from state
             try {
                 $userId = decrypt($state);
             } catch (\Exception $e) {
-                return response()->json(['error' => 'Invalid state parameter'], 400);
+                return $this->redirectWithError('the link was invalid, please start again from your calendar page');
             }
 
             $user = \App\Models\User::find($userId);
             if (!$user) {
-                return response()->json(['error' => 'User not found'], 404);
+                return $this->redirectWithError('your account could not be found, please sign in again');
             }
 
             // Exchange code for tokens
             $tokens = $this->googleCalendar->exchangeCode($code);
+
+            // access_type=offline with prompt=consent should always return one.
+            // Without it the connection cannot survive its first hour.
+            if (empty($tokens['refresh_token'])) {
+                Log::error("Google Calendar returned no refresh token for user {$user->id}");
+
+                return $this->redirectWithError('Google did not return a refresh token, please try again');
+            }
 
             // Get user info from Google
             $googleUser = $this->googleCalendar->getUserInfo($tokens['access_token']);
@@ -111,11 +131,19 @@ class CalendarOAuthController extends Controller
                 'trace' => $e->getTraceAsString(),
             ]);
 
-            // Redirect to frontend with error param
-            $frontendUrl = $this->getFrontendUrl();
-            $errorMessage = urlencode($e->getMessage());
-            return redirect()->away("{$frontendUrl}/calendar?calendar_error={$errorMessage}");
+            return $this->redirectWithError($e->getMessage());
         }
+    }
+
+    /**
+     * The frontend renders this as "Failed to connect: {message}", so messages
+     * are phrased to complete that sentence.
+     */
+    private function redirectWithError(string $message): mixed
+    {
+        return redirect()->away(
+            $this->getFrontendUrl() . '/calendar?calendar_error=' . urlencode($message)
+        );
     }
 
     /**
