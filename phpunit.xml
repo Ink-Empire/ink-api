@@ -40,5 +40,9 @@
         <server name="TELESCOPE_ENABLED" value="false" force="true"/>
         <env name="SCOUT_DRIVER" value="null" force="true"/>
         <server name="SCOUT_DRIVER" value="null" force="true"/>
+        <env name="SENTRY_LARAVEL_DSN" value="" force="true"/>
+        <server name="SENTRY_LARAVEL_DSN" value="" force="true"/>
+        <env name="SENTRY_DSN" value="" force="true"/>
+        <server name="SENTRY_DSN" value="" force="true"/>
     </php>
 </phpunit>
