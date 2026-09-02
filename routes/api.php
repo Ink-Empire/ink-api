@@ -3,6 +3,7 @@
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
 use App\Http\Controllers\Admin\ArtistOnboardingController;
+use App\Http\Controllers\Admin\NotificationLogController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -301,6 +302,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
 
     // Build an artist page from material they sent in
     Route::post('artists/onboard', [ArtistOnboardingController::class, 'store']);
+
+    // What the platform has sent, and to whom
+    Route::get('notification-logs', [NotificationLogController::class, 'index']);
 
     // Elastic operations
     Route::post('elastic/rebuild', [\App\Http\Controllers\ElasticController::class, 'rebuild']);

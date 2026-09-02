@@ -91,6 +91,58 @@ flowchart TD
     style S fill:#ffcdd2
 ```
 
+## Provisional accounts
+
+The flow above is an artist signing themselves up. An artist account can also
+be created *for* someone, before they have ever visited the site, when their
+images arrive first. Both provisional routes go through
+`ArtistOnboardingService`, so the account rules are identical to each other —
+though not to the flow above, since the artist is not present to verify
+anything.
+
+```mermaid
+flowchart TD
+    A([Images arrive before the artist]) --> B{How?}
+    B --> |Emailed to setup@getinked.in| C[email:fetch-inbound polls IMAP]
+    B --> |Sent to an admin directly| D[Admin fills in Onboard Artist]
+
+    C --> E[ArtistOnboardingService]
+    D --> E
+
+    E --> F{Account for this address?}
+    F --> |Yes| G[Use the existing artist]
+    F --> |No| H[Create provisional artist]
+
+    H --> I[Temp password, email marked verified,<br/>force_password_reset = true]
+
+    G --> J[Images stored as a BulkUpload]
+    I --> J
+
+    J --> K[Receipt email with credentials<br/>and a review link]
+    K --> L{Artist logs in?}
+
+    L --> |Yes| M[Accept ToC, set password,<br/>review and publish]
+    M --> N([Artist profile live])
+
+    L --> |No, after 14 days| O{Came from the mailbox?}
+    O --> |Yes| P([Account and uploads deleted])
+    O --> |No, built by an admin| Q([Kept indefinitely])
+
+    style A fill:#e1f5fe
+    style N fill:#c8e6c9
+    style P fill:#ffcdd2
+    style Q fill:#fff3e0
+```
+
+Nothing is published by either route. The images sit in the artist's review
+queue until they publish them themselves; there is no admin path to publish on
+their behalf.
+
+The expiry split is deliberate — a mailbox account comes from a stranger and
+an unclaimed one is abandoned, while an admin-built page was made on purpose
+and deleting it would destroy work. See
+[Provisional Artist Signup](../email-inbound-signup.md) for the full detail.
+
 ## Step-by-Step Breakdown
 
 ### 1. Registration Flow
