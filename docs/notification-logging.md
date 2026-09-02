@@ -111,6 +111,40 @@ public function logExtra(): array
 
 ## Querying Notification Logs
 
+### From the admin panel
+
+**Admin → Sent Notifications** lists what the platform has sent: when, which
+notification, to whom, and over which channel. It is searchable by name,
+address or notification type, so "did this artist get their temp password" is
+one search. Backed by `GET /api/admin/notification-logs`
+(`App\Http\Controllers\Admin\NotificationLogController`).
+
+Two things worth knowing:
+
+- **It does not show message bodies.** The log records that a notification was
+  sent, not what it said. Bodies carry temp passwords and personal details, and
+  storing them permanently would undo the same reasoning applied to artists'
+  calendar event contents.
+- **Rows link to Telescope where the email is still there.** The two are
+  separate systems with no shared key, so a row is paired to a Telescope mail
+  entry on the recipient's address — which Telescope tags every mail entry with
+  — and the second both records were written. The link only renders when the
+  entry actually exists, so it disappears once Telescope prunes, and never
+  appears outside local, where Telescope is disabled.
+
+A row whose recipient has since been deleted still shows, since the record of
+what was sent outlives the account.
+
+### Reading an actual email
+
+Telescope's **Mail** tab (`/telescope/mail`, local only) renders the message
+body, which is the only place a sent email can actually be read.
+
+Note that `SecurityHeaders` middleware must exempt `telescope` from the strict
+CSP or the dashboard renders as bare HTML — Telescope inlines its own styles
+and script, and `default-src 'none'` blocks all of it. Horizon and Mailbook are
+exempted for the same reason.
+
 ### Using the Model Directly
 
 ```php
@@ -191,6 +225,11 @@ php artisan model:prune --model="Spatie\NotificationLog\Models\NotificationLogIt
 
 ### Service
 - `App\Services\NotificationStatsService` - Helper methods for querying stats
+
+### Admin screen
+- `App\Http\Controllers\Admin\NotificationLogController` - `GET /admin/notification-logs`
+- `inked-in-www/nextjs/admin/resources/notificationLogs.tsx` - The Sent Notifications screen
+- `App\Http\Middleware\SecurityHeaders` - CSP exemption that lets Telescope render
 
 ### Notifications with logExtra()
 - `App\Notifications\WelcomeNotification`

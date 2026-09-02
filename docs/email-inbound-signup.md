@@ -1,14 +1,56 @@
-# Email-to-Portfolio Inbound Signup
+# Provisional Artist Signup
+
+An artist's images can reach us before the artist does. There are two ways in,
+and both produce the same thing: a claimable artist account with the images
+waiting in a review queue.
+
+| Entry point | Who starts it | `BulkUpload.source` |
+|---|---|---|
+| Setup mailbox | The artist emails `setup@getinked.in` | `email` |
+| Admin panel | An admin enters an artist who sent work in some other way | `admin` |
+
+Both call `ArtistOnboardingService`, so the account rules below — temp
+password, auto-verification, forced password reset — are identical whichever
+route was taken. The service exists precisely so the two cannot drift apart.
+
+The one deliberate difference is expiry: see
+[Provisional account expiry](#provisional-account-expiry).
+
+## The setup mailbox
 
 Artists email images to `setup@getinked.in` to add work to their portfolio. If no account exists for the sender address, one is created automatically.
 
-## How it works
+### How it works
 
 1. The scheduler runs `email:fetch-inbound` every 3 minutes (`Kernel.php`).
 2. The command polls `setup@getinked.in` via IMAP for unseen messages.
 3. For each message with image attachments, it finds or creates the artist's account.
 4. Images are saved through the existing `BulkUpload` pipeline (`source = 'email'`).
 5. The artist receives one email: a receipt with credentials (new accounts) or a review link (existing accounts).
+
+## The admin panel
+
+For artists who send their work directly to a person rather than to the
+mailbox. **Admin → Onboard Artist** takes their email, name, images, and
+optionally a location and a studio.
+
+1. `POST /api/admin/artists/onboard` (admin only).
+2. The same `ArtistOnboardingService` finds or creates the artist and stores
+   the images as a `BulkUpload` with `source = 'admin'`.
+3. The artist gets the same receipt email with their temp password.
+
+Two fields are optional and behave carefully:
+
+- **Location** is captured through the Places picker so coordinates come with
+  it. A location without coordinates is discarded rather than saved, because
+  proximity search matches on the coordinates and `users:backfill-timezones`
+  derives the timezone from them — an artist with neither is unsearchable and
+  syncs bookings to Google in UTC. An existing location is never overwritten.
+- **Studio** attaches the artist as an unverified join request recorded as
+  `initiated_by = 'artist'`, matching registration, so it lands in the studio
+  owner's existing queue. A studio that is not on the platform yet can be
+  created from the same screen; it stays unverified and ownerless until
+  somebody claims it.
 
 ## New account creation
 
@@ -37,6 +79,20 @@ If the artist never logs in, `users:expire-provisional` runs nightly at 02:00 an
 - The `InboundEmailLog` record
 
 Criteria for expiry: `force_password_reset = true` AND `last_login_at IS NULL` AND `created_at < 14 days ago` AND email exists in `inbound_email_logs`.
+
+**Mailbox accounts expire. Admin-created accounts do not.** That last
+condition is what separates them: only the mailbox path writes an
+`InboundEmailLog` row.
+
+The reasoning is that a mailbox account is created by a stranger emailing in,
+so one still unclaimed after fourteen days is abandoned and worth clearing. An
+admin-built page is one a person made on purpose for an artist they are
+onboarding, possibly well before that artist is ready to log in, and deleting
+it would destroy real work.
+
+The trade-off is that abandoned admin-created pages accumulate with no
+automatic cleanup. `ExpireProvisionalAccountsTest` pins both halves of this so
+the difference stays a decision rather than drifting.
 
 ```bash
 # Dry-run to preview what would be expired
@@ -96,7 +152,11 @@ $schedule->command('email:fetch-inbound')
 
 | File | Role |
 |---|---|
-| `app/Console/Commands/FetchInboundEmails.php` | IMAP polling, account creation, BulkUpload pipeline |
+| `app/Services/ArtistOnboardingService.php` | Account creation, image ingestion, location and studio rules — shared by both entry points |
+| `app/Console/Commands/FetchInboundEmails.php` | IMAP polling; delegates to the service |
+| `app/Http/Controllers/Admin/ArtistOnboardingController.php` | `POST /admin/artists/onboard`; delegates to the service |
+| `app/Console/Commands/ExpireProvisionalAccounts.php` | Nightly cleanup of unclaimed mailbox accounts |
+| `inked-in-www/nextjs/admin/pages/OnboardArtistPanel.tsx` | The admin screen |
 | `app/Models/InboundEmailLog.php` | Processing audit log |
 | `app/Notifications/InboundEmailReceiptNotification.php` | Receipt email (new + existing accounts) |
 | `resources/views/mail/inbound-email-receipt.blade.php` | Email template |
