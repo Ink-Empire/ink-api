@@ -5,6 +5,7 @@
  */
 
 use App\Models\User;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Queue;
 use Spatie\NotificationLog\Models\NotificationLogItem;
 use Tests\Traits\RefreshTestDatabase;
@@ -27,6 +28,26 @@ function logItemFor(User $user, string $type = 'App\\Notifications\\WelcomeNotif
         'notifiable_id' => $user->id,
         'channel' => 'mail',
         'fingerprint' => '',
+    ]);
+}
+
+/**
+ * Stands in for what Telescope's mail watcher writes: an entry of type mail,
+ * tagged with the recipient's address.
+ */
+function telescopeMailEntry(string $uuid, string $email, $createdAt): void
+{
+    DB::table('telescope_entries')->insert([
+        'uuid' => $uuid,
+        'batch_id' => 'a-batch',
+        'type' => 'mail',
+        'content' => '{}',
+        'created_at' => $createdAt,
+    ]);
+
+    DB::table('telescope_entries_tags')->insert([
+        'entry_uuid' => $uuid,
+        'tag' => $email,
     ]);
 }
 
@@ -129,6 +150,75 @@ it('ignores a sort column that is not allowed', function () {
     $this->actingAs($this->admin, 'sanctum')
         ->getJson('/api/admin/notification-logs?sort=fingerprint')
         ->assertOk();
+});
+
+/**
+ * The log and Telescope are separate systems with no shared key. They are
+ * paired on the recipient's address, which Telescope tags every mail entry
+ * with, and the second the two records were written.
+ */
+it('links a row to its telescope entry', function () {
+    config(['telescope.enabled' => true]);
+
+    $user = User::factory()->create(['email' => 'linked@example.com']);
+    $item = logItemFor($user);
+
+    telescopeMailEntry('a-uuid-1', 'linked@example.com', $item->created_at);
+
+    $row = $this->actingAs($this->admin, 'sanctum')
+        ->getJson('/api/admin/notification-logs')
+        ->json('data.0');
+
+    expect($row['telescope_url'])->toEndWith('/telescope/mail/a-uuid-1');
+});
+
+it('gives no link when telescope has pruned the entry', function () {
+    config(['telescope.enabled' => true]);
+
+    logItemFor(User::factory()->create(['email' => 'gone@example.com']));
+
+    $row = $this->actingAs($this->admin, 'sanctum')
+        ->getJson('/api/admin/notification-logs')
+        ->json('data.0');
+
+    expect($row['telescope_url'])->toBeNull();
+});
+
+/**
+ * Telescope is off in production, so a link there would point at a dead page.
+ */
+it('gives no link when telescope is disabled', function () {
+    config(['telescope.enabled' => false]);
+
+    $user = User::factory()->create(['email' => 'linked@example.com']);
+    $item = logItemFor($user);
+
+    telescopeMailEntry('a-uuid-2', 'linked@example.com', $item->created_at);
+
+    $row = $this->actingAs($this->admin, 'sanctum')
+        ->getJson('/api/admin/notification-logs')
+        ->json('data.0');
+
+    expect($row['telescope_url'])->toBeNull();
+});
+
+/**
+ * Two people can be emailed in the same second, so the address has to be part
+ * of the match rather than the timestamp alone.
+ */
+it('does not link a row to someone else\'s email', function () {
+    config(['telescope.enabled' => true]);
+
+    $user = User::factory()->create(['email' => 'mine@example.com']);
+    $item = logItemFor($user);
+
+    telescopeMailEntry('someone-elses-uuid', 'theirs@example.com', $item->created_at);
+
+    $row = $this->actingAs($this->admin, 'sanctum')
+        ->getJson('/api/admin/notification-logs')
+        ->json('data.0');
+
+    expect($row['telescope_url'])->toBeNull();
 });
 
 it('is closed to non admins', function () {

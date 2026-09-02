@@ -5,8 +5,11 @@ namespace App\Http\Controllers\Admin;
 use App\Http\Controllers\Controller;
 use App\Models\User;
 use App\Services\PaginationService;
+use Carbon\Carbon;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Collection;
+use Illuminate\Support\Facades\DB;
 use Spatie\NotificationLog\Models\NotificationLogItem;
 
 /**
@@ -84,8 +87,10 @@ class NotificationLogController extends Controller
             ->get(['id', 'name', 'email'])
             ->keyBy('id');
 
+        $telescopeUrls = $this->telescopeUrls($items, $recipients);
+
         return response()->json([
-            'data' => $items->map(function (NotificationLogItem $item) use ($recipients) {
+            'data' => $items->map(function (NotificationLogItem $item) use ($recipients, $telescopeUrls) {
                 $recipient = $recipients->get($item->notifiable_id);
 
                 return [
@@ -97,10 +102,67 @@ class NotificationLogController extends Controller
                     'recipient_name' => $recipient?->name,
                     'recipient_email' => $recipient?->email,
                     'extra' => $item->extra,
+                    'telescope_url' => $telescopeUrls[$item->id] ?? null,
                     'created_at' => $item->created_at,
                 ];
             })->values(),
             'total' => $total,
         ]);
+    }
+
+    /**
+     * Links from log rows to the matching Telescope mail entry, keyed by log id.
+     *
+     * The two are separate systems with no shared key, but Telescope tags every
+     * mail entry with the recipient's address and both records are written in
+     * the same second, so the pair identifies the entry.
+     *
+     * A row gets no link when Telescope is off, when it has pruned the entry,
+     * or when the notification did not go out by mail. That is what makes this
+     * safe in production, where Telescope is disabled: the query is skipped and
+     * every link comes back null rather than pointing at a dead page.
+     *
+     * @return array<int, string>
+     */
+    private function telescopeUrls(Collection $items, Collection $recipients): array
+    {
+        if (! config('telescope.enabled')) {
+            return [];
+        }
+
+        $mailItems = $items->filter(fn (NotificationLogItem $item) => $item->channel === 'mail'
+            && $recipients->has($item->notifiable_id)
+        );
+
+        if ($mailItems->isEmpty()) {
+            return [];
+        }
+
+        $emails = $mailItems->map(fn ($item) => $recipients->get($item->notifiable_id)->email)->unique()->values();
+        $times = $mailItems->map(fn ($item) => $item->created_at->format('Y-m-d H:i:s'))->unique()->values();
+
+        try {
+            $entries = DB::table('telescope_entries_tags')
+                ->join('telescope_entries', 'telescope_entries.uuid', '=', 'telescope_entries_tags.entry_uuid')
+                ->where('telescope_entries.type', 'mail')
+                ->whereIn('telescope_entries_tags.tag', $emails)
+                ->whereIn('telescope_entries.created_at', $times)
+                ->get(['telescope_entries.uuid', 'telescope_entries.created_at', 'telescope_entries_tags.tag']);
+        } catch (\Throwable $e) {
+            // Telescope's tables may not exist wherever this is running. A
+            // missing link is not worth failing the screen over.
+            return [];
+        }
+
+        $byEmailAndTime = $entries->keyBy(
+            fn ($entry) => $entry->tag.'|'.Carbon::parse($entry->created_at)->format('Y-m-d H:i:s')
+        );
+
+        return $mailItems->mapWithKeys(function (NotificationLogItem $item) use ($recipients, $byEmailAndTime) {
+            $key = $recipients->get($item->notifiable_id)->email.'|'.$item->created_at->format('Y-m-d H:i:s');
+            $entry = $byEmailAndTime->get($key);
+
+            return [$item->id => $entry ? url('/telescope/mail/'.$entry->uuid) : null];
+        })->filter()->all();
     }
 }
