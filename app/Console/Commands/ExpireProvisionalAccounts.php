@@ -22,6 +22,13 @@ class ExpireProvisionalAccounts extends Command
         // Provisional accounts: created via email inbound (have an InboundEmailLog entry),
         // force_password_reset still true (haven't logged in and changed password),
         // and last_login_at is null (never logged in at all).
+        //
+        // The InboundEmailLog condition deliberately excludes accounts built
+        // through the admin panel, which never write one. A mailbox account is
+        // created by a stranger emailing in, so an unclaimed one is abandoned.
+        // An admin-built page is one a person made on purpose for an artist
+        // they are onboarding, and deleting it would destroy that work.
+        // Pinned by ExpireProvisionalAccountsTest.
         $expired = User::where('force_password_reset', true)
             ->whereNull('last_login_at')
             ->where('created_at', '<', $cutoff)
