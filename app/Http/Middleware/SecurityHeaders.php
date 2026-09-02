@@ -15,8 +15,10 @@ class SecurityHeaders
     {
         $response = $next($request);
 
-        // Skip strict CSP for dashboards that need JS/CSS to render
-        if ($request->is('horizon', 'horizon/*', 'mailbook', 'mailbook/*')) {
+        // Skip strict CSP for dashboards that need JS/CSS to render.
+        // Telescope inlines its own styles and script, so default-src 'none'
+        // blocks every one of them and the dashboard renders as bare HTML.
+        if ($request->is('horizon', 'horizon/*', 'mailbook', 'mailbook/*', 'telescope', 'telescope/*')) {
             return $response;
         }
 
