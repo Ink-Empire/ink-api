@@ -1225,6 +1225,10 @@ class StudioController extends Controller
     {
         $request->validate([
             'name' => 'required|string|max:255',
+            // "lat,lng" from the Places picker. A location saved without these
+            // leaves the studio out of proximity search, which reads the
+            // coordinates rather than the string.
+            'location_lat_long' => ['nullable', 'string', 'max:64', 'regex:/^-?\d{1,3}(\.\d+)?,\s*-?\d{1,3}(\.\d+)?$/'],
         ]);
 
         $studio = Studio::create([
@@ -1233,6 +1237,7 @@ class StudioController extends Controller
             'email' => $request->input('email'),
             'phone' => $request->input('phone'),
             'location' => $request->input('location', ''),
+            'location_lat_long' => $request->input('location_lat_long'),
             'about' => $request->input('about'),
             'owner_id' => $request->input('owner_id'),
         ]);
