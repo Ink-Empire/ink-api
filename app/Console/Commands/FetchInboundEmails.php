@@ -2,19 +2,12 @@
 
 namespace App\Console\Commands;
 
-use App\Enums\UserTypes;
-use App\Models\BulkUpload;
-use App\Models\BulkUploadItem;
 use App\Models\InboundEmailLog;
 use App\Models\User;
-use App\Notifications\InboundEmailReceiptNotification;
-use App\Services\ImageService;
+use App\Services\ArtistOnboardingService;
 use App\Services\SlackService;
-use Illuminate\Auth\Events\Registered;
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Str;
 
 class FetchInboundEmails extends Command
 {
@@ -23,11 +16,11 @@ class FetchInboundEmails extends Command
 
     protected $description = 'Poll the inbound IMAP mailbox and process image attachments into artist portfolios';
 
-    private ImageService $imageService;
+    private ArtistOnboardingService $onboarding;
 
-    public function handle(ImageService $imageService): int
+    public function handle(ArtistOnboardingService $onboarding): int
     {
-        $this->imageService = $imageService;
+        $this->onboarding = $onboarding;
 
         $host     = config('services.inbound_imap.host');
         $port     = config('services.inbound_imap.port', 993);
@@ -162,58 +155,18 @@ class FetchInboundEmails extends Command
         }
 
         try {
-            $isNewAccount = false;
-            $tempPassword = null;
-            $user = User::where('email', $senderEmail)->first();
+            $existed = User::where('email', $senderEmail)->exists();
 
-            if (!$user) {
-                [$user, $tempPassword] = $this->createProvisionalArtist($senderEmail, $senderName);
-                $isNewAccount = true;
+            [$user, $bulkUpload, $processed, $isNewAccount] = $this->onboarding->onboard(
+                $senderEmail,
+                $senderName,
+                $imageAttachments,
+                'email'
+            );
+
+            if (! $existed && $isNewAccount) {
                 $this->line("  Created provisional account for {$senderEmail}");
                 app(SlackService::class)->notifyEmailInboundSignup($user, $imageCount);
-            }
-
-            $bulkUpload = BulkUpload::create([
-                'artist_id'    => $user->id,
-                'source'       => 'email',
-                'status'       => 'processing',
-                'total_images' => $imageCount,
-            ]);
-
-            $processed = 0;
-
-            foreach ($imageAttachments as $index => $attachment) {
-                try {
-                    $ext = $this->extensionFromMime($attachment['mime']);
-                    $baseFilename = "tattoo_{$user->id}_" . now()->format('YmdHis') . "_{$index}_" . Str::random(8) . ".{$ext}";
-
-                    $image = $this->imageService->processImage($attachment['content'], $baseFilename);
-
-                    BulkUploadItem::create([
-                        'bulk_upload_id'  => $bulkUpload->id,
-                        'image_id'        => $image->id,
-                        'zip_path'        => $attachment['filename'] ?? $baseFilename,
-                        'file_size_bytes' => $attachment['size'] ?? null,
-                        'is_cataloged'    => true,
-                        'is_processed'    => true,
-                        'sort_order'      => $index,
-                    ]);
-
-                    $processed++;
-                } catch (\Throwable $e) {
-                    Log::error('FetchInboundEmails: failed to store attachment', [
-                        'user_id'  => $user->id,
-                        'filename' => $attachment['filename'] ?? 'unknown',
-                        'error'    => $e->getMessage(),
-                    ]);
-                }
-            }
-
-            $bulkUpload->update(['status' => $processed > 0 ? 'ready' : 'failed']);
-            $bulkUpload->updateCounts();
-
-            if ($processed > 0) {
-                $user->notify(new InboundEmailReceiptNotification($bulkUpload, $processed, $isNewAccount, $tempPassword));
             }
 
             $log->update([
@@ -329,56 +282,4 @@ class FetchInboundEmails extends Command
         imap_setflag_full($connection, (string) $msgNum, '\\Seen');
     }
 
-    private function createProvisionalArtist(string $email, string $name): array
-    {
-        $tempPassword = strtoupper(Str::random(4)) . '-' . strtoupper(Str::random(4)) . '-' . rand(1000, 9999);
-        $username = $this->generateUniqueUsername($email);
-
-        $user = User::create([
-            'name'                        => $name,
-            'email'                       => $email,
-            'username'                    => $username,
-            'slug'                        => $username,
-            'password'                    => Hash::make($tempPassword),
-            'type_id'                     => UserTypes::ARTIST_TYPE_ID,
-            'location'                    => '',
-            'has_accepted_toc'            => false,
-            'has_accepted_privacy_policy' => false,
-            'force_password_reset'        => true,
-        ]);
-
-        // Mark verified before firing Registered so SendEmailVerificationNotification skips.
-        // email_verified_at may not be in $fillable, so set it explicitly here.
-        $user->markEmailAsVerified();
-
-        event(new Registered($user));
-
-        return [$user, $tempPassword];
-    }
-
-    private function generateUniqueUsername(string $email): string
-    {
-        $prefix   = explode('@', $email)[0];
-        $base     = strtolower(preg_replace('/[^a-zA-Z0-9._]/', '', $prefix));
-        $base     = $base ?: 'artist';
-        $base     = substr($base, 0, 28);
-        $username = $base;
-        $counter  = 1;
-
-        while (User::where('username', $username)->orWhere('slug', $username)->exists()) {
-            $username = $base . $counter++;
-        }
-
-        return $username;
-    }
-
-    private function extensionFromMime(string $mimeType): string
-    {
-        return match ($mimeType) {
-            'image/png'  => 'png',
-            'image/gif'  => 'gif',
-            'image/webp' => 'webp',
-            default      => 'jpg',
-        };
-    }
 }

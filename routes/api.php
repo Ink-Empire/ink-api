@@ -2,6 +2,7 @@
 
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Admin\ArtistOnboardingController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
@@ -297,6 +298,9 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('blocked-terms/{id}', [BlockedTermController::class, 'adminShow']);
     Route::put('blocked-terms/{id}', [BlockedTermController::class, 'adminUpdate']);
     Route::delete('blocked-terms/{id}', [BlockedTermController::class, 'adminDestroy']);
+
+    // Build an artist page from material they sent in
+    Route::post('artists/onboard', [ArtistOnboardingController::class, 'store']);
 
     // Elastic operations
     Route::post('elastic/rebuild', [\App\Http\Controllers\ElasticController::class, 'rebuild']);
