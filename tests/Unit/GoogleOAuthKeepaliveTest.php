@@ -53,6 +53,24 @@ class GoogleOAuthKeepaliveTest extends TestCase
         $this->artisan('google:keepalive')->assertExitCode(0);
     }
 
+    /**
+     * Production pinned connection 3, which was later deleted, and the command
+     * returned null without ever trying the general query. The keepalive was
+     * switched off by a stale environment variable while a healthy connection
+     * sat there unused, and the only sign was a weekly error.
+     */
+    public function test_it_chooses_another_when_the_pinned_connection_is_gone(): void
+    {
+        $usable = $this->connection();
+
+        config(['services.google.keepalive_connection_id' => $usable->id + 1000]);
+
+        $this->expectRefreshOf($usable->id);
+        $this->slack->shouldNotReceive('notifyOps');
+
+        $this->artisan('google:keepalive')->assertExitCode(0);
+    }
+
     public function test_it_falls_back_to_the_most_recent_usable_connection(): void
     {
         $this->connection(['created_at' => now()->subMonth()]);
