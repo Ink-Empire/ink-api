@@ -101,6 +101,14 @@ class StyleService
                 }
 
             } catch (\Throwable $e) {
+                // An exhausted account fails every image for the same reason,
+                // so it is reported once rather than per image.
+                if (OpenAiQuota::isExhausted($e)) {
+                    OpenAiQuota::report($e, 'style suggestions');
+
+                    continue;
+                }
+
                 Log::error("Failed to analyze image for style suggestions", [
                     'url' => $imageUrl,
                     'error' => $e->getMessage(),
