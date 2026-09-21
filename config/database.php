@@ -128,6 +128,12 @@ return [
             'prefix' => env('REDIS_PREFIX', Str::slug(env('APP_NAME', 'laravel'), '_').'_database_'),
         ],
 
+        // Predis gives up on a read after 60 seconds by default, which a
+        // Horizon worker exceeds just by sitting idle between jobs. The next
+        // read then throws "Error while reading line from the server", the
+        // worker dies and Horizon restarts it. 0 disables the deadline, which
+        // is what long-lived workers and blocking reads need. Ignored by
+        // phpredis, which uses its own read_timeout.
         'default' => [
             'url' => env('REDIS_URL'),
             'host' => env('REDIS_HOST', '127.0.0.1'),
@@ -135,6 +141,7 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_DB', '0'),
+            'read_write_timeout' => env('REDIS_READ_WRITE_TIMEOUT', 0),
         ],
 
         'cache' => [
@@ -144,6 +151,7 @@ return [
             'password' => env('REDIS_PASSWORD'),
             'port' => env('REDIS_PORT', '6379'),
             'database' => env('REDIS_CACHE_DB', '1'),
+            'read_write_timeout' => env('REDIS_READ_WRITE_TIMEOUT', 0),
         ],
 
     ],

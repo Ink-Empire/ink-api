@@ -56,6 +56,9 @@ return [
         'username'   => env('INBOUND_IMAP_USERNAME'),
         'password'   => env('INBOUND_IMAP_PASSWORD'),
         'encryption' => env('INBOUND_IMAP_ENCRYPTION', 'ssl'),
+        // How long the mailbox has to stay unreachable before ops is told.
+        // The command runs every three minutes, so this is ten failed runs.
+        'outage_alert_minutes' => env('INBOUND_IMAP_OUTAGE_ALERT_MINUTES', 30),
     ],
 
 ];

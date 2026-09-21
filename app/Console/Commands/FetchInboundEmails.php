@@ -6,7 +6,9 @@ use App\Models\InboundEmailLog;
 use App\Models\User;
 use App\Services\ArtistOnboardingService;
 use App\Services\SlackService;
+use Carbon\Carbon;
 use Illuminate\Console\Command;
+use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Log;
 
 class FetchInboundEmails extends Command
@@ -15,6 +17,10 @@ class FetchInboundEmails extends Command
                             {--dry-run : Log what would be processed without saving anything}';
 
     protected $description = 'Poll the inbound IMAP mailbox and process image attachments into artist portfolios';
+
+    private const OUTAGE_SINCE_KEY = 'inbound_email:unreachable_since';
+
+    private const OUTAGE_ALERTED_KEY = 'inbound_email:outage_alerted';
 
     private ArtistOnboardingService $onboarding;
 
@@ -49,20 +55,31 @@ class FetchInboundEmails extends Command
         $connection = @imap_open($mailbox, $username, $password, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
 
         if (!$connection) {
-            $error = imap_last_error();
-            $this->error("Could not connect to IMAP: {$error}");
-            Log::error('FetchInboundEmails: IMAP connection failed', ['error' => $error]);
-
-            // imap_open queues its errors internally and PHP re-emits them as
+            // c-client queues every error it hit on the way down, and falls
+            // back to other ports and auth methods before giving up.
+            // imap_last_error() returns only the final entry, which is usually
+            // the fallback failing rather than the reason the first attempt
+            // did, so the whole queue is recorded.
+            //
+            // Draining matters for its own sake too: PHP re-emits these as
             // warnings at shutdown, where the @ suppression no longer applies
-            // and Laravel turns them into exceptions. Draining the queue keeps
-            // an unreachable mailbox to the log line above rather than a
-            // reported error every time the schedule runs.
-            imap_errors();
-            imap_alerts();
+            // and Laravel turns them into exceptions.
+            $errors = imap_errors() ?: [];
+            $alerts = imap_alerts() ?: [];
+            $error = $errors ? end($errors) : 'Unknown IMAP error';
+
+            $this->error("Could not connect to IMAP: {$error}");
+            Log::error('FetchInboundEmails: IMAP connection failed', [
+                'error' => $error,
+                'all_errors' => $errors,
+                'alerts' => $alerts,
+            ]);
+            $this->reportOutage((string) $error);
 
             return Command::FAILURE;
         }
+
+        $this->reportRecovery();
 
         try {
             $this->processMailbox($connection);
@@ -73,6 +90,80 @@ class FetchInboundEmails extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Tells the ops channel once when the mailbox has been unreachable for
+     * long enough to mean something, then stays quiet until it recovers.
+     *
+     * An unreachable mailbox is silent by nature: artists email their work in
+     * and hear nothing back, and the only trace is a log line. This ran broken
+     * for 26 days before anyone noticed. Alerting on the first failed run
+     * instead would post every three minutes, which is the same as not
+     * alerting at all.
+     */
+    private function reportOutage(string $error): void
+    {
+        $threshold = (int) config('services.inbound_imap.outage_alert_minutes', 30);
+
+        try {
+            $failingSince = Cache::get(self::OUTAGE_SINCE_KEY);
+
+            if (! $failingSince) {
+                Cache::put(self::OUTAGE_SINCE_KEY, now()->toIso8601String(), now()->addDay());
+
+                return;
+            }
+
+            if (Cache::get(self::OUTAGE_ALERTED_KEY)) {
+                return;
+            }
+
+            $since = Carbon::parse($failingSince);
+
+            if ($since->diffInMinutes(now()) < $threshold) {
+                return;
+            }
+
+            Cache::put(self::OUTAGE_ALERTED_KEY, true, now()->addDays(7));
+
+            app(SlackService::class)->notifyOps(
+                'Inbound mailbox unreachable',
+                "The setup mailbox has been unreachable since {$since->toDayDateTimeString()}.\n"
+                ."Artists emailing their work in are getting no response, and nothing is being processed.\n"
+                ."*Error:* {$error}"
+            );
+        } catch (\Throwable $e) {
+            // The alert is a courtesy. A cache or webhook problem must not turn
+            // an unreachable mailbox into a second failure on top of it.
+            Log::warning('FetchInboundEmails: could not report the outage', ['error' => $e->getMessage()]);
+        }
+    }
+
+    /**
+     * Clears the outage state, and says so if an alert went out for it.
+     */
+    private function reportRecovery(): void
+    {
+        try {
+            if (! Cache::get(self::OUTAGE_SINCE_KEY)) {
+                return;
+            }
+
+            $alerted = Cache::get(self::OUTAGE_ALERTED_KEY);
+
+            Cache::forget(self::OUTAGE_SINCE_KEY);
+            Cache::forget(self::OUTAGE_ALERTED_KEY);
+
+            if ($alerted) {
+                app(SlackService::class)->notifyOps(
+                    'Inbound mailbox is back',
+                    'The setup mailbox is reachable again and queued messages are being processed.'
+                );
+            }
+        } catch (\Throwable $e) {
+            Log::warning('FetchInboundEmails: could not clear the outage state', ['error' => $e->getMessage()]);
+        }
     }
 
     private function processMailbox($connection): void
