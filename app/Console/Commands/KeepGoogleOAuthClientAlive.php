@@ -109,9 +109,23 @@ class KeepGoogleOAuthClientAlive extends Command
         $designatedId = config('services.google.keepalive_connection_id');
 
         if ($designatedId) {
-            return CalendarConnection::whereKey($designatedId)
+            $designated = CalendarConnection::whereKey($designatedId)
                 ->whereNotNull('refresh_token')
                 ->first();
+
+            if ($designated) {
+                return $designated;
+            }
+
+            // The pinned connection can be deleted or replaced while the env
+            // var still points at it, and this used to return null and stop
+            // there. That switches the keepalive off silently for a job whose
+            // whole purpose is stopping Google from deleting the OAuth client,
+            // so an unusable pin now falls through to the general query and
+            // says why.
+            Log::warning('google:keepalive: the pinned connection no longer exists, choosing another', [
+                'keepalive_connection_id' => $designatedId,
+            ]);
         }
 
         // Two connections created in the same second would otherwise leave the
