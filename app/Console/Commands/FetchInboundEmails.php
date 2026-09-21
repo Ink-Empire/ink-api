@@ -55,18 +55,26 @@ class FetchInboundEmails extends Command
         $connection = @imap_open($mailbox, $username, $password, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
 
         if (!$connection) {
-            $error = imap_last_error();
-            $this->error("Could not connect to IMAP: {$error}");
-            Log::error('FetchInboundEmails: IMAP connection failed', ['error' => $error]);
-            $this->reportOutage((string) $error);
-
-            // imap_open queues its errors internally and PHP re-emits them as
+            // c-client queues every error it hit on the way down, and falls
+            // back to other ports and auth methods before giving up.
+            // imap_last_error() returns only the final entry, which is usually
+            // the fallback failing rather than the reason the first attempt
+            // did, so the whole queue is recorded.
+            //
+            // Draining matters for its own sake too: PHP re-emits these as
             // warnings at shutdown, where the @ suppression no longer applies
-            // and Laravel turns them into exceptions. Draining the queue keeps
-            // an unreachable mailbox to the log line above rather than a
-            // reported error every time the schedule runs.
-            imap_errors();
-            imap_alerts();
+            // and Laravel turns them into exceptions.
+            $errors = imap_errors() ?: [];
+            $alerts = imap_alerts() ?: [];
+            $error = $errors ? end($errors) : 'Unknown IMAP error';
+
+            $this->error("Could not connect to IMAP: {$error}");
+            Log::error('FetchInboundEmails: IMAP connection failed', [
+                'error' => $error,
+                'all_errors' => $errors,
+                'alerts' => $alerts,
+            ]);
+            $this->reportOutage((string) $error);
 
             return Command::FAILURE;
         }
