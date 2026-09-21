@@ -127,6 +127,14 @@ class TagService
             return $tags;
 
         } catch (\Throwable $e) {
+            // An exhausted account fails every image in a batch for the same
+            // reason, so it is reported once rather than per image.
+            if (OpenAiQuota::isExhausted($e)) {
+                OpenAiQuota::report($e, 'tag suggestions');
+
+                return [];
+            }
+
             Log::error("Failed to analyze image ID: {$image->id}", [
                 'error' => $e->getMessage()
             ]);
