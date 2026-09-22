@@ -22,6 +22,12 @@ class FetchInboundEmails extends Command
 
     private const OUTAGE_ALERTED_KEY = 'inbound_email:outage_alerted';
 
+    /** @var array<int, string> */
+    private array $lastErrors = [];
+
+    /** @var array<int, string> */
+    private array $lastAlerts = [];
+
     private ArtistOnboardingService $onboarding;
 
     public function handle(ArtistOnboardingService $onboarding): int
@@ -52,27 +58,17 @@ class FetchInboundEmails extends Command
             return Command::FAILURE;
         }
 
-        $connection = @imap_open($mailbox, $username, $password, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
+        $connection = $this->connect($mailbox, $username, $password);
 
         if (!$connection) {
-            // c-client queues every error it hit on the way down, and falls
-            // back to other ports and auth methods before giving up.
-            // imap_last_error() returns only the final entry, which is usually
-            // the fallback failing rather than the reason the first attempt
-            // did, so the whole queue is recorded.
-            //
-            // Draining matters for its own sake too: PHP re-emits these as
-            // warnings at shutdown, where the @ suppression no longer applies
-            // and Laravel turns them into exceptions.
-            $errors = imap_errors() ?: [];
-            $alerts = imap_alerts() ?: [];
+            $errors = $this->lastErrors;
             $error = $errors ? end($errors) : 'Unknown IMAP error';
 
             $this->error("Could not connect to IMAP: {$error}");
             Log::error('FetchInboundEmails: IMAP connection failed', [
                 'error' => $error,
                 'all_errors' => $errors,
-                'alerts' => $alerts,
+                'alerts' => $this->lastAlerts,
             ]);
             $this->reportOutage((string) $error);
 
@@ -90,6 +86,68 @@ class FetchInboundEmails extends Command
         }
 
         return Command::SUCCESS;
+    }
+
+    /**
+     * Opens the mailbox, trying more than once before calling it a failure.
+     *
+     * Exactly one run an hour, the one at the top of the hour, has its
+     * connection refused, while the nineteen either side of it connect fine
+     * from the same host with the same credentials. The cause is not known.
+     * What is known is that the refusal does not survive a second attempt
+     * moments later, and that a mailbox which is genuinely unreachable fails
+     * both, so retrying cannot hide a real outage.
+     *
+     * Returns the connection, or false with the errors from the final attempt
+     * left on the command for the caller to report.
+     */
+    private function connect(string $mailbox, string $username, string $password)
+    {
+        $attempts = max(1, (int) config('services.inbound_imap.connect_attempts', 2));
+        $pause = max(0, (int) config('services.inbound_imap.retry_seconds', 5));
+
+        for ($attempt = 1; $attempt <= $attempts; $attempt++) {
+            $connection = $this->openMailbox($mailbox, $username, $password);
+
+            // c-client queues every error it hit on the way down, and
+            // imap_last_error() returns only the final entry. Draining also
+            // matters for its own sake: PHP re-emits these as warnings at
+            // shutdown, where the @ suppression no longer applies and Laravel
+            // turns them into exceptions. Drained per attempt so a reported
+            // failure carries only its own errors.
+            $this->lastErrors = imap_errors() ?: [];
+            $this->lastAlerts = imap_alerts() ?: [];
+
+            if ($connection) {
+                if ($attempt > 1) {
+                    Log::info('FetchInboundEmails: the mailbox connected on a retry', [
+                        'attempt' => $attempt,
+                    ]);
+                }
+
+                return $connection;
+            }
+
+            if ($attempt < $attempts) {
+                Log::debug('FetchInboundEmails: mailbox refused the connection, retrying', [
+                    'attempt' => $attempt,
+                    'errors' => $this->lastErrors,
+                ]);
+
+                sleep($pause);
+            }
+        }
+
+        return false;
+    }
+
+    /**
+     * The bare connection attempt, separated so a test can drive the retry
+     * without reaching a real mail server.
+     */
+    protected function openMailbox(string $mailbox, string $username, string $password)
+    {
+        return @imap_open($mailbox, $username, $password, 0, 1, ['DISABLE_AUTHENTICATOR' => 'GSSAPI']);
     }
 
     /**
