@@ -59,6 +59,12 @@ return [
         // How long the mailbox has to stay unreachable before ops is told.
         // The command runs every three minutes, so this is ten failed runs.
         'outage_alert_minutes' => env('INBOUND_IMAP_OUTAGE_ALERT_MINUTES', 30),
+        // The run at the top of each hour has its connection refused while the
+        // ones either side of it succeed. A second attempt clears it, and a
+        // mailbox that is genuinely down fails both, so this cannot hide an
+        // outage.
+        'connect_attempts' => env('INBOUND_IMAP_CONNECT_ATTEMPTS', 2),
+        'retry_seconds' => env('INBOUND_IMAP_RETRY_SECONDS', 5),
     ],
 
 ];
