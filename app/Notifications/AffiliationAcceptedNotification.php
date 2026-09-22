@@ -42,7 +42,8 @@ class AffiliationAcceptedNotification extends Notification
         if ($this->acceptedByType === 'artist') {
             // Artist accepted studio's invitation - notify studio owner
             $subject = "{$accepterName} has joined {$studioName}!";
-            $dashboardUrl = $frontendUrl . '/dashboard/studio/artists';
+            // /dashboard is a flat page, so /dashboard/studio/artists 404s.
+            $dashboardUrl = $frontendUrl . '/dashboard';
             $message = "{$accepterName} has accepted your invitation to join {$studioName}. They are now a verified member of your studio.";
         } else {
             // Studio approved artist's request - notify artist

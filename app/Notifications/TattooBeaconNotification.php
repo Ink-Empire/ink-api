@@ -35,7 +35,9 @@ class TattooBeaconNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:4000');
-        $leadsUrl = $frontendUrl . '/dashboard/leads';
+        // /dashboard is a flat page, so /dashboard/leads 404s, and there is no
+        // dedicated leads route to send people to instead.
+        $leadsUrl = $frontendUrl . '/dashboard';
 
         $clientName = $this->client->name ?? $this->client->username;
         $location = $this->client->location ?? 'your area';

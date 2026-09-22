@@ -32,7 +32,10 @@ class ArtistJoinRequestNotification extends Notification implements ShouldQueue
     public function toMail(object $notifiable): MailMessage
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
-        $dashboardUrl = $frontendUrl . '/dashboard/studio/artists';
+        // /dashboard is a flat page, so /dashboard/studio/artists 404s. The
+        // studio tab is component state rather than a route, so there is
+        // nothing more specific to link to than the dashboard itself.
+        $dashboardUrl = $frontendUrl . '/dashboard';
 
         $artistName = $this->artist->name ?? 'An artist';
         $studioName = $this->studio->name ?? 'your studio';

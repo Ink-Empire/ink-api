@@ -54,7 +54,8 @@ class BookingRequestNotification extends Notification
         \Log::info('BookingRequestNotification::toMail() called');
 
         $frontendUrl = config('app.frontend_url', 'http://localhost:3000');
-        $inboxUrl = $frontendUrl . '/dashboard/inbox';
+        // The inbox is its own page; /dashboard/inbox 404s.
+        $inboxUrl = $frontendUrl . '/inbox';
 
         $clientName = $this->appointment->client?->name ?? 'A client';
         \Log::info('Building email for client: ' . $clientName);
