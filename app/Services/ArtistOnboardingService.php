@@ -65,7 +65,14 @@ class ArtistOnboardingService
         // Marked verified before Registered fires so the verification email is
         // skipped. Whoever sent the photos proved the address works, and the
         // artist gets one email rather than two.
+        //
+        // is_email_verified is a separate column from email_verified_at, and
+        // markEmailAsVerified only sets the latter. The app gates on the
+        // column, so without this every artist onboarded this way was stuck
+        // being asked to verify an address that was already verified, with no
+        // way through.
         $user->markEmailAsVerified();
+        $user->forceFill(['is_email_verified' => true])->save();
 
         event(new Registered($user));
 
