@@ -28,7 +28,10 @@ class InboundEmailReceiptNotification extends Notification
     public function toMail(object $notifiable): MailMessage
     {
         $frontendUrl = config('app.frontend_url', 'http://localhost:4000');
-        $reviewUrl = $frontendUrl . '/dashboard/uploads/' . $this->bulkUpload->id;
+        // /dashboard is a flat page with no nested routes, so the old
+        // /dashboard/uploads/{id} sent every artist to a 404 on the one link
+        // that matters in this email. The review screen is bulk-upload/[id].
+        $reviewUrl = $frontendUrl . '/bulk-upload/' . $this->bulkUpload->id;
 
         $subject = $this->isNewAccount
             ? "Your photos are ready — activate your InkedIn account"
