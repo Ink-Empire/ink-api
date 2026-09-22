@@ -34,6 +34,9 @@ class ArtistOnboardingServiceTest extends TestCase
         $this->assertSame(UserTypes::ARTIST_TYPE_ID, $artist->type_id);
         $this->assertTrue($artist->force_password_reset);
         $this->assertNotNull($artist->email_verified_at);
+        // Both, not just email_verified_at. The app gates on the column, so an
+        // artist with only the timestamp set is stuck on the verify screen.
+        $this->assertTrue((bool) $artist->fresh()->is_email_verified);
         $this->assertFalse((bool) $artist->has_accepted_toc);
         $this->assertNotNull($tempPassword);
     }
