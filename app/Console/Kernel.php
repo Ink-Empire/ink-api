@@ -30,6 +30,14 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // Signup addresses are kept for 90 days, long enough to answer a
+        // report that lands weeks after the accounts were created, then
+        // cleared. See PruneSignupIps::RETENTION_DAYS.
+        $schedule->command('signups:prune-ips')
+            ->dailyAt('03:00')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // Refresh calendar webhooks daily (before they expire)
         $schedule->job(new RefreshCalendarWebhooks)
             ->daily()

@@ -61,6 +61,8 @@ class User extends Authenticatable implements MustVerifyEmail
         'has_accepted_toc',
         'has_accepted_privacy_policy',
         'signup_platform',
+        'signup_ip',
+        'signup_user_agent',
         'force_password_reset',
     ];
 

@@ -17,6 +17,7 @@ class ArtisanController extends Controller
         'data:clean',
         'elastic:reset',
         'elastic:migrate',
+        'signups:prune-ips',
     ];
 
     /**
