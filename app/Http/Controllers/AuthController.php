@@ -62,6 +62,8 @@ class AuthController extends Controller
 
         $hashedPassword = Hash::make($request->password);
 
+        $signupMetadata = $this->userService->signupMetadata($request);
+
         $user = User::create([
             'name' => $request->name,
             'email' => $request->email,
@@ -78,6 +80,8 @@ class AuthController extends Controller
             'has_accepted_toc' => true,
             'has_accepted_privacy_policy' => true,
             'signup_platform' => $request->signup_platform ?? null,
+            'signup_ip' => $signupMetadata['signup_ip'],
+            'signup_user_agent' => $signupMetadata['signup_user_agent'],
             // Sent by the client from the browser or device. Appointment times
             // are stored as the artist typed them, so without this their
             // bookings sync to Google in UTC and land hours out.

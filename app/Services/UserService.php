@@ -12,6 +12,7 @@ use App\Models\User;
 use App\Models\UserTag;
 use App\Models\UserTagCategory;
 use App\Util\ModelLookup;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Str;
 
@@ -26,6 +27,30 @@ class UserService
         'tattoos' => Tattoo::class,
         'artists' => User::class
     ];
+
+    /**
+     * Request metadata recorded against a newly registered account.
+     *
+     * Registration stored nothing about where a signup came from, so two
+     * accounts created minutes apart could not be connected afterwards. The
+     * nginx access log was no help either, since no per-site access_log
+     * directive is configured.
+     *
+     * Accurate only while nothing proxies the API. Behind a CDN or load
+     * balancer every row would be that proxy's edge address, and identical,
+     * unless TrustProxies is given the proxy's actual ranges.
+     */
+    public function signupMetadata(Request $request): array
+    {
+        $userAgent = $request->userAgent();
+
+        return [
+            'signup_ip' => $request->ip(),
+            // The header is attacker-controlled and unbounded below nginx's
+            // own limit, so it is capped rather than trusted to be sane.
+            'signup_user_agent' => $userAgent ? Str::limit($userAgent, 1000, '') : null,
+        ];
+    }
 
     /**
      * Create a placeholder client account for someone an artist is booking

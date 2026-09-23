@@ -229,6 +229,61 @@ Work through in this order.
     posting. Changing which courts hear a dispute is the kind of change users
     are usually told about directly.
 
+## Signup IP address
+
+Not yet reflected in the live policy. Registration now records the client
+address and user agent against the account, kept for ninety days and then
+cleared. See `docs/signup-metadata.md` for what is stored and why.
+
+The existing document is closer to this than expected but does not cover it.
+Section 01 already lists IP address, framed only as a source of approximate
+location, and lists device information under Usage Data. Section 02 already
+claims security and integrity as a purpose. What is missing is that the address
+is now stored against the account rather than used in passing.
+
+### Section 01, Information We Collect
+
+The Location Data row explains an IP address as a way of guessing where
+somebody is. That is no longer the only reason one is held. Add a row:
+
+> **Security Information.** The network address and browser or device
+> identifier your device sends when you create an account. We keep this for
+> ninety days so that we can investigate fraudulent or abusive signups, after
+> which the address is deleted.
+
+### Section 02, How We Use Your Information
+
+The security sentence already present is broad enough to cover it, but the
+specific use is worth naming, since the data is now retained rather than
+transient. Suggested addition to the second paragraph:
+
+> We record the network address used to create an account so that we can
+> identify accounts created in bulk or used to abuse the Platform.
+
+### Section 06, Data Retention
+
+The section promises removal within 30 days of account deletion, which this
+satisfies, since the columns live on the account row and are deleted with it.
+What it does not say is that this particular field expires on its own while the
+account is still active. Suggested addition:
+
+> Some information expires sooner than your account. The network address
+> recorded when you created your account is deleted after ninety days.
+
+### Worth deciding
+
+- Whether this counts as a material change under section 10, which promises
+  notice through the platform or by email. It is a new retained identifier, but
+  a narrow one with a short life and a security purpose. Against that, it is
+  exactly the sort of thing a privacy-minded user would want to have been told.
+- Whether the same retention position should be applied to `profile_views` and
+  `search_impressions`, which have kept `ip_address` indefinitely since
+  December 2025 and January 2026. Those tables are not covered by any of the
+  wording above, and a ninety day promise about signup addresses sits awkwardly
+  beside an indefinite one nobody has written down.
+
+---
+
 ---
 
 ## Sources
@@ -248,6 +303,10 @@ Every claim above traces to code, so a reviewer can verify rather than trust.
 | Google Places is in use | `config/services.php`, `places_api_key` |
 | Images are stored on S3 and served via imgix | `config/filesystems.php` |
 | Sentry does not send PII by default | `config/sentry.php`, `send_default_pii` defaults to false |
+| Signup address and user agent are stored | `UserService::signupMetadata()`, written by `AuthController::register` |
+| Signup address is cleared after ninety days | `PruneSignupIps::RETENTION_DAYS`, scheduled daily in `app/Console/Kernel.php` |
+| Both are deleted with the account | `User` has no `SoftDeletes`; `UserController::performUserDeletion()` issues a real delete |
+| Neither appears in a public response | `UserResource` and `SelfUserResource` are explicit allowlists |
 
 ---
 
