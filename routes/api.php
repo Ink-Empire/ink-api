@@ -9,6 +9,7 @@ use App\Http\Controllers\Auth\PasswordResetLinkController;
 use App\Http\Controllers\Auth\NewPasswordController;
 use App\Http\Controllers\Auth\VerifyEmailController;
 use App\Http\Controllers\Auth\EmailVerificationNotificationController;
+use App\Http\Controllers\Auth\EmailCorrectionController;
 use App\Http\Controllers\Auth\UpdatePasswordController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\StyleController;
@@ -98,6 +99,12 @@ Route::get('/verify-email/{id}/{hash}', VerifyEmailController::class)
     ->middleware(['signed', 'throttle:6,1'])
     ->name('verification.verify');
 Route::post('/email/verification-notification', [EmailVerificationNotificationController::class, 'store'])
+    ->middleware('throttle:6,1');
+
+// Recovery for an address mistyped at registration. Unauthenticated because
+// an unverified user cannot pass auth middleware; the old address and password
+// are the credential.
+Route::post('/email/correct', [EmailCorrectionController::class, 'update'])
     ->middleware('throttle:6,1');
 
 // Protected routes

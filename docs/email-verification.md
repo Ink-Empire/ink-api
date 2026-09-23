@@ -223,6 +223,98 @@ If a user attempts to login before verifying their email:
 }
 ```
 
+## Correcting a Mistyped Address
+
+A user who mistypes their address at registration is otherwise locked out with
+no self-serve recovery: `register()` has no confirmation step, the login 403
+path resends to the same wrong address, and every endpoint that could change
+the email sits behind auth middleware an unverified user cannot pass. Their
+only option was to register again, stranding the first attempt holding an
+email, username and slug nobody can reclaim.
+
+**Endpoint:** `POST /api/email/correct`
+
+Unauthenticated by necessity. The old address plus the password are the
+credential, which is what the user has in hand at the point they discover the
+problem: the login 403 screen already carries their email and they just typed
+their password.
+
+**Request:**
+```json
+{
+  "email": "john@exampel.com",
+  "password": "...",
+  "new_email": "john@example.com"
+}
+```
+
+**Response (200):**
+```json
+{
+  "message": "Email updated. Check your inbox for a new verification link.",
+  "verification": {
+    "email": "john@example.com",
+    "requires_verification": true
+  }
+}
+```
+
+**Behavior:**
+- `EmailCorrectionService` looks the account up by the old address and checks
+  the password with `Hash::check`
+- An unknown address and a wrong password return the same 422 message, so the
+  endpoint cannot be used to find out which addresses are registered
+- An account that has already verified is refused; it should change its email
+  from account settings instead
+- The new address passes `unique:users`, so it cannot collide with an existing
+  account
+- The address is written and `VerifyEmailNotification` is re-sent
+
+**Link invalidation:** the signed verification URL carries
+`sha1($user->getEmailForVerification())` as its hash and `VerifyEmailController`
+compares it against the address currently on the record. Writing a new address
+is therefore what invalidates every link already mailed to the old one; those
+links now fail `hash_equals` and return 403. There is a test covering this,
+because nothing in the code says so out loud.
+
+**Rate limits:** three layers, since a successful call mails an address the
+caller chose.
+
+| Layer | Limit | Key |
+|-------|-------|-----|
+| Route middleware | 6 requests / minute | IP |
+| `CorrectEmailRequest` | 5 failed attempts / minute | old email + IP |
+| `EmailCorrectionService` | 3 successful changes / hour | user id |
+
+The middle limiter mirrors `LoginRequest::ensureIsNotRateLimited()`. It is
+cleared on success and hit on failure. The service limiter is the one that
+stops a caller with valid credentials using the endpoint as a slow relay.
+
+**Not done on purpose:**
+- The old address is not notified. It is unverified by definition and usually
+  belongs to a stranger or nobody, so a notice would be unsolicited mail about
+  an account that person has nothing to do with.
+- Existing tokens are not revoked. The caller proved the password, and the
+  React Native gate is polling `/users/me` with the `registration-upload`
+  token while it makes this call.
+
+### Known wrinkle: the two windows disagree
+
+The `registration-upload` token expires in 30 minutes. The verification link
+expires in 60. Worse, the 60 is not configured anywhere: `auth.verification.expire`
+is absent from `config/auth.php`, so the value comes from the hardcoded fallback
+in `VerifyEmailNotification::verificationUrl()`. A user can therefore still hold
+a valid verification link after the token that was supposed to accompany it has
+expired. This endpoint does not depend on either window, but the mismatch is
+still there for the rest of the flow.
+
+### Known wrinkle: the unverified-login resend is unthrottled
+
+`AuthController::login()` calls `sendEmailVerificationNotification()` on every
+attempt by an unverified user, with no limiter of its own. That path mails an
+attacker-chosen address on request, which is the same concern the new endpoint
+is carefully guarded against.
+
 ## Token Lifecycle
 
 | Stage | Token Name | Expiry | Purpose |
@@ -251,6 +343,11 @@ Both are set when the user verifies their email.
 |------|---------|
 | `app/Http/Controllers/AuthController.php` | Registration and login logic |
 | `app/Http/Controllers/Auth/VerifyEmailController.php` | Email verification handling |
+| `app/Http/Controllers/Auth/EmailCorrectionController.php` | Mistyped-address recovery endpoint |
+| `app/Http/Requests/Auth/CorrectEmailRequest.php` | Validation and failed-attempt throttle |
+| `app/Services/EmailCorrectionService.php` | Credential check, address write, send cap |
+| `app/Http/Resources/EmailVerificationResource.php` | Verification state for an unauthenticated caller |
+| `tests/Feature/Flows/EmailCorrectionTest.php` | Coverage for the recovery flow |
 | `app/Notifications/VerifyEmailNotification.php` | Verification email notification (queued) |
 | `app/Jobs/SendSlackNewUserNotification.php` | Slack notification for new signups (queued) |
 | `app/Observers/UserObserver.php` | Dispatches Slack notification on user creation |
@@ -265,6 +362,8 @@ Both are set when the user verifies their email.
 | `pages/register.tsx` | Registration flow |
 | `pages/login.tsx` | Login with verification check |
 | `pages/verify-email.tsx` | Verification status page |
+| `components/CorrectEmailForm.tsx` | Inline mistyped-address correction form |
+| `services/authService.ts` | `correctEmail()` |
 | `pages/dashboard.tsx` | Post-verification studio creation |
 | `contexts/AuthContext.tsx` | Auth state and login handler |
 
@@ -274,6 +373,9 @@ Both are set when the user verifies their email.
 |------|---------|
 | `app/screens/auth/RegisterScreen.tsx` | Multi-step registration flow |
 | `app/components/auth/VerifyEmailGate.tsx` | Polls for verification, auto-transitions |
+| `app/components/auth/CorrectEmailForm.tsx` | Mistyped-address correction form |
+| `app/screens/auth/VerifyEmailScreen.tsx` | Verification status screen |
+| `shared/api/client.ts` | `createAuthApi().correctEmail()` |
 | `app/contexts/AuthContext.tsx` | Auth state, register/refreshUser |
 | `App.tsx` | Routes to VerifyEmailGate when unverified |
 | `lib/api.ts` | API client with token storage |
