@@ -37,6 +37,9 @@ class AuthController extends Controller
         $request->validate([
             'name' => 'required|string|max:255',
             'email' => 'required|string|email|max:255|unique:users',
+            // Enforced only when the client sends it, so older app builds
+            // that predate the confirm field keep registering successfully.
+            'email_confirmation' => 'nullable|same:email',
             'password' => $this->passwordRules(),
             'username' => [
                 'required',
@@ -52,6 +55,8 @@ class AuthController extends Controller
             'has_accepted_privacy_policy' => 'required|accepted',
             'signup_platform' => 'nullable|string|in:web,ios,android',
             'timezone' => 'nullable|string|timezone',
+        ], [
+            'email_confirmation.same' => 'The email addresses do not match.',
         ]);
 
         if (isset($request->address)) {
