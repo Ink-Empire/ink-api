@@ -443,6 +443,10 @@ Route: `/studios/[slug]`
 | `is_claimed = true` | Full profile | Owner-claimed studio |
 | `owner_id = user.id` | Full profile | Current user is owner |
 | None of above | Unclaimed | Shows "Claim This Studio" banner |
+
+A studio on hold does not reach any of these rows: the API 404s the page for
+everyone but the owner and an admin. See **Holding a studio**.
+
 ### Profile Sections
 
 | Section | Data Source | Description |
@@ -455,12 +459,82 @@ Route: `/studios/[slug]`
 | Contact | Studio record | Phone, email, website, social |
 | Announcements | `studio_announcements` | Active announcements |
 
+## Holding a studio
+
+Nothing in the claim or registration path checks that the person registering
+has any connection to the business. `StudioController::claim` requires
+authentication but not ownership, and registering with `type: 'studio'` creates
+a studio already marked `is_claimed`. A hold is the reactive answer to that: it
+takes a studio out of public view while its owner is asked to establish that
+they run the business.
+
+A hold is reversible by construction. Nothing is deleted - not the account, the
+studio row, the images, or the owner's login - and `liftHold` puts every
+surface back.
+
+### The state
+
+`studios.hold_status` is a `StudioHoldStatus` enum, `active` or `on_hold`, with
+`hold_reason`, `held_at` and `held_by_id` recording who placed it and why, and
+`hold_lifted_at` / `hold_lifted_by_id` recording the release. The hold columns
+are deliberately **not** on `Studio::$fillable`: `adminUpdate` assigns anything
+fillable straight off the request, and a hold has to carry its audit trail, so
+it is only ever written through `StudioService`.
+
+`studios.is_verified` is **not** reused. It has existed since the first studios
+migration, is never written by any code path, and already feeds a verified
+badge on the public studio page through `StudioResource`. Overloading it would
+conflate a business being verified with a studio being visible.
+
+### What a hold actually hides
+
+| Surface | Mechanism |
+|---|---|
+| Studios ES index | `Studio::shouldBeSearchable()` returns false, and `StudioService` calls `unsearchable()` on the request that placed the hold |
+| Artists ES index | `Artist::shouldBeSearchable()` returns false for the owner of a held studio. This is the document search actually reads for studios - nothing queries the studios index today |
+| Public studio page and everything nested under it | `BlockHeldStudio` middleware (`studio.not-held`) 404s the whole public read group, plus `/api/studios/{id}/gallery` |
+| Sitemap directory | `directory()` filters with the `notOnHold` scope, the same way it filters `is_demo` |
+
+The owner and an admin still reach the page. The owner may be entirely
+legitimate and mid-setup, so a hold hides them from the public rather than
+locking them out: they can sign in, edit, and keep working on a page that is
+not yet showing.
+
+Artists affiliated through `artists_studios` are unaffected. They are not the
+subject of a hold, and their own profiles and portfolios stay searchable.
+
+`HealthCheckService` subtracts held owners from the artists drift count, since
+those documents are absent from the index on purpose.
+
+### The email
+
+Placing a hold notifies the owner with
+`StudioVerificationRequestNotification`, sent to the **owner's registered
+account address** (`users.email` via `studios.owner_id`). `studios.email` is
+frequently null, so the studio's own column is not a usable contact route. An
+unclaimed studio has no owner, so the hold still applies and the response says
+`owner_notified: false`.
+
+The email asks for one of two things: a reply from an address on the studio's
+own domain, or a callback to the number published on the studio's own website.
+Replies go to the monitored inbound mailbox, the same one `FetchInboundEmails`
+polls, set as the message's reply-to.
+
+Tone is a verification request, not an accusation. It does not imply
+wrongdoing, does not mention any other account, and states plainly that nothing
+has been deleted.
+
+### After no reply
+
+Nothing happens automatically. A hold stays until a human lifts it. `held_at`
+is what the admin list sorts on to show how long a hold has been open.
+
 ## Key Database Tables
 
 | Table | Description |
 |-------|-------------|
 | `users` | User accounts (type_id=3 for studios) |
-| `studios` | Studio records (has `image_id`, `banner_image_id`, `template`, `owner_id`; `slug` and `owner_id` are both unique) |
+| `studios` | Studio records (has `image_id`, `banner_image_id`, `template`, `owner_id`; `slug` is unique; `hold_status` plus the hold audit columns) |
 | `images` | Image records (uri points to S3) |
 | `addresses` | Physical addresses |
 | `studio_availability` | Weekly working hours (studio_id, day_of_week 0-6, start_time, end_time, is_day_off) |
@@ -652,6 +726,8 @@ rejected with a 422 on conflict rather than silently adjusted.
 | POST | `/api/studios/{id}/working-hours` | Set studio working hours |
 | POST | `/api/studios/lookup-or-create` | Lookup/create from Google Places |
 | POST | `/api/studios/check-availability` | Check username/email availability |
+| POST | `/api/admin/studios/{id}/hold` | Admin: hold a studio pending proof of ownership (requires `reason`) |
+| POST | `/api/admin/studios/{id}/release` | Admin: lift a hold and restore every surface |
 
 ## Key Files
 
@@ -677,6 +753,10 @@ rejected with a 422 on conflict rather than silently adjusted.
 | Studio Controller | `ink-api/app/Http/Controllers/StudioController.php` |
 | Studio Service | `ink-api/app/Services/StudioService.php` |
 | Studio Resource | `ink-api/app/Http/Resources/StudioResource.php` |
+| Studio Hold Resource | `ink-api/app/Http/Resources/StudioHoldResource.php` |
+| Hold Status Enum | `ink-api/app/Enums/StudioHoldStatus.php` |
+| Held Studio Middleware | `ink-api/app/Http/Middleware/BlockHeldStudio.php` |
+| Verification Request Notification | `ink-api/app/Notifications/StudioVerificationRequestNotification.php` |
 | Admin Studios Resource | `inked-in-www/nextjs/admin/resources/studios.tsx` |
 | Admin Service | `inked-in-www/nextjs/services/adminService.ts` |
 | Studio Model | `ink-api/app/Models/Studio.php` |

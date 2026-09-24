@@ -141,14 +141,20 @@ Route::prefix('api')->group(function () {
         // and reloaded their page was served the old version for up to a minute.
         // Registered before /{id} so the wildcard does not swallow it.
         Route::get('/directory', [StudioController::class, 'directory']);
-        Route::get('/{id}', [StudioController::class, 'getById']);
-        Route::get('/{id}/announcements', [StudioController::class, 'getAnnouncements']);
-        Route::get('/{id}/news/{postSlug}', [StudioController::class, 'getPost']);
-        Route::get('/{id}/guides', [StudioController::class, 'getGuides']);
-        Route::get('/{id}/guides/{guideSlug}', [StudioController::class, 'getGuide']);
-        Route::get('/{id}/spotlights', [StudioController::class, 'getSpotlights']);
-        Route::get('/{id}/artists', [StudioController::class, 'getArtists']);
-        Route::get('/{id}/working-hours', [StudioController::class, 'getAvailability']);
+
+        // A studio on hold is 404 to the public here, and to anyone following a
+        // direct link to a page nested under it. Its owner and an admin still
+        // see it; the owner can keep working on a page that is not yet showing.
+        Route::middleware('studio.not-held')->group(function () {
+            Route::get('/{id}', [StudioController::class, 'getById']);
+            Route::get('/{id}/announcements', [StudioController::class, 'getAnnouncements']);
+            Route::get('/{id}/news/{postSlug}', [StudioController::class, 'getPost']);
+            Route::get('/{id}/guides', [StudioController::class, 'getGuides']);
+            Route::get('/{id}/guides/{guideSlug}', [StudioController::class, 'getGuide']);
+            Route::get('/{id}/spotlights', [StudioController::class, 'getSpotlights']);
+            Route::get('/{id}/artists', [StudioController::class, 'getArtists']);
+            Route::get('/{id}/working-hours', [StudioController::class, 'getAvailability']);
+        });
 
         // Protected studio routes - require authentication
         Route::middleware('auth:sanctum')->group(function () {

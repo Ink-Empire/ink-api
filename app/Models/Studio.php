@@ -2,6 +2,7 @@
 
 namespace App\Models;
 
+use App\Enums\StudioHoldStatus;
 use App\Enums\StudioPostType;
 use App\Enums\StudioSection;
 use App\Enums\StudioSectionBand;
@@ -27,6 +28,12 @@ class Studio extends Model
 
     protected $with = ['image', 'address', 'availability'];
 
+    /**
+     * The hold columns are deliberately absent from this list. adminUpdate
+     * assigns anything fillable straight off the request, and a hold has to
+     * carry who placed it and why, so it is only ever written through
+     * StudioService.
+     */
     protected $fillable = [
         'name',
         'slug',
@@ -54,6 +61,15 @@ class Studio extends Model
         'rating',
     ];
 
+    /**
+     * A studio is active until somebody holds it. The column default covers
+     * the row; this covers the model in memory, which otherwise reads null
+     * between create() and the first refresh.
+     */
+    protected $attributes = [
+        'hold_status' => StudioHoldStatus::Active->value,
+    ];
+
     protected $casts = [
         'template' => StudioTemplate::class,
         'section_order' => 'array',
@@ -64,6 +80,9 @@ class Studio extends Model
         'seeking_guest_artists' => 'boolean',
         'is_claimed' => 'boolean',
         'rating' => 'decimal:1',
+        'hold_status' => StudioHoldStatus::class,
+        'held_at' => 'datetime',
+        'hold_lifted_at' => 'datetime',
     ];
 
     public function owner()
@@ -74,6 +93,25 @@ class Studio extends Model
     public function address()
     {
         return $this->belongsTo(Address::class);
+    }
+
+    public function heldBy()
+    {
+        return $this->belongsTo(User::class, 'held_by_id');
+    }
+
+    public function holdLiftedBy()
+    {
+        return $this->belongsTo(User::class, 'hold_lifted_by_id');
+    }
+
+    /**
+     * A held studio is hidden from the public, not deleted. The account, the
+     * row, the images and the owner's login are all untouched.
+     */
+    public function isOnHold(): bool
+    {
+        return $this->hold_status === StudioHoldStatus::OnHold;
     }
 
     public function image()
@@ -405,6 +443,22 @@ class Studio extends Model
     }
 
     /**
+     * Scope to studios currently on hold.
+     */
+    public function scopeOnHold($query)
+    {
+        return $query->where('hold_status', StudioHoldStatus::OnHold->value);
+    }
+
+    /**
+     * Scope to studios that are not on hold.
+     */
+    public function scopeNotOnHold($query)
+    {
+        return $query->where('hold_status', '!=', StudioHoldStatus::OnHold->value);
+    }
+
+    /**
      * Scope to get only claimed studios.
      */
     public function scopeClaimed($query)
@@ -438,9 +492,13 @@ class Studio extends Model
         ]);
     }
 
+    /**
+     * A studio on hold leaves the index. Without this the page stays findable
+     * and the hold achieves nothing.
+     */
     public function shouldBeSearchable()
     {
-        return true;
+        return ! $this->isOnHold();
     }
 
     public function toSearchableArray()

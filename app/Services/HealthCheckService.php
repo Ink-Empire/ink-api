@@ -176,6 +176,10 @@ class HealthCheckService
                     'database' => User::query()
                         ->whereIn('type_id', [UserTypes::ARTIST_TYPE_ID, UserTypes::STUDIO_TYPE_ID])
                         ->whereNotNull('email_verified_at')
+                        // The owner of a held studio is pulled out of this
+                        // index on purpose, so counting them here would read
+                        // as drift for as long as the hold lasts.
+                        ->whereDoesntHave('ownedStudio', fn ($query) => $query->onHold())
                         ->count(),
                     'optional' => false,
                 ],

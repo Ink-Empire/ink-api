@@ -63,7 +63,8 @@ Route::middleware('cache.headers:public;max_age=3600;etag')->group(function () {
 
 // Public routes — dynamic data (cached briefly for CDN/browser, still fresh)
 Route::middleware('cache.headers:public;max_age=60;etag')->group(function () {
-    Route::get('/studios/{id}/gallery', [StudioController::class, 'getGallery']);
+    Route::get('/studios/{id}/gallery', [StudioController::class, 'getGallery'])
+        ->middleware('studio.not-held');
     Route::get('/artists/{id}/settings', [\App\Http\Controllers\ArtistController::class, 'getSettings']);
     Route::get('/users/{slug}/profile', [UserProfileController::class, 'getProfile']);
     Route::get('/users/{slug}/tattoos', [UserProfileController::class, 'getUploadedTattoos']);
@@ -285,6 +286,10 @@ Route::middleware(['auth:sanctum', 'admin'])->prefix('admin')->group(function ()
     Route::get('studios/{id}', [StudioController::class, 'adminShow']);
     Route::put('studios/{id}', [StudioController::class, 'adminUpdate']);
     Route::delete('studios/{id}', [StudioController::class, 'adminDestroy']);
+    // Reversible. A hold hides a studio pending proof of ownership; it does not
+    // delete anything, and the release puts every surface back.
+    Route::post('studios/{id}/hold', [StudioController::class, 'adminHold']);
+    Route::post('studios/{id}/release', [StudioController::class, 'adminRelease']);
 
     // Tags
     Route::get('tags', [TagController::class, 'adminIndex']);

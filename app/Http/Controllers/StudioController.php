@@ -13,10 +13,13 @@ use App\Enums\StudioSectionColumn;
 use App\Enums\StudioSectionWidth;
 use App\Enums\StudioTemplate;
 use App\Enums\UserTypes;
+use App\Exceptions\StudioAlreadyOnHoldException;
+use App\Exceptions\StudioNotOnHoldException;
 use App\Exceptions\StudioOwnerConflictException;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Dashboard\StudioArtistDashboardResource;
 use App\Http\Resources\Dashboard\WorkingHoursDashboardResource;
+use App\Http\Resources\StudioHoldResource;
 use App\Http\Resources\StudioPostResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
@@ -499,6 +502,7 @@ class StudioController extends Controller
 
         $indexable = fn ($query) => $query
             ->where('is_demo', false)
+            ->notOnHold()
             ->whereNotNull('owner_id')
             ->whereNotNull('slug')
             ->where('slug', '!=', '');
@@ -1281,6 +1285,77 @@ class StudioController extends Controller
 
         return response()->json([
             'data' => $studio,
+        ]);
+    }
+
+    /**
+     * Put a studio on hold (admin only).
+     *
+     * Reversible: the account, the studio row, its images and the owner's
+     * login are untouched. The owner is emailed at their registered address
+     * and asked to establish that they run the business.
+     */
+    public function adminHold(Request $request, int $id): JsonResponse
+    {
+        $studio = Studio::with('owner')->find($id);
+
+        if (!$studio) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Studio not found',
+            ], 404);
+        }
+
+        $request->validate([
+            'reason' => 'required|string|max:1000',
+        ]);
+
+        try {
+            $studio = $this->studioService->placeOnHold(
+                $studio,
+                $request->user(),
+                $request->input('reason')
+            );
+        } catch (StudioAlreadyOnHoldException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => new StudioHoldResource($studio->load('heldBy')),
+            // An unclaimed studio has no owner to write to, so the caller is
+            // told whether the request for proof actually went anywhere.
+            'owner_notified' => (bool) $studio->owner?->email,
+        ]);
+    }
+
+    /**
+     * Lift a hold (admin only), putting the studio back on every surface.
+     */
+    public function adminRelease(Request $request, int $id): JsonResponse
+    {
+        $studio = Studio::find($id);
+
+        if (!$studio) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Studio not found',
+            ], 404);
+        }
+
+        try {
+            $studio = $this->studioService->liftHold($studio, $request->user());
+        } catch (StudioNotOnHoldException $e) {
+            return response()->json([
+                'success' => false,
+                'message' => $e->getMessage(),
+            ], 422);
+        }
+
+        return response()->json([
+            'data' => new StudioHoldResource($studio->load('heldBy', 'holdLiftedBy')),
         ]);
     }
 
