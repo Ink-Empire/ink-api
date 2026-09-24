@@ -2,11 +2,11 @@
 
 namespace App\Http\Controllers;
 
-use App\Enums\UploadPurpose;
 use App\Exceptions\UserNotFoundException;
 use App\Http\Resources\BriefImageResource;
 use App\Http\Resources\StudioResource;
 use App\Http\Resources\UserResource;
+use App\Enums\UploadPurpose;
 use App\Enums\UserTypes;
 use App\Models\Artist;
 use App\Scopes\ArtistScope;
@@ -19,8 +19,6 @@ use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 use Illuminate\Validation\Rule;
 
 class ImageController extends Controller
@@ -84,8 +82,12 @@ class ImageController extends Controller
     }
 
     /**
-     * Generate a presigned URL for direct S3 upload from the client.
+     * Generate a signed upload form for a direct S3 upload from the client.
      * This bypasses the server for faster uploads.
+     *
+     * The client POSTs the returned fields plus the file to upload_url. Size,
+     * content type, key and ACL are all signed into the policy, so S3 refuses
+     * anything that does not match what was asked for here.
      */
     public function getPresignedUrl(Request $request): JsonResponse
     {
@@ -98,50 +100,17 @@ class ImageController extends Controller
                 'purpose' => ['required', 'string', Rule::in(UploadPurpose::values())],
             ]);
 
-            $contentType = $request->input('content_type');
-            $purpose = $request->input('purpose');
-
-            // Generate unique filename
-            $extension = match ($contentType) {
-                'image/png' => 'png',
-                'image/webp' => 'webp',
-                'image/gif' => 'gif',
-                default => 'jpg',
-            };
-
-            $timestamp = now()->format('YmdHis');
-            $random = Str::random(8);
-            $baseFilename = "{$purpose}_{$user->id}_{$timestamp}_{$random}.{$extension}";
-            $filename = ImageService::prefixFilename($baseFilename);
-
-            // Get S3 client and bucket
-            $disk = Storage::disk('s3');
-            $client = $disk->getClient();
-            $bucket = config('filesystems.disks.s3.bucket');
-
-            // Create presigned PUT request
-            $command = $client->getCommand('PutObject', [
-                'Bucket' => $bucket,
-                'Key' => $filename,
-                'ContentType' => $contentType,
-                'ACL' => 'public-read',
-                'CacheControl' => 'max-age=31536000',
-            ]);
-
-            // URL valid for 15 minutes
-            $presignedRequest = $client->createPresignedRequest($command, '+15 minutes');
-            $presignedUrl = (string) $presignedRequest->getUri();
-
-            // Get the public URL where the image will be accessible after upload
-            $publicUrl = $disk->url($filename);
+            $upload = $this->imageService->uploadForm(
+                UploadPurpose::from($request->input('purpose')),
+                $user->id,
+                $request->input('content_type')
+            );
 
             return response()->json([
                 'success' => true,
-                'data' => [
-                    'upload_url' => $presignedUrl,
-                    'filename' => $filename,
-                    'public_url' => $publicUrl,
-                    'expires_in' => 900, // 15 minutes in seconds
+                'data' => $upload + [
+                    'max_bytes' => ImageService::maxUploadBytes(),
+                    'expires_in' => config('uploads.window_minutes') * 60,
                 ]
             ]);
 
@@ -156,7 +125,7 @@ class ImageController extends Controller
     }
 
     /**
-     * Generate multiple presigned URLs for batch upload.
+     * Generate multiple signed upload forms for batch upload.
      * More efficient than calling getPresignedUrl multiple times.
      */
     public function getPresignedUrls(Request $request): JsonResponse
@@ -170,52 +139,25 @@ class ImageController extends Controller
                 'purpose' => ['required', 'string', Rule::in(UploadPurpose::values())],
             ]);
 
-            $files = $request->input('files');
-            $purpose = $request->input('purpose');
+            $purpose = UploadPurpose::from($request->input('purpose'));
 
-            $disk = Storage::disk('s3');
-            $client = $disk->getClient();
-            $bucket = config('filesystems.disks.s3.bucket');
+            $uploads = [];
 
-            $results = [];
-            $timestamp = now()->format('YmdHis');
-
-            foreach ($files as $index => $file) {
-                $contentType = $file['content_type'];
-
-                $extension = match ($contentType) {
-                    'image/png' => 'png',
-                    'image/webp' => 'webp',
-                    'image/gif' => 'gif',
-                    default => 'jpg',
-                };
-
-                $random = Str::random(8);
-                $baseFilename = "{$purpose}_{$user->id}_{$timestamp}_{$index}_{$random}.{$extension}";
-                $filename = ImageService::prefixFilename($baseFilename);
-
-                $command = $client->getCommand('PutObject', [
-                    'Bucket' => $bucket,
-                    'Key' => $filename,
-                    'ContentType' => $contentType,
-                    'ACL' => 'public-read',
-                    'CacheControl' => 'max-age=31536000',
-                ]);
-
-                $presignedRequest = $client->createPresignedRequest($command, '+15 minutes');
-
-                $results[] = [
-                    'upload_url' => (string) $presignedRequest->getUri(),
-                    'filename' => $filename,
-                    'public_url' => $disk->url($filename),
-                ];
+            foreach ($request->input('files') as $index => $file) {
+                $uploads[] = $this->imageService->uploadForm(
+                    $purpose,
+                    $user->id,
+                    $file['content_type'],
+                    $index
+                );
             }
 
             return response()->json([
                 'success' => true,
                 'data' => [
-                    'uploads' => $results,
-                    'expires_in' => 900,
+                    'uploads' => $uploads,
+                    'max_bytes' => ImageService::maxUploadBytes(),
+                    'expires_in' => config('uploads.window_minutes') * 60,
                 ]
             ]);
 
@@ -233,10 +175,10 @@ class ImageController extends Controller
      * Confirm that images were uploaded successfully and create Image records.
      * Called after direct S3 upload completes.
      *
-     * A filename is only accepted from the account it was issued to. The name
-     * is the only thing tying a direct upload back to a user, and it travels
-     * in the public URL of every image on the platform, so without this check
-     * anyone could claim a row pointing at somebody else's file.
+     * The filenames arrive from the client, and an image URL exposes the
+     * filename of every image on the site, so being able to name a file is not
+     * evidence of having uploaded it. The service checks each one against the
+     * caller before it creates a row.
      */
     public function confirmUploads(Request $request): JsonResponse
     {
@@ -249,19 +191,19 @@ class ImageController extends Controller
             ]);
 
             $confirmed = $this->imageService->confirmUploads(
-                (int) $user->id,
+                $user->id,
                 $request->input('filenames')
             );
+
+            if (empty($confirmed)) {
+                return $this->returnErrorResponse('No valid images found', 'None of the uploaded files could be confirmed');
+            }
 
             $images = array_map(fn (Image $image) => [
                 'id' => $image->id,
                 'filename' => $image->filename,
                 'uri' => $image->uri,
             ], $confirmed);
-
-            if (empty($images)) {
-                return $this->returnErrorResponse('No valid images found', 'None of the uploaded files could be confirmed');
-            }
 
             return response()->json([
                 'success' => true,

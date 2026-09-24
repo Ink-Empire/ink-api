@@ -4,6 +4,7 @@ namespace App\Services;
 
 use App\Enums\UploadPurpose;
 use App\Models\Image;
+use Aws\S3\PostObjectV4;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Http\UploadedFile;
@@ -11,6 +12,8 @@ use Illuminate\Support\Str;
 
 class ImageService
 {
+    private const UPLOAD_CACHE_CONTROL = 'max-age=31536000';
+
     protected $s3;
 
     protected $s3Path;
@@ -125,6 +128,74 @@ class ImageService
             'image/gif' => 'gif',
             default => 'jpg',
         };
+    }
+
+    /**
+     * The largest single object a direct upload may write.
+     */
+    public static function maxUploadBytes(): int
+    {
+        return (int) config('uploads.max_image_size_mb') * 1024 * 1024;
+    }
+
+    /**
+     * Build a signed form for one direct upload.
+     *
+     * This is a POST policy rather than a presigned PUT because a presigned
+     * PUT cannot bound what the client writes. The SDK strips content-length,
+     * content-type and cache-control from the signature before presigning
+     * (see SignatureV4::getHeaderBlacklist), leaving host and x-amz-acl as the
+     * only signed headers, so a URL holder could PUT any bytes of any size up
+     * to the 5GB single-request ceiling. A POST policy is signed whole, so S3
+     * enforces every condition below, size included.
+     */
+    public function uploadForm(
+        UploadPurpose $purpose,
+        int $userId,
+        string $contentType,
+        ?int $index = null
+    ): array {
+        $filename = self::uploadFilename(
+            $purpose,
+            $userId,
+            self::extensionForContentType($contentType),
+            $index
+        );
+
+        $bucket = config('filesystems.disks.s3.bucket');
+
+        // Every field the form posts has to be covered by a condition or S3
+        // rejects the upload, so these two lists move together.
+        $fields = [
+            'key' => $filename,
+            'Content-Type' => $contentType,
+            'acl' => 'public-read',
+            'Cache-Control' => self::UPLOAD_CACHE_CONTROL,
+        ];
+
+        $conditions = [
+            ['bucket' => $bucket],
+            ['eq', '$key', $filename],
+            ['eq', '$Content-Type', $contentType],
+            ['eq', '$acl', 'public-read'],
+            ['eq', '$Cache-Control', self::UPLOAD_CACHE_CONTROL],
+            ['content-length-range', 1, self::maxUploadBytes()],
+        ];
+
+        $post = new PostObjectV4(
+            $this->s3->getClient(),
+            $bucket,
+            $fields,
+            $conditions,
+            '+' . config('uploads.window_minutes') . ' minutes'
+        );
+
+        return [
+            'upload_url' => $post->getFormAttributes()['action'],
+            'fields' => $post->getFormInputs(),
+            'filename' => $filename,
+            'public_url' => $this->s3->url($filename),
+        ];
     }
 
     public function processImage(mixed $input, string $filename): ?Image
