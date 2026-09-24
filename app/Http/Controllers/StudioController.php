@@ -13,6 +13,7 @@ use App\Enums\StudioSectionColumn;
 use App\Enums\StudioSectionWidth;
 use App\Enums\StudioTemplate;
 use App\Enums\UserTypes;
+use App\Exceptions\StudioOwnerConflictException;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Dashboard\StudioArtistDashboardResource;
 use App\Http\Resources\Dashboard\WorkingHoursDashboardResource;
@@ -155,24 +156,11 @@ class StudioController extends Controller
             'image_id' => 'nullable|exists:images,id',
         ]);
 
-        // Update the studio with the authenticated user as owner and mark as claimed
-        $updateData = [
-            'owner_id' => $request->user()->id,
-            'name' => $request->input('name') ?: $studio->name,
-            'slug' => $request->input('slug') ?: $studio->slug,
-            'about' => $request->input('about') ?: $studio->about,
-            'location' => $request->input('location') ?: $studio->location,
-            'location_lat_long' => $request->input('location_lat_long') ?: $studio->location_lat_long,
-            'email' => $request->input('email') ?: $studio->email,
-            'phone' => $request->input('phone') ?: $studio->phone,
-            'is_claimed' => true,
-        ];
-
-        if ($request->input('image_id')) {
-            $updateData['image_id'] = $request->input('image_id');
+        try {
+            $this->studioService->claimFor($studio, $request->user(), $request->all());
+        } catch (StudioOwnerConflictException $e) {
+            return $this->returnErrorResponse($e->getMessage(), 422);
         }
-
-        $studio->update($updateData);
 
         // The owner's own documents carry the studio they own. The claim is
         // already committed, so a queue failure must not fail the request.
@@ -267,45 +255,29 @@ class StudioController extends Controller
         return $this->returnResponse('studio', new StudioResource($studio));
     }
 
-    //TODO create custom request
+    /**
+     * Create a studio for the authenticated user.
+     *
+     * The owner is the caller. An `owner_id` in the payload is ignored: older
+     * clients still send it, and it was the only thing naming the owner.
+     */
     public function create(Request $request): \Illuminate\Http\JsonResponse
     {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'slug' => 'nullable|string|max:255',
+            'about' => 'nullable|string',
+            'location' => 'nullable|string',
+            'location_lat_long' => 'nullable|string',
+            'email' => 'nullable|email',
+            'phone' => 'nullable|string',
+            'image_id' => 'nullable|exists:images,id',
+        ]);
+
         try {
-            $data = $request->all();
-
-            $address = null;
-
-//            if ($data['address']) {
-//                $address = $this->addressService->create(
-//                    [
-//                        'address1' => $data['address']['address1'],
-//                        'address2' => $data['address']['address2'] ?? null,
-//                        'city' => $data['address']['city'],
-//                        'state' => $data['address']['state'],
-//                        'postal_code' => $data['address']['postal_code'],
-//                        'country_code' => $data['address']['country_code'] ?? "US"
-//                    ]
-//                );
-//            }
-
-            $studio = new Studio([
-                'name' => $data['name'],
-                'slug' => $this->studioService->generateSlug($data['slug'] ?? $data['name']),
-                'email' => $data['email'] ?? null,
-                'about' => $data['about'] ?? null,
-                'phone' => $data['phone'] ?? null,
-                'location' => $data['location'] ?? null,
-                'location_lat_long' => $data['location_lat_long'] ?? null,
-                'address_id' => $address->id ?? null,
-                'owner_id' => $data['owner_id'] ?? null,
-                'image_id' => $data['image_id'] ?? null,
-                'is_claimed' => true, // Studios created via registration are claimed
-            ]);
-
-            $studio->save();
-
-            return $this->returnResponse('studio', new StudioResource($studio));
-
+            $studio = $this->studioService->createForOwner($request->user(), $request->all());
+        } catch (StudioOwnerConflictException $e) {
+            return $this->returnErrorResponse($e->getMessage(), 422);
         } catch (\Exception $e) {
             \Log::error("Unable to create studio", [
                 'error' => $e->getMessage(),
@@ -315,6 +287,8 @@ class StudioController extends Controller
 
             return $this->returnErrorResponse($e->getMessage());
         }
+
+        return $this->returnResponse('studio', new StudioResource($studio));
     }
 
     public function update(Request $request, $id)

@@ -5,8 +5,10 @@ namespace App\Services;
 use App\Enums\SpotlightType;
 use App\Enums\StudioPostStatus;
 use App\Enums\StudioPostType;
+use App\Enums\UserTypes;
 use Illuminate\Support\Facades\DB;
 use App\Exceptions\StudioNotFoundException;
+use App\Exceptions\StudioOwnerConflictException;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Elastic\TattooResource;
 use App\Models\Image;
@@ -17,6 +19,7 @@ use App\Models\Studio;
 use App\Models\StudioPost;
 use App\Models\StudioSpotlight;
 use App\Models\User;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
 /**
@@ -74,6 +77,111 @@ class StudioService
             ->exists();
     }
 
+    /**
+     * Create a studio owned by the given user.
+     *
+     * The owner comes from the authenticated session rather than the payload.
+     * The account that ends up carrying the studio has to be the one that
+     * asked for it, and the type change below must not land on a stranger.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws StudioOwnerConflictException
+     */
+    public function createForOwner(User $owner, array $data): Studio
+    {
+        $this->assertHasNoStudio($owner);
+
+        $studio = Studio::create([
+            'name' => $data['name'],
+            'slug' => $this->generateSlug($data['slug'] ?? $data['name']),
+            'email' => $data['email'] ?? null,
+            'about' => $data['about'] ?? null,
+            'phone' => $data['phone'] ?? null,
+            'location' => $data['location'] ?? null,
+            'location_lat_long' => $data['location_lat_long'] ?? null,
+            'owner_id' => $owner->id,
+            'image_id' => $data['image_id'] ?? null,
+            'is_claimed' => true,
+        ]);
+
+        $this->alignOwnerType($owner);
+
+        return $studio;
+    }
+
+    /**
+     * Hand an unclaimed studio to its owner.
+     *
+     * @param  array<string, mixed>  $data
+     *
+     * @throws StudioOwnerConflictException
+     */
+    public function claimFor(Studio $studio, User $owner, array $data): Studio
+    {
+        $this->assertHasNoStudio($owner, $studio->id);
+
+        $updateData = [
+            'owner_id' => $owner->id,
+            'name' => ($data['name'] ?? null) ?: $studio->name,
+            'slug' => ($data['slug'] ?? null) ?: $studio->slug,
+            'about' => ($data['about'] ?? null) ?: $studio->about,
+            'location' => ($data['location'] ?? null) ?: $studio->location,
+            'location_lat_long' => ($data['location_lat_long'] ?? null) ?: $studio->location_lat_long,
+            'email' => ($data['email'] ?? null) ?: $studio->email,
+            'phone' => ($data['phone'] ?? null) ?: $studio->phone,
+            'is_claimed' => true,
+        ];
+
+        if (! empty($data['image_id'])) {
+            $updateData['image_id'] = $data['image_id'];
+        }
+
+        $studio->update($updateData);
+
+        $this->alignOwnerType($owner);
+
+        return $studio;
+    }
+
+    /**
+     * Give a studio owner the studio type.
+     *
+     * A studio account represents the business, so the owner's own row carries
+     * type 3 and is picked up by the artists index, which holds studio
+     * accounts alongside artists.
+     *
+     * An artist who owns a studio keeps type 2. Relabelling them would take
+     * their portfolio out of the artist side of search, which is destructive
+     * to an account that is already doing the right thing.
+     */
+    public function alignOwnerType(User $owner): void
+    {
+        if ($owner->type_id !== UserTypes::CLIENT_TYPE_ID) {
+            return;
+        }
+
+        $owner->type_id = UserTypes::STUDIO_TYPE_ID;
+        $owner->save();
+    }
+
+    /**
+     * A studio account is the business, so an owner holds exactly one.
+     * `studios.owner_id` is unique, and this turns the collision into a
+     * message a signup form can show rather than a database error.
+     *
+     * @throws StudioOwnerConflictException
+     */
+    public function assertHasNoStudio(User $owner, ?int $ignoreStudioId = null): void
+    {
+        $exists = Studio::where('owner_id', $owner->id)
+            ->when($ignoreStudioId, fn ($query) => $query->where('id', '!=', $ignoreStudioId))
+            ->exists();
+
+        if ($exists) {
+            throw new StudioOwnerConflictException('This account already has a studio.');
+        }
+    }
     /**
      *
      */

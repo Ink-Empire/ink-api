@@ -10,6 +10,44 @@ Studios use `type_id = 3` in the users table. This distinguishes them from:
 
 The studio itself lives in the `studios` table (separate from `users`). A user "owns" a studio via `studios.owner_id`.
 
+### A studio account is the business
+
+A studio account represents the business, not the person who runs it. The user
+row carries the studio's name, username and slug, and `type_id = 3`.
+
+That type is what puts the account into the artists index, which holds studio
+accounts alongside artists (`Artist::searchableQuery`, `Artist::shouldBeSearchable`),
+and what `ArtistIndexResource` reads to set `type` and `is_claimed`. It is also
+the branch taken by `VerifyEmailController`, `UserController::deleteAccount`,
+`UserController::update` and `ImageController`.
+
+`StudioService::alignOwnerType` applies the rule on every path that hands
+someone a studio:
+
+| Owner's type before | After | Why |
+|---|---|---|
+| Client (1) | Studio (3) | They signed up to run a business, and the account has no artist portfolio to lose |
+| Artist (2) | Artist (2) | Relabelling would take their portfolio out of the artist side of search. A solo artist with their own shop keeps both, and gets the two-tab dashboard |
+| Studio (3) | Studio (3) | Already correct |
+
+Only `AuthController::register` used to set the type. `create` and `claim` did
+not, so a studio made by an already-authenticated user, or claimed off a Google
+Places listing, left its owner as a client. `UserObserver::saved` returns early
+for client type, so those owners never entered the artists index at all. The
+studio page still appeared in search, because `Studio` carries its own
+`Searchable` trait and indexes independently, which is why this went unnoticed.
+
+### One studio per owner
+
+`studios.owner_id` is unique. `User::ownedStudio` has always been a `hasOne`,
+so the application already assumed this; the column only said so from
+`2026_09_23_000001_add_unique_index_to_studios_owner_id`.
+`StudioService::assertHasNoStudio` checks first and returns a 422, so a second
+attempt reads as a message rather than a database error.
+
+Unclaimed Google Places listings carry a null `owner_id`, and MySQL permits any
+number of nulls in a unique index, so they are unaffected.
+
 ## Registration Paths Overview
 
 There are two distinct registration paths for studios, with different image handling:
@@ -158,7 +196,14 @@ processPendingStudioData():
 
 `RegisterScreen.tsx` follows the same flow but:
 - Uses `uploadImagesToS3()` instead of `imageService.upload()`
-- After registration, calls `studioService.update(studioId, { image_id: imageId })` directly instead of storing pending data (RN doesn't redirect to a verify page — `VerifyEmailGate` polls in-app)
+- After registration, calls `studioService.update(studioId, { image_id: imageId })` directly instead of storing pending data (RN doesn't redirect to a verify page - `VerifyEmailGate` polls in-app)
+
+On path B, `RegisterScreen.tsx` and `usePendingStudio` in `App.tsx` call
+`studioService.create()`, the same endpoint the web signup uses. They used to
+call `lookupOrCreate()`, which resolves a Google Places listing and rejects a
+request with no `place_id`, so an existing user who typed out a new studio got
+a 422 and no studio at all. Both also send `about` rather than `bio`, which is
+the field `create` and `claim` read.
 
 ## Path B: Existing User Creating Studio (Detailed)
 
@@ -187,7 +232,11 @@ No pending data. No dashboard processing. Image is linked atomically.
 
 ### API Handling
 
-**`StudioController::create()`** accepts `image_id` in the payload and sets it directly on the new studio record.
+Both endpoints are thin. `StudioController` validates and hands off to
+`StudioService::createForOwner` / `StudioService::claimFor`, which set the
+owner, apply the fields, and run `alignOwnerType`.
+
+**`StudioController::create()`** accepts `image_id` in the payload and sets it directly on the new studio record. The owner is the authenticated caller. An `owner_id` in the payload is **ignored** - older clients still send it, and it used to be the only thing naming the owner, so any authenticated user could hand a studio to any user id.
 
 **`StudioController::claim()`** validates `image_id` (nullable, must exist in images table) and sets it during the claim update.
 
@@ -212,15 +261,22 @@ The `StudioController::update()` method also sets `image_id` since it's in `$fil
 | Studio Account (`type_id=3`) | Always | Direct studio dashboard (no tabs) |
 | Artist (`type_id=2`) | Yes (owned) | Two tabs: "My Artist Profile" + "My Studio" |
 | Artist (`type_id=2`) | No | Artist dashboard only (no tabs) |
-| Client (`type_id=1`) | Yes (owned) | Two tabs: "My Dashboard" + "My Studio" |
 | Client (`type_id=1`) | No | Client dashboard only |
+
+A client who creates or claims a studio becomes a studio account, so the
+"My Dashboard" + "My Studio" pair no longer occurs. Rows that predate the fix
+still exist in the data until the backfill runs.
 
 ### Studio Ownership
 
-Any user type can own a studio via the `owner_id` field on the `studios` table:
-- Studio accounts (`type_id=3`) typically own a studio
-- Artists can own a studio (e.g., solo artist with their own studio)
-- Clients can own a studio (e.g., business owner who isn't an artist)
+A studio has at most one owner and an owner has at most one studio
+(`studios.owner_id` is unique).
+
+- Studio accounts (`type_id=3`) own the studio they registered
+- Artists can own a studio (a solo artist with their own shop) and keep
+  `type_id=2`, so their portfolio stays on the artist side of search
+- A client who takes on a studio becomes `type_id=3`; see
+  [A studio account is the business](#a-studio-account-is-the-business)
 
 The `owned_studio` relationship is returned in the user API response when authenticated.
 
@@ -387,7 +443,6 @@ Route: `/studios/[slug]`
 | `is_claimed = true` | Full profile | Owner-claimed studio |
 | `owner_id = user.id` | Full profile | Current user is owner |
 | None of above | Unclaimed | Shows "Claim This Studio" banner |
-
 ### Profile Sections
 
 | Section | Data Source | Description |
@@ -405,7 +460,7 @@ Route: `/studios/[slug]`
 | Table | Description |
 |-------|-------------|
 | `users` | User accounts (type_id=3 for studios) |
-| `studios` | Studio records (has `image_id`, `banner_image_id`, `template`, `owner_id`; `slug` is unique) |
+| `studios` | Studio records (has `image_id`, `banner_image_id`, `template`, `owner_id`; `slug` and `owner_id` are both unique) |
 | `images` | Image records (uri points to S3) |
 | `addresses` | Physical addresses |
 | `studio_availability` | Weekly working hours (studio_id, day_of_week 0-6, start_time, end_time, is_day_off) |
@@ -571,7 +626,7 @@ rejected with a 422 on conflict rather than silently adjusted.
 | Method | Endpoint | Description |
 |--------|----------|-------------|
 | POST | `/api/register` | Create user + studio (type=studio) |
-| POST | `/api/studios` | Create new studio (auth required) |
+| POST | `/api/studios` | Create new studio (auth required; owner is the caller) |
 | POST | `/api/studios/{id}/claim` | Claim existing studio (accepts `image_id`) |
 | PUT | `/api/studios/studio/{id}` | Update studio details |
 | POST | `/api/studios/{id}/image` | Upload/link studio image |
@@ -622,6 +677,8 @@ rejected with a 422 on conflict rather than silently adjusted.
 | Studio Controller | `ink-api/app/Http/Controllers/StudioController.php` |
 | Studio Service | `ink-api/app/Services/StudioService.php` |
 | Studio Resource | `ink-api/app/Http/Resources/StudioResource.php` |
+| Admin Studios Resource | `inked-in-www/nextjs/admin/resources/studios.tsx` |
+| Admin Service | `inked-in-www/nextjs/services/adminService.ts` |
 | Studio Model | `ink-api/app/Models/Studio.php` |
 | Verify Email Controller | `ink-api/app/Http/Controllers/Auth/VerifyEmailController.php` |
 | Google Places Service | `ink-api/app/Services/GooglePlacesService.php` |
