@@ -115,6 +115,47 @@ describe('Registration API Contracts', function () {
         exportFixture('auth/register-duplicate-email.json', $response->json());
     });
 
+    it('POST /api/register rejects a mismatched email confirmation', function () {
+        $response = $this->postJson('/api/register', [
+            'name' => 'Test User',
+            'email' => 'interscoperecordlabelsp@gmail.com',
+            'email_confirmation' => 'interscoperecordlabelps@gmail.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'username' => 'typeduser',
+            'slug' => 'typeduser',
+            'has_accepted_toc' => true,
+            'has_accepted_privacy_policy' => true,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['email_confirmation']);
+
+        $this->assertDatabaseMissing('users', ['email' => 'interscoperecordlabelsp@gmail.com']);
+
+        exportFixture('auth/register-email-confirmation-mismatch.json', $response->json());
+    });
+
+    it('POST /api/register still succeeds when the client omits email confirmation', function () {
+        // Older app builds predate the confirm field. They must keep working,
+        // which is why the rule is nullable rather than 'confirmed'.
+        $response = $this->postJson('/api/register', [
+            'name' => 'Legacy Client',
+            'email' => 'legacyclient@test.com',
+            'password' => 'Password123!',
+            'password_confirmation' => 'Password123!',
+            'username' => 'legacyclient',
+            'slug' => 'legacyclient',
+            'type' => 'user',
+            'has_accepted_toc' => true,
+            'has_accepted_privacy_policy' => true,
+        ]);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseHas('users', ['email' => 'legacyclient@test.com']);
+    });
+
 });
 
 describe('Login API Contracts', function () {
