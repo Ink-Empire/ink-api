@@ -1,6 +1,5 @@
 <?php
 
-use App\Enums\UploadPurpose;
 use App\Services\ImageService;
 use App\Services\S3DeleteGuard;
 
@@ -61,9 +60,11 @@ test('every filename shape production generates passes its own guard', function 
     app()->detectEnvironment(fn () => 'production');
     config(['filesystems.disks.s3.file_prefix' => 'production']);
 
+    // Written out rather than generated, so this stays independent of the
+    // upload-ownership work that owns the filename builder.
     $keys = [
-        ImageService::uploadFilename(UploadPurpose::Tattoo, 7, 'jpg'),
-        ImageService::uploadFilename(UploadPurpose::Tattoo, 7, 'jpg', 3),
+        ImageService::prefixFilename('tattoo_7_20260101000000_abcd1234.jpg'),
+        ImageService::prefixFilename('tattoo_7_20260101000000_3_abcd1234.jpg'),
         ImageService::prefixFilename('tattoo_7_20260101000000_11_abcd1234.jpg'),
         ImageService::prefixFilename('watermarked_7_'.date('Ymdhis').'.jpg'),
         'bulk-uploads/7/9_ab12cd34.zip',
