@@ -4,6 +4,9 @@
 
 Allow artists to bulk upload images and efficiently add metadata before publishing to their portfolio.
 
+Keys under `bulk-uploads/` carry no environment prefix, so the cross-environment delete guard
+cannot protect them. See [s3-environments.md](s3-environments.md).
+
 ### Upload Methods
 
 **1. ZIP Upload (Web - Next.js)**

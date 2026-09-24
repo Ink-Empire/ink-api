@@ -56,6 +56,12 @@ return [
             'throw' => false,
             'visibility' => 'public',
             'file_prefix' => env('S3_FILE_PREFIX', ''), // e.g., 'dev' or 'production'
+
+            // Every environment shares one bucket, separated only by file_prefix,
+            // so App\Services\S3DeleteGuard refuses deletes of objects carrying a
+            // different prefix. Set this only for a deliberate cross-environment
+            // cleanup. See docs/s3-environments.md.
+            'allow_cross_env_deletes' => env('S3_ALLOW_CROSS_ENV_DELETES', false),
         ],
 
     ],
