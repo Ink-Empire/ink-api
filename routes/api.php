@@ -73,7 +73,9 @@ Route::middleware('cache.headers:public;max_age=60;etag')->group(function () {
 Route::get('/tags/search', [TagController::class, 'search']);
 Route::post('/studios/check-availability', [StudioController::class, 'checkAvailability']);
 Route::post('/studios/lookup-or-create', [StudioController::class, 'lookupOrCreate']);
-Route::post('/studios/{id}/claim', [StudioController::class, 'claim']);
+// Claiming a studio is registered in web.php, behind auth:sanctum. An
+// unauthenticated duplicate lived here; the router keys by method and URI, so
+// the later registration always won and this one never served a request.
 Route::post('/artists/appointments', [AppointmentController::class, 'getArtistAppointments']);
 
 // Subscription routes (signed URLs from email)

@@ -65,7 +65,8 @@ test('drafts are not offered for indexing', function () {
 });
 
 test('the directory paginates', function () {
-    Studio::factory()->count(3)->create(['is_demo' => false, 'owner_id' => User::factory()->create()->id]);
+    // A closure so each studio gets its own owner: studios.owner_id is unique.
+    Studio::factory()->count(3)->create(['is_demo' => false, 'owner_id' => fn () => User::factory()->create()->id]);
 
     $first = $this->getJson('/api/studios/directory?size=2&page=1')->assertOk();
 
