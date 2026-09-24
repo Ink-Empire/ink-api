@@ -144,7 +144,19 @@ class Artist extends User
 
         // The user observer indexes on create, so without this an account is
         // searchable before it has confirmed its email address.
-        return $this['email_verified_at'] !== null;
+        if ($this['email_verified_at'] === null) {
+            return false;
+        }
+
+        // A studio on hold is hidden, and the owner's own account carries the
+        // studio's name into this index. Leaving it here would keep the studio
+        // findable through the owner's card, which is the surface search
+        // actually reads - nothing queries the studios index today.
+        //
+        // This is the registrant, not an affiliated artist. Artists attached
+        // through artists_studios are not the subject of a hold and stay
+        // searchable.
+        return ! ($this->ownedStudio?->isOnHold() ?? false);
     }
 
     public function toSearchableArray()

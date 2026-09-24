@@ -3,14 +3,18 @@
 namespace App\Services;
 
 use App\Enums\SpotlightType;
+use App\Enums\StudioHoldStatus;
 use App\Enums\StudioPostStatus;
 use App\Enums\StudioPostType;
 use App\Enums\UserTypes;
 use Illuminate\Support\Facades\DB;
+use App\Exceptions\StudioAlreadyOnHoldException;
 use App\Exceptions\StudioNotFoundException;
+use App\Exceptions\StudioNotOnHoldException;
 use App\Exceptions\StudioOwnerConflictException;
 use App\Http\Resources\Dashboard\ArtistDashboardResource;
 use App\Http\Resources\Elastic\TattooResource;
+use App\Models\Artist;
 use App\Models\Image;
 use App\Models\StudioAvailability;
 use App\Models\Address;
@@ -19,6 +23,8 @@ use App\Models\Studio;
 use App\Models\StudioPost;
 use App\Models\StudioSpotlight;
 use App\Models\User;
+use App\Notifications\StudioVerificationRequestNotification;
+use App\Scopes\ArtistScope;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Str;
 
@@ -182,6 +188,137 @@ class StudioService
             throw new StudioOwnerConflictException('This account already has a studio.');
         }
     }
+
+    /**
+     * Put a studio out of public view pending proof that the registrant runs
+     * the business.
+     *
+     * Nothing is deleted. The account, the studio row, its images and the
+     * owner's login are all untouched, and liftHold puts every one of them
+     * back exactly as they were.
+     *
+     * @throws StudioAlreadyOnHoldException
+     */
+    public function placeOnHold(Studio $studio, User $admin, string $reason): Studio
+    {
+        if ($studio->isOnHold()) {
+            throw new StudioAlreadyOnHoldException('This studio is already on hold.');
+        }
+
+        $studio->forceFill([
+            'hold_status' => StudioHoldStatus::OnHold,
+            'hold_reason' => $reason,
+            'held_at' => now(),
+            'held_by_id' => $admin->id,
+            // These describe the hold being placed now, not the previous one.
+            'hold_lifted_at' => null,
+            'hold_lifted_by_id' => null,
+        ])->save();
+
+        $this->syncHoldSearchability($studio);
+        $this->requestOwnershipProof($studio);
+
+        return $studio->refresh();
+    }
+
+    /**
+     * Put a held studio back.
+     *
+     * held_at, held_by_id and hold_reason are deliberately left in place: they
+     * are the record of the hold that was placed, and clearing them would make
+     * the action unauditable after the fact.
+     *
+     * @throws StudioNotOnHoldException
+     */
+    public function liftHold(Studio $studio, User $admin): Studio
+    {
+        if (! $studio->isOnHold()) {
+            throw new StudioNotOnHoldException('This studio is not on hold.');
+        }
+
+        $studio->forceFill([
+            'hold_status' => StudioHoldStatus::Active,
+            'hold_lifted_at' => now(),
+            'hold_lifted_by_id' => $admin->id,
+        ])->save();
+
+        $this->syncHoldSearchability($studio);
+
+        return $studio->refresh();
+    }
+
+    /**
+     * Bring both search documents into line with the studio's hold state.
+     *
+     * Two documents describe a studio. The studios index holds the studio
+     * itself; the artists index holds the owner's account, which carries the
+     * studio's name and is the one search actually reads. Both have to move or
+     * the page stays findable.
+     *
+     * Scout's observer would reach the same answer on save, but only when the
+     * model was searchable beforehand and only through the configured queue.
+     * Doing it here makes the hold take effect on the request that placed it.
+     */
+    private function syncHoldSearchability(Studio $studio): void
+    {
+        $studio->isOnHold()
+            ? $studio->unsearchable()
+            : $studio->searchable();
+
+        if (! $studio->owner_id) {
+            return;
+        }
+
+        // Artist pins itself to type 2 through a global scope, and a studio
+        // account is type 3, so the scope has to come off to find the owner.
+        $owner = Artist::withoutGlobalScope(ArtistScope::class)->find($studio->owner_id);
+
+        if (! $owner) {
+            return;
+        }
+
+        // The relation would otherwise be loaded fresh and miss the change
+        // made a moment ago on this instance.
+        $owner->setRelation('ownedStudio', $studio);
+
+        $owner->shouldBeSearchable()
+            ? $owner->searchable()
+            : $owner->unsearchable();
+    }
+
+    /**
+     * Ask the owner to establish that they run the business.
+     *
+     * Sent to the owner's registered account address. studios.email is
+     * frequently null - it is on both of the records that prompted this - so
+     * the studio's own column is not a usable contact route.
+     *
+     * The hold is already committed by the time this runs. A mail failure must
+     * not undo it, and an unclaimed studio has nobody to write to.
+     */
+    private function requestOwnershipProof(Studio $studio): bool
+    {
+        $owner = $studio->owner;
+
+        if (! $owner || ! $owner->email) {
+            return false;
+        }
+
+        try {
+            $owner->notify(new StudioVerificationRequestNotification($studio));
+
+            return true;
+        } catch (\Throwable $e) {
+            Log::error('Failed to send studio verification request', [
+                'studio_id' => $studio->id,
+                'owner_id' => $owner->id,
+                'error' => $e->getMessage(),
+            ]);
+
+            return false;
+        }
+    }
+
     /**
      *
      */

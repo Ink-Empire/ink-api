@@ -20,6 +20,7 @@ use App\Notifications\NewMessageNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\StudioInvitationNotification;
 use App\Notifications\StudioOwnerInvitationNotification;
+use App\Notifications\StudioVerificationRequestNotification;
 use App\Models\StudioInvitation;
 use App\Notifications\TattooApprovedNotification;
 use App\Notifications\TattooBeaconNotification;
@@ -121,6 +122,10 @@ Mailbook::to($getUser())
 Mailbook::to('owner@example.com')
     ->add(fn () => new StudioOwnerInvitationNotification($getStudioInvitation(), $getUser()))
     ->label('Studio Owner Invitation');
+
+Mailbook::to($getUser())
+    ->add(fn () => new StudioVerificationRequestNotification($getStudio()))
+    ->label('Studio Verification Request');
 
 // -- Leads & Availability --
 
