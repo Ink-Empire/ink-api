@@ -42,23 +42,21 @@ class ImageService
             if ($input instanceof UploadedFile) {
                 // Handle uploaded file
                 $imageData = file_get_contents($input->getRealPath());
-                $mimeType = $input->getMimeType();
             } elseif ($this->isBase64String($input)) {
                 // Handle base64 string
-                if (preg_match('/^data:image\/(\w+);base64,/', $input, $matches)) {
-                    $mimeType = 'image/' . $matches[1];
+                if (preg_match('/^data:image\/(\w+);base64,/', $input)) {
                     $input = substr($input, strpos($input, ',') + 1); // Strip the data URI prefix
-                } else {
-                    $mimeType = 'image/jpeg'; // Fallback MIME type
                 }
 
-                $imageData = base64_decode($input);
+                $imageData = base64_decode($input, true);
                 if ($imageData === false) {
                     throw new \Exception("Could not decode base64 image data");
                 }
             } else {
                 throw new \Exception("Invalid image input type");
             }
+
+            $mimeType = $this->verifiedMimeType($imageData);
 
             // Add environment prefix to filename
             $prefixedFilename = self::prefixFilename($filename);
@@ -78,6 +76,34 @@ class ImageService
         }
     }
 
+    /**
+     * Derive the MIME type from the image bytes themselves.
+     *
+     * The declared type is never trusted, whether it arrived as a data URI
+     * prefix from the client or as the MIME type of an UploadedFile. Anything
+     * that does not read back as an image is rejected rather than stored.
+     */
+    private function verifiedMimeType(string $imageData): string
+    {
+        if ($imageData === '') {
+            throw new \Exception("Image data is empty");
+        }
+
+        $info = @getimagesizefromstring($imageData);
+
+        if ($info === false || empty($info[0]) || empty($info[1])) {
+            throw new \Exception("Image data is not a readable image");
+        }
+
+        $mimeType = image_type_to_mime_type($info[2]);
+
+        // getimagesizefromstring also reads non-image formats such as SWF.
+        if (!str_starts_with($mimeType, 'image/')) {
+            throw new \Exception("Image data is not a readable image");
+        }
+
+        return $mimeType;
+    }
 
     private function saveImage(string $filename)
     {
