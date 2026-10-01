@@ -89,6 +89,7 @@ class User extends Authenticatable implements MustVerifyEmail
         'is_admin' => 'boolean',
         'is_demo' => 'boolean',
         'is_email_verified' => 'boolean',
+        'is_subscribed' => 'boolean',
         'email_unsubscribed' => 'boolean',
         'has_accepted_toc' => 'boolean',
         'has_accepted_privacy_policy' => 'boolean',
