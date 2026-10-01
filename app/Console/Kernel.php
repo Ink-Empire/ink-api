@@ -44,6 +44,14 @@ class Kernel extends ConsoleKernel
             ->withoutOverlapping()
             ->onOneServer();
 
+        // The second touch, a week after signup, to accounts that came back.
+        // Guarded by a cutoff date in the command so it can never sweep up the
+        // whole table on its first run.
+        $schedule->command('emails:whats-next')
+            ->dailyAt('15:00')
+            ->withoutOverlapping()
+            ->onOneServer();
+
         // Update popularity counts (saved_count) for sorting
         $schedule->command('popularity:update')
             ->dailyAt('12:00')

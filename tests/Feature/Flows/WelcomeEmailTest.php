@@ -38,7 +38,7 @@ function welcomeFrontendUrl(): string
 test('a client is pointed at the tattoo feed', function () {
     [$mail, $html] = welcomeFor(UserTypes::CLIENT_TYPE_ID);
 
-    expect($mail->subject)->toBe("What's next: finding your tattoo");
+    expect($mail->subject)->toBe("You're in! Welcome to InkedIn");
     expect($html)
         ->toContain('Welcome to the new way to find your next tattoo.')
         ->toContain('Start Exploring')
@@ -58,7 +58,7 @@ test('a client does not get the artist or studio copy', function () {
 test('an artist is pointed at the dashboard', function () {
     [$mail, $html] = welcomeFor(UserTypes::ARTIST_TYPE_ID);
 
-    expect($mail->subject)->toBe("What's next: getting your work seen");
+    expect($mail->subject)->toBe("You're in! Welcome to InkedIn");
     expect($html)
         ->toContain('Welcome to the new way to showcase your work.')
         ->toContain('Complete Your Profile')
@@ -78,7 +78,7 @@ test('an artist does not get the client or studio copy', function () {
 test('a studio owner is pointed at the dashboard', function () {
     [$mail, $html] = welcomeFor(UserTypes::STUDIO_TYPE_ID);
 
-    expect($mail->subject)->toBe("What's next: getting your shop on the map");
+    expect($mail->subject)->toBe("You're in. Let's get your shop on the map.");
     expect($html)
         ->toContain('Set up your studio page')
         ->toContain(welcomeFrontendUrl().'/dashboard');
@@ -116,9 +116,7 @@ test('every version opens with the same gold headline', function () {
     foreach ([UserTypes::CLIENT_TYPE_ID, UserTypes::ARTIST_TYPE_ID, UserTypes::STUDIO_TYPE_ID] as $typeId) {
         [, $html] = welcomeFor($typeId);
 
-        expect($html)
-            ->toContain("You're signed up.<br>Here's what's next.")
-            ->not->toContain("You're in.");
+        expect($html)->toContain('color: #D4A853;">You\'re in.</h1>');
     }
 });
 
@@ -148,9 +146,9 @@ test('the admin preview can force any version without an account behind it', fun
     $anonymous->route('mail', 'someone@example.com');
 
     $expected = [
-        UserTypes::CLIENT => "What's next: finding your tattoo",
-        UserTypes::ARTIST => "What's next: getting your work seen",
-        UserTypes::STUDIO => "What's next: getting your shop on the map",
+        UserTypes::CLIENT => "You're in! Welcome to InkedIn",
+        UserTypes::ARTIST => "You're in! Welcome to InkedIn",
+        UserTypes::STUDIO => "You're in. Let's get your shop on the map.",
     ];
 
     foreach ($expected as $audience => $subject) {
@@ -167,7 +165,7 @@ test('a real send ignores nothing and still resolves from the account', function
     $studio = User::factory()->create(['type_id' => UserTypes::STUDIO_TYPE_ID]);
 
     expect((new WelcomeNotification)->toMail($studio)->subject)
-        ->toBe("What's next: getting your shop on the map");
+        ->toBe("You're in. Let's get your shop on the map.");
 });
 
 test('an account type with no copy fails loudly instead of borrowing another email', function () {

@@ -10,19 +10,21 @@ use Illuminate\Notifications\Messages\MailMessage;
 use Illuminate\Notifications\Notification;
 use Illuminate\Support\Facades\URL;
 
-class WelcomeNotification extends Notification
+/**
+ * The second touch, about a week after signup.
+ *
+ * The welcome lands before anyone has had a chance to do anything. This one
+ * goes to people who came back and signed in, so it can talk about the things
+ * that only matter once an account is real.
+ */
+class WhatsNextNotification extends Notification
 {
     use Queueable, ResolvesAccountAudience, RespectsEmailPreferences;
 
-    public const EVENT_TYPE = 'welcome';
+    public const EVENT_TYPE = 'whats_next';
 
     /**
-     * Forces a version of the email regardless of the notifiable.
-     *
-     * Only the admin preview sets this. It sends through
-     * Notification::route(), which has no account behind it and therefore no
-     * type_id, and it needs to be able to show any of the three on demand. A
-     * real send leaves this null and resolves from the account.
+     * Only the admin preview sets this. See WelcomeNotification.
      */
     public function __construct(private ?string $audience = null)
     {
@@ -39,36 +41,33 @@ class WelcomeNotification extends Notification
         $frontendUrl = config('app.frontend_url', 'http://localhost:4000');
         $audience = $this->audienceFor($notifiable, $this->audience);
 
-        $ctaUrl = $frontendUrl . match ($audience) {
+        $ctaUrl = $frontendUrl.match ($audience) {
             UserTypes::ARTIST => '/dashboard',
             UserTypes::STUDIO => '/dashboard',
             UserTypes::CLIENT => '/tattoos',
         };
 
         $subject = match ($audience) {
-            UserTypes::STUDIO => "You're in. Let's get your shop on the map.",
-            UserTypes::ARTIST, UserTypes::CLIENT => "You're in! Welcome to InkedIn",
+            UserTypes::CLIENT => "What's next: finding your tattoo",
+            UserTypes::ARTIST => "What's next: getting your work seen",
+            UserTypes::STUDIO => "What's next: getting your shop on the map",
         };
 
         $preheader = match ($audience) {
-            UserTypes::CLIENT => 'Browse by style, subject and city to find the artist you want.',
-            UserTypes::ARTIST => 'Add your work and tag your styles so the right clients can find you.',
-            UserTypes::STUDIO => 'Add your address, pick a layout and bring your artists in.',
+            UserTypes::CLIENT => 'Save the work you like, and tell artists what you are after.',
+            UserTypes::ARTIST => 'Tag your styles, open your books and answer the people asking.',
+            UserTypes::STUDIO => 'Keep the page current, and answer the artists asking to join.',
         };
 
-        // The admin preview sends to a bare address, so there is no account to
-        // key these to. The links resolve to the invalid-link page rather than
-        // emitting an undefined property warning and signing a null id.
         $userId = $notifiable->id ?? null;
 
-        // Generate a signed URL for subscribing to updates (valid for 30 days)
         $updatesUrl = URL::signedRoute('subscribe', ['user' => $userId], now()->addDays(30));
 
         $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $userId], now()->addDays(30));
 
         return (new MailMessage)
             ->subject($subject)
-            ->view('mail.welcome', [
+            ->view('mail.whats-next', [
                 'ctaUrl' => $ctaUrl,
                 'updatesUrl' => $updatesUrl,
                 'audience' => $audience,
@@ -76,7 +75,6 @@ class WelcomeNotification extends Notification
                 'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
-
 
     public function toArray(object $notifiable): array
     {
