@@ -12,6 +12,7 @@
 
 use App\Console\Commands\SendWhatsNextEmails;
 use App\Enums\UserTypes;
+use App\Http\Controllers\EmailTestController;
 use App\Jobs\SendWhatsNextNotification;
 use App\Models\User;
 use App\Notifications\WhatsNextNotification;
@@ -151,6 +152,21 @@ test('the follow-up leads with its own headline, not the welcome one', function 
         ->toContain('color: #D4A853;">Here\'s what\'s next.</h1>')
         ->not->toContain("You're signed up.")
         ->not->toContain("You're in.");
+});
+
+test('the admin tester offers all three versions and they resolve', function () {
+    $types = collect(app(EmailTestController::class)->getTypes()->getData(true)['types'])
+        ->pluck('id');
+
+    expect($types)->toContain('whats-next-client', 'whats-next-artist', 'whats-next-studio');
+
+    $resolve = new ReflectionMethod(EmailTestController::class, 'createNotification');
+    $resolve->setAccessible(true);
+
+    foreach (['whats-next-client', 'whats-next-artist', 'whats-next-studio'] as $type) {
+        expect($resolve->invoke(app(EmailTestController::class), $type))
+            ->toBeInstanceOf(WhatsNextNotification::class);
+    }
 });
 
 test('an account type with no copy fails loudly', function () {

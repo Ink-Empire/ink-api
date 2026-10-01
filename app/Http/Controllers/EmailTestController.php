@@ -13,6 +13,7 @@ use App\Notifications\BooksOpenNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\TattooBeaconNotification;
 use App\Notifications\VerifyEmailNotification;
+use App\Notifications\WhatsNextNotification;
 use App\Notifications\WelcomeNotification;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Notification;
@@ -26,6 +27,9 @@ class EmailTestController extends Controller
                 ['id' => 'welcome-client', 'name' => 'Welcome Email (Client)'],
                 ['id' => 'welcome-artist', 'name' => 'Welcome Email (Artist)'],
                 ['id' => 'welcome-studio', 'name' => 'Welcome Email (Studio)'],
+                ['id' => 'whats-next-client', 'name' => "What's Next (Client)"],
+                ['id' => 'whats-next-artist', 'name' => "What's Next (Artist)"],
+                ['id' => 'whats-next-studio', 'name' => "What's Next (Studio)"],
                 ['id' => 'verify-email', 'name' => 'Verify Email'],
                 ['id' => 'password-reset', 'name' => 'Password Reset'],
                 ['id' => 'booking-request', 'name' => 'Booking Request'],
@@ -40,7 +44,7 @@ class EmailTestController extends Controller
     public function send(Request $request)
     {
         $request->validate([
-            'type' => 'required|string|in:welcome-client,welcome-artist,welcome-studio,verify-email,password-reset,booking-request,booking-accepted,booking-declined,books-open,tattoo-beacon',
+            'type' => 'required|string|in:welcome-client,welcome-artist,welcome-studio,whats-next-client,whats-next-artist,whats-next-studio,verify-email,password-reset,booking-request,booking-accepted,booking-declined,books-open,tattoo-beacon',
             'email' => 'required|email',
         ]);
 
@@ -71,6 +75,9 @@ class EmailTestController extends Controller
             'welcome-client' => new WelcomeNotification(UserTypes::CLIENT),
             'welcome-artist' => new WelcomeNotification(UserTypes::ARTIST),
             'welcome-studio' => new WelcomeNotification(UserTypes::STUDIO),
+            'whats-next-client' => new WhatsNextNotification(UserTypes::CLIENT),
+            'whats-next-artist' => new WhatsNextNotification(UserTypes::ARTIST),
+            'whats-next-studio' => new WhatsNextNotification(UserTypes::STUDIO),
             'verify-email' => new VerifyEmailNotification(),
             'password-reset' => new ResetPasswordNotification($this->generateTestToken()),
             'booking-request' => new BookingRequestNotification($this->getTestAppointment()),
