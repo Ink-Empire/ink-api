@@ -9,6 +9,7 @@ use App\Models\Studio;
 use App\Models\User;
 use App\Notifications\ArtistJoinRequestNotification;
 use App\Notifications\InboundEmailReceiptNotification;
+use App\Notifications\InboundEmailUnreadableNotification;
 use Illuminate\Auth\Events\Registered;
 use Illuminate\Support\Facades\Hash;
 use Illuminate\Support\Facades\Log;
@@ -134,6 +135,13 @@ class ArtistOnboardingService
      * The whole thing: find or create the artist, store their images, and send
      * the one email that carries their credentials and a link to review.
      *
+     * The artist is always written to, whatever the images did. The account is
+     * created before the images are tried, and the temp password exists only
+     * in memory until a mail hands it over, so staying silent on a failed
+     * batch strands somebody with an account they do not know about and a
+     * password nobody can recover. Their address is taken by then too, so
+     * signing up again fails.
+     *
      * Returns [User, BulkUpload, int $processed, bool $isNewAccount].
      */
     public function onboard(string $email, string $name, array $images, string $source): array
@@ -145,6 +153,8 @@ class ArtistOnboardingService
 
         if ($processed > 0) {
             $artist->notify(new InboundEmailReceiptNotification($bulkUpload, $processed, $isNewAccount, $tempPassword));
+        } else {
+            $artist->notify(new InboundEmailUnreadableNotification(count($images), $isNewAccount, $tempPassword));
         }
 
         return [$artist, $bulkUpload, $processed, $isNewAccount];
