@@ -13,6 +13,7 @@
 use App\Enums\UserTypes;
 use App\Models\User;
 use App\Notifications\WelcomeNotification;
+use Illuminate\Notifications\AnonymousNotifiable;
 use Illuminate\Support\Facades\Queue;
 
 beforeEach(function () {
@@ -139,6 +140,34 @@ test('each version carries its own hidden preheader', function () {
             }
         }
     }
+});
+
+test('the admin preview can force any version without an account behind it', function () {
+    // The preview sends through Notification::route(), which has no type_id.
+    $anonymous = new AnonymousNotifiable;
+    $anonymous->route('mail', 'someone@example.com');
+
+    $expected = [
+        UserTypes::CLIENT => "What's next: finding your tattoo",
+        UserTypes::ARTIST => "What's next: getting your work seen",
+        UserTypes::STUDIO => "What's next: getting your shop on the map",
+    ];
+
+    foreach ($expected as $audience => $subject) {
+        expect((new WelcomeNotification($audience))->toMail($anonymous)->subject)->toBe($subject);
+    }
+});
+
+test('an audience with no copy is refused when the notification is built', function () {
+    expect(fn () => new WelcomeNotification('shopkeeper'))
+        ->toThrow(InvalidArgumentException::class);
+});
+
+test('a real send ignores nothing and still resolves from the account', function () {
+    $studio = User::factory()->create(['type_id' => UserTypes::STUDIO_TYPE_ID]);
+
+    expect((new WelcomeNotification)->toMail($studio)->subject)
+        ->toBe("What's next: getting your shop on the map");
 });
 
 test('an account type with no copy fails loudly instead of borrowing another email', function () {

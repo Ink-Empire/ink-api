@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserTypes;
 use App\Models\User;
 use App\Models\Appointment;
 use App\Models\TattooLead;
@@ -22,7 +23,9 @@ class EmailTestController extends Controller
     {
         return response()->json([
             'types' => [
-                ['id' => 'welcome', 'name' => 'Welcome Email'],
+                ['id' => 'welcome-client', 'name' => 'Welcome Email (Client)'],
+                ['id' => 'welcome-artist', 'name' => 'Welcome Email (Artist)'],
+                ['id' => 'welcome-studio', 'name' => 'Welcome Email (Studio)'],
                 ['id' => 'verify-email', 'name' => 'Verify Email'],
                 ['id' => 'password-reset', 'name' => 'Password Reset'],
                 ['id' => 'booking-request', 'name' => 'Booking Request'],
@@ -37,7 +40,7 @@ class EmailTestController extends Controller
     public function send(Request $request)
     {
         $request->validate([
-            'type' => 'required|string|in:welcome,verify-email,password-reset,booking-request,booking-accepted,booking-declined,books-open,tattoo-beacon',
+            'type' => 'required|string|in:welcome-client,welcome-artist,welcome-studio,verify-email,password-reset,booking-request,booking-accepted,booking-declined,books-open,tattoo-beacon',
             'email' => 'required|email',
         ]);
 
@@ -65,7 +68,9 @@ class EmailTestController extends Controller
     private function createNotification(string $type)
     {
         return match ($type) {
-            'welcome' => new WelcomeNotification(),
+            'welcome-client' => new WelcomeNotification(UserTypes::CLIENT),
+            'welcome-artist' => new WelcomeNotification(UserTypes::ARTIST),
+            'welcome-studio' => new WelcomeNotification(UserTypes::STUDIO),
             'verify-email' => new VerifyEmailNotification(),
             'password-reset' => new ResetPasswordNotification($this->generateTestToken()),
             'booking-request' => new BookingRequestNotification($this->getTestAppointment()),

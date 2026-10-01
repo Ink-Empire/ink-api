@@ -190,6 +190,12 @@ to everybody until that was fixed. The expiring signature is what authorises the
 `SubscriptionController` checks it with `hasValidSignature()`, redirecting to
 `?error=invalid_link` when it fails. Covered by `tests/Feature/Flows/EmailLinkAccessTest.php`.
 
+`WelcomeNotification` takes an optional audience for the admin preview at
+`POST /api/email-test/send`, which sends through `Notification::route()` and so has no
+account behind it to read a `type_id` from. The preview offers `welcome-client`,
+`welcome-artist` and `welcome-studio`. A real send passes nothing and resolves from the
+account, and an audience outside the three is refused when the notification is built.
+
 Branching is on `type_id` against `App\Enums\UserTypes`, and an unrecognised type throws
 instead of falling back to one of the three. This used to be an is-artist boolean, so
 studio accounts landed in the client branch and shop owners were sent to the public

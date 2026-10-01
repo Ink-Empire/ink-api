@@ -16,6 +16,30 @@ class WelcomeNotification extends Notification
 
     public const EVENT_TYPE = 'welcome';
 
+    /**
+     * Forces a version of the email regardless of the notifiable.
+     *
+     * Only the admin preview sets this. It sends through
+     * Notification::route(), which has no account behind it and therefore no
+     * type_id, and it needs to be able to show any of the three on demand. A
+     * real send leaves this null and resolves from the account.
+     */
+    public function __construct(private ?string $audience = null)
+    {
+        if ($this->audience !== null && ! in_array($this->audience, self::AUDIENCES, true)) {
+            throw new InvalidArgumentException("WelcomeNotification has no copy for audience {$this->audience}.");
+        }
+    }
+
+    /**
+     * @var list<string>
+     */
+    private const AUDIENCES = [
+        UserTypes::CLIENT,
+        UserTypes::ARTIST,
+        UserTypes::STUDIO,
+    ];
+
     public function via(object $notifiable): array
     {
         return $this->filterChannelsForUnsubscribed($notifiable, ['mail']);
@@ -47,10 +71,15 @@ class WelcomeNotification extends Notification
             UserTypes::STUDIO => 'Add your address, pick a layout and bring your artists in.',
         };
 
-        // Generate a signed URL for subscribing to updates (valid for 30 days)
-        $updatesUrl = URL::signedRoute('subscribe', ['user' => $notifiable->id], now()->addDays(30));
+        // The admin preview sends to a bare address, so there is no account to
+        // key these to. The links resolve to the invalid-link page rather than
+        // emitting an undefined property warning and signing a null id.
+        $userId = $notifiable->id ?? null;
 
-        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $notifiable->id], now()->addDays(30));
+        // Generate a signed URL for subscribing to updates (valid for 30 days)
+        $updatesUrl = URL::signedRoute('subscribe', ['user' => $userId], now()->addDays(30));
+
+        $unsubscribeUrl = URL::signedRoute('unsubscribe', ['user' => $userId], now()->addDays(30));
 
         return (new MailMessage)
             ->subject($subject)
@@ -59,7 +88,6 @@ class WelcomeNotification extends Notification
                 'updatesUrl' => $updatesUrl,
                 'audience' => $audience,
                 'preheader' => $preheader,
-                'userName' => $notifiable->name,
                 'unsubscribeUrl' => $unsubscribeUrl,
             ]);
     }
@@ -75,7 +103,11 @@ class WelcomeNotification extends Notification
      */
     private function audienceFor(object $notifiable): string
     {
-        return match ($notifiable->type_id) {
+        if ($this->audience !== null) {
+            return $this->audience;
+        }
+
+        return match ($notifiable->type_id ?? null) {
             UserTypes::CLIENT_TYPE_ID => UserTypes::CLIENT,
             UserTypes::ARTIST_TYPE_ID => UserTypes::ARTIST,
             UserTypes::STUDIO_TYPE_ID => UserTypes::STUDIO,
