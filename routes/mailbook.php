@@ -16,6 +16,7 @@ use App\Notifications\BookingAcceptedNotification;
 use App\Notifications\BookingDeclinedNotification;
 use App\Notifications\BookingRequestNotification;
 use App\Notifications\BooksOpenNotification;
+use App\Notifications\InboundEmailUnreadableNotification;
 use App\Notifications\NewMessageNotification;
 use App\Notifications\ResetPasswordNotification;
 use App\Notifications\StudioInvitationNotification;
@@ -126,6 +127,14 @@ Mailbook::to('owner@example.com')
 Mailbook::to($getUser())
     ->add(fn () => new StudioVerificationRequestNotification($getStudio()))
     ->label('Studio Verification Request');
+
+Mailbook::to($getArtist())
+    ->add(fn () => new InboundEmailUnreadableNotification(3, true, 'ABCD-EFGH-1234'))
+    ->label('Inbound Email Unreadable (new account)');
+
+Mailbook::to($getArtist())
+    ->add(fn () => new InboundEmailUnreadableNotification(1, false))
+    ->label('Inbound Email Unreadable (existing account)');
 
 // -- Leads & Availability --
 
