@@ -219,9 +219,15 @@ If a user attempts to login before verifying their email:
 **Response (200):**
 ```json
 {
-  "message": "Verification link sent!"
+  "message": "If that email needs verifying, a link has been sent."
 }
 ```
+
+The same body comes back for an unknown address, an address that is already
+verified and one that genuinely receives a link. An earlier version hedged the
+unknown case but returned distinct bodies for the other two, which let anyone
+test whether an address had an account. See the account existence rule in
+CLAUDE.md.
 
 ## Correcting a Mistyped Address
 

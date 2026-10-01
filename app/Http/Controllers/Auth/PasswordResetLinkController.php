@@ -6,15 +6,13 @@ use App\Http\Controllers\Controller;
 use App\Models\User;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Password;
-use Illuminate\Validation\ValidationException;
 
 class PasswordResetLinkController extends Controller
 {
     /**
      * Handle an incoming password reset link request.
-     *
-     * @throws \Illuminate\Validation\ValidationException
      */
     public function store(Request $request): JsonResponse
     {
@@ -40,12 +38,13 @@ class PasswordResetLinkController extends Controller
             ['email' => $email]
         );
 
-        if ($status != Password::RESET_LINK_SENT) {
-            throw ValidationException::withMessages([
-                'email' => [__($status)],
-            ]);
+        // Same response for a delivered link, an unknown address and a
+        // throttled retry, so the endpoint cannot be used to find out which
+        // addresses are registered. Matches the username branch above.
+        if ($status !== Password::RESET_LINK_SENT) {
+            Log::info('Password reset link not sent', ['status' => $status]);
         }
 
-        return response()->json(['status' => __($status)]);
+        return response()->json(['status' => __('passwords.sent')]);
     }
 }
