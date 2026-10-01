@@ -6,7 +6,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <meta name="color-scheme" content="dark">
     <meta name="supported-color-schemes" content="dark">
-    <title>Welcome to InkedIn</title>
+    <title>What's next on InkedIn</title>
 </head>
 <body style="margin: 0; padding: 0; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif; background-color: #0a0a0a;">
     <div style="display: none; font-size: 1px; line-height: 1px; max-height: 0; max-width: 0; opacity: 0; overflow: hidden; mso-hide: all;">
@@ -31,14 +31,14 @@
                                 <!-- Header Section -->
                                 <tr>
                                     <td style="padding: 48px 40px 32px 40px; text-align: center;">
-                                        <h1 style="margin: 0 0 16px 0; font-size: 36px; font-weight: 700; color: #D4A853;">You're in.</h1>
+                                        <h1 style="margin: 0 0 16px 0; font-size: 36px; font-weight: 700; color: #D4A853;">Here's what's next.</h1>
                                         <p style="margin: 0; font-size: 18px; line-height: 1.5; color: #888888;">
                                             @if($audience === UserTypes::ARTIST)
-                                                Welcome to the new way to showcase your work.
+                                                You've had a look around. Here's what actually gets your work in front of people.
                                             @elseif($audience === UserTypes::CLIENT)
-                                                Welcome to the new way to find your next tattoo.
+                                                You've had a look around. Here's how to turn browsing into a booking.
                                             @elseif($audience === UserTypes::STUDIO)
-                                                Thanks for signing up! A studio page on InkedIn is how people find your shop by location, and how artists find you when they're looking for a chair or a guest spot.
+                                                You've had a look around. Here's what keeps a shop page working after setup.
                                             @endif
                                         </p>
                                     </td>
@@ -54,45 +54,41 @@
                                 <!-- Content Section -->
                                 <tr>
                                     <td style="padding: 32px 40px 40px 40px;">
-                                        @if($audience !== UserTypes::STUDIO)
-                                            <h2 style="margin: 0 0 20px 0; font-size: 14px; font-weight: 700; color: #D4A853; text-transform: uppercase; letter-spacing: 1px; text-align: center;">Here's the deal</h2>
-                                        @endif
-
                                         @if($audience === UserTypes::ARTIST)
-                                            <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                We're building a platform where clients can discover artists based on style, subject matter, and location. The more detail you add to your profile, the better your chances of being found by the right clients.
+                                            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
+                                                <strong style="color: #ffffff;">Tag your styles and subjects.</strong> Search runs on them. An untagged portfolio is close to invisible to someone looking for your kind of work.
+                                            </p>
+
+                                            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
+                                                <strong style="color: #ffffff;">Say whether your books are open.</strong> It is the first thing people check, and it decides whether they bother asking.
                                             </p>
 
                                             <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                Upload your best work, tag your styles, and let your portfolio do the talking. We're just getting started — and we're glad you're here.
+                                                <strong style="color: #ffffff;">Answer the people who reach out.</strong> Booking requests and messages come through the dashboard. A quick reply is most of what turns an enquiry into a chair.
                                             </p>
                                         @elseif($audience === UserTypes::CLIENT)
-                                            <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                We're just getting started. New artists are joining every week, so check back often — the lineup keeps getting better.
+                                            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
+                                                <strong style="color: #ffffff;">Save the work you keep coming back to.</strong> Saving artists and tattoos gives you somewhere to compare them side by side instead of losing them in a feed.
+                                            </p>
+
+                                            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
+                                                <strong style="color: #ffffff;">Search by style, subject and city.</strong> Narrowing by what you actually want beats scrolling, especially if you are flexible on who does it.
                                             </p>
 
                                             <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                If you're into what we're building, share it. The more people in, the stronger the network grows — for everyone.
+                                                <strong style="color: #ffffff;">Tell artists what you are after.</strong> Describe the piece and your timing, and artists who want that work can come to you.
                                             </p>
                                         @elseif($audience === UserTypes::STUDIO)
-                                            <p style="margin: 0 0 24px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                Four things worth doing now:
+                                            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
+                                                <strong style="color: #ffffff;">Answer the artists asking to join.</strong> Join requests land with you, and an unanswered one is a name missing from your page.
                                             </p>
 
                                             <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                <strong style="color: #ffffff;">Add your address.</strong> Location search runs on coordinates, so this is what puts you on the map when someone looks for a shop near them.
-                                            </p>
-
-                                            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                <strong style="color: #ffffff;">Pick a layout and fill the page.</strong> Three to choose from depending on whether you want to lead with the work, the artists or the shop itself. Add a banner, your hours and your contact details, and you have a page worth sending people to.
-                                            </p>
-
-                                            <p style="margin: 0 0 16px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                <strong style="color: #ffffff;">Bring your artists in.</strong> Invite them by email and their portfolios show up on your page. Artists can also ask to join, and those requests come to you.
+                                                <strong style="color: #ffffff;">Put your best work up front.</strong> You can pin particular artists and tattoos to the top of your page, so the first thing people see is the thing you want them to see.
                                             </p>
 
                                             <p style="margin: 0 0 32px 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                <strong style="color: #ffffff;">Say if you're after guest artists.</strong> You can flag the shop as open to guest spots and say what you're offering. It is one of the first things travelling artists look for.
+                                                <strong style="color: #ffffff;">Post what is going on.</strong> Guest spots, openings, a new artist starting. A page that changes is worth coming back to.
                                             </p>
                                         @endif
 
@@ -102,30 +98,24 @@
                                                 <td align="center" style="padding: 8px 0;">
                                                     <a href="{{ $ctaUrl }}" style="display: inline-block; padding: 16px 48px; background-color: #D4A853; color: #1a1a1a; text-decoration: none; font-size: 16px; font-weight: 600; border-radius: 30px;">
                                                         @if($audience === UserTypes::ARTIST)
-                                                            Complete Your Profile
+                                                            Go to your dashboard
                                                         @elseif($audience === UserTypes::CLIENT)
-                                                            Start Exploring
+                                                            Start exploring
                                                         @elseif($audience === UserTypes::STUDIO)
-                                                            Set up your studio page
+                                                            Go to your dashboard
                                                         @endif
                                                     </a>
                                                 </td>
                                             </tr>
                                         </table>
 
-                                        @if($audience === UserTypes::STUDIO)
-                                            <p style="margin: 32px 0 0 0; font-size: 16px; line-height: 1.7; color: #aaaaaa;">
-                                                Help us grow this community! The more artists we bring in, the better we can help users to find their perfect piece.
-                                            </p>
+                                        <p style="margin: 32px 0 0 0; font-size: 16px; line-height: 1.7; color: #aaaaaa; font-style: italic;">
+                                            We're early, and I read everything that comes back to this address. If something's broken or annoying, don't hesitate to reach out.
+                                        </p>
 
-                                            <p style="margin: 16px 0 0 0; font-size: 16px; line-height: 1.7; color: #aaaaaa; font-style: italic;">
-                                                We're early, and I read everything that comes back to this address. If something's broken or annoying, don't hesitate to reach out.
-                                            </p>
-
-                                            <p style="margin: 16px 0 0 0; font-size: 16px; line-height: 1.7; color: #aaaaaa; font-style: italic;">
-                                                -Caroline, founder of InkedIn
-                                            </p>
-                                        @endif
+                                        <p style="margin: 16px 0 0 0; font-size: 16px; line-height: 1.7; color: #aaaaaa; font-style: italic;">
+                                            -Caroline, founder of InkedIn
+                                        </p>
                                     </td>
                                 </tr>
                             </table>

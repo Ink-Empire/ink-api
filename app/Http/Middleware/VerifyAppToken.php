@@ -29,6 +29,10 @@ class VerifyAppToken
         'api/reset-password',
         'api/verify-email/*',
         'api/email/verification-notification',
+        // Reached by clicking a link in an email, which cannot carry a header.
+        // The expiring signature on the URL is what authorises these.
+        'api/subscribe',
+        'api/unsubscribe',
         'sanctum/csrf-cookie',
     ];
 

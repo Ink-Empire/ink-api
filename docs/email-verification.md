@@ -159,6 +159,48 @@ User taps "Create Account"
 - A new `authToken` is created for the browser session
 - Welcome email is sent via `SendWelcomeNotification` job (queued)
 
+**Welcome Email by User Type:**
+
+`WelcomeNotification` picks one of three versions of `resources/views/mail/welcome.blade.php` from `type_id`:
+
+All three share the headline "You're signed up. Here's what's next." The subject, the
+hidden preheader, the body and the button differ:
+
+| type_id | User Type | Subject | Button and destination |
+|---------|-----------|---------|------------------------|
+| 1 | Client | What's next: finding your tattoo | Start Exploring, to `/tattoos` |
+| 2 | Artist | What's next: getting your work seen | Complete Your Profile, to `/dashboard` |
+| 3 | Studio | What's next: getting your shop on the map | Set up your studio page, to `/dashboard` |
+
+The subject deliberately does not restate the headline. The subject and the preheader are
+the only two things a recipient reads before deciding whether to open, so repeating the
+headline in the subject wastes the preview. Note that the inbox also shows
+`MAIL_FROM_NAME`, which must be set to `InkedIn` in the environment. `config/mail.php`
+falls back to Laravel's stub `Example` when it is unset, so it has to be set per
+environment rather than relied on from the config default.
+
+The studio version covers the four things that matter on a new shop page: adding the
+address, picking a layout and filling the page out, inviting artists in, and flagging
+the shop as open to guest spots.
+
+Every version carries a "Get updates" link and an unsubscribe link, both signed routes
+(`api/subscribe`, `api/unsubscribe`). Both are listed in `VerifyAppToken::$except`, because a
+link clicked from an email client cannot send an `X-App-Token` header and both returned 401
+to everybody until that was fixed. The expiring signature is what authorises them, and
+`SubscriptionController` checks it with `hasValidSignature()`, redirecting to
+`?error=invalid_link` when it fails. Covered by `tests/Feature/Flows/EmailLinkAccessTest.php`.
+
+`WelcomeNotification` takes an optional audience for the admin preview at
+`POST /api/email-test/send`, which sends through `Notification::route()` and so has no
+account behind it to read a `type_id` from. The preview offers `welcome-client`,
+`welcome-artist` and `welcome-studio`. A real send passes nothing and resolves from the
+account, and an audience outside the three is refused when the notification is built.
+
+Branching is on `type_id` against `App\Enums\UserTypes`, and an unrecognised type throws
+instead of falling back to one of the three. This used to be an is-artist boolean, so
+studio accounts landed in the client branch and shop owners were sent to the public
+tattoo feed. Covered by `tests/Feature/Flows/WelcomeEmailTest.php`.
+
 **Studio Accounts (type_id=3):**
 - `AuthController::register()` creates/claims the studio record during registration (before verification)
 - The studio exists but has no `image_id` yet at this point
