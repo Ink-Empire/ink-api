@@ -4,6 +4,7 @@ namespace Tests;
 
 use App\Http\Middleware\VerifyAppToken;
 use Illuminate\Foundation\Testing\TestCase as BaseTestCase;
+use Illuminate\Support\Facades\Storage;
 
 abstract class TestCase extends BaseTestCase
 {
@@ -12,6 +13,14 @@ abstract class TestCase extends BaseTestCase
     protected function setUp(): void
     {
         parent::setUp();
+
+        // Local, test and production all write to the same S3 bucket, separated
+        // only by a filename prefix. Without this a test that exercises a delete
+        // path removes a real production object. Faking the disk here makes the
+        // whole suite incapable of reaching S3; a test that needs a real client
+        // overrides the disk in its own beforeEach, which runs after this.
+        // See docs/s3-environments.md.
+        Storage::fake('s3');
 
         // Disable app token verification for all tests
         $this->withoutMiddleware(VerifyAppToken::class);
