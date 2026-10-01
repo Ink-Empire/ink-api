@@ -30,27 +30,15 @@ class NewPasswordController extends Controller
             'password' => $this->passwordRules(),
         ]);
 
-        // Check if the new password matches any of the last 5 passwords
-        $user = User::where('email', $request->email)->first();
-
-        if ($user) {
-            $lastPasswords = $user->passwords()
-                ->orderBy('created_at', 'desc')
-                ->take(5)
-                ->get();
-
-            foreach ($lastPasswords as $oldPassword) {
-                if (Hash::check($request->password, $oldPassword->password)) {
-                    throw ValidationException::withMessages([
-                        'password' => ['You cannot reuse any of your last 5 passwords.'],
-                    ]);
-                }
-            }
-        }
-
         $status = Password::reset(
             $request->only('email', 'password', 'password_confirmation', 'token'),
             function ($user) use ($request) {
+                // Runs only after the token is validated. Checking history
+                // first let a caller with no token learn both that an address
+                // is registered and that a guessed password was recently used
+                // on it.
+                $this->ensurePasswordNotReused($user, $request->password);
+
                 $user->forceFill([
                     'password' => Hash::make($request->password),
                     'remember_token' => Str::random(60),
@@ -65,12 +53,34 @@ class NewPasswordController extends Controller
             }
         );
 
-        if ($status != Password::PASSWORD_RESET) {
+        // One message for an unknown address, a bad token and an expired one,
+        // so a reset link cannot be used to find out which addresses are
+        // registered.
+        if ($status !== Password::PASSWORD_RESET) {
             throw ValidationException::withMessages([
-                'email' => [__($status)],
+                'email' => ['This password reset link is invalid or has expired.'],
             ]);
         }
 
         return response()->json(['status' => __($status)]);
+    }
+
+    /**
+     * @throws ValidationException
+     */
+    protected function ensurePasswordNotReused(User $user, string $password): void
+    {
+        $lastPasswords = $user->passwords()
+            ->orderBy('created_at', 'desc')
+            ->take(5)
+            ->get();
+
+        foreach ($lastPasswords as $oldPassword) {
+            if (Hash::check($password, $oldPassword->password)) {
+                throw ValidationException::withMessages([
+                    'password' => ['You cannot reuse any of your last 5 passwords.'],
+                ]);
+            }
+        }
     }
 }

@@ -82,6 +82,19 @@ return response()->json([
 ]);
 ```
 
+## Account Existence Disclosure
+Endpoints fall into one of two groups. Decide which group a new endpoint belongs to before writing its responses.
+
+**Signup availability is public.** An endpoint whose job is to tell someone whether a name or address is free may say so plainly. A signup form cannot work otherwise. This covers `/check-availability`, `/studios/check-availability` and `/register`.
+
+**Credential and mail-sending surfaces return a uniform response.** An endpoint that checks a credential, or that mails something to an address the caller named, returns the same response whether or not the account exists. Never let the caller tell an unknown address apart from a wrong password, a bad token or a throttled retry. This covers `/login`, `/email/correct`, `/forgot-password`, `/reset-password` and `/email/verification-notification`.
+
+The split is about what the caller has already proven. A signup form is asking a question it is entitled to ask. Everything else is being asked to act on an account the caller has not yet shown they own.
+
+Two consequences that are easy to get wrong:
+- Branching on the outcome defeats the rule even when every branch is worded carefully. Three different messages for unknown, verified and unverified is an oracle regardless of how the first one is phrased.
+- Checks that run before token or password validation leak too. Validate the credential first, then run everything else.
+
 ## Elasticsearch Guidelines
 - **Always use the Scout Elasticsearch library syntax** - never raw Elasticsearch query DSL
 - Use `Model::search()->where()->get()` pattern for queries

@@ -20,24 +20,15 @@ class EmailVerificationNotificationController extends Controller
 
         $user = User::where('email', $request->email)->first();
 
-        if (!$user) {
-            return response()->json([
-                'message' => 'If that email exists, a verification link has been sent.',
-            ]);
+        if ($user && !$user->hasVerifiedEmail()) {
+            $user->sendEmailVerificationNotification();
         }
 
-        if ($user->hasVerifiedEmail()) {
-            return response()->json([
-                'message' => 'Email already verified.',
-                'already_verified' => true,
-            ]);
-        }
-
-        $user->sendEmailVerificationNotification();
-
+        // One response for an unknown address, an already verified one and a
+        // link actually sent. Wording the unknown case carefully is not enough
+        // on its own; three outcomes with three bodies is still an oracle.
         return response()->json([
-            'message' => 'Verification link sent.',
-            'status' => 'verification-link-sent',
+            'message' => 'If that email needs verifying, a link has been sent.',
         ]);
     }
 }
