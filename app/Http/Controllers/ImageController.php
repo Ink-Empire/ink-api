@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UploadPurpose;
 use App\Exceptions\UserNotFoundException;
 use App\Http\Resources\BriefImageResource;
 use App\Http\Resources\StudioResource;
@@ -20,6 +21,7 @@ use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
+use Illuminate\Validation\Rule;
 
 class ImageController extends Controller
 {
@@ -93,7 +95,7 @@ class ImageController extends Controller
             // Validate request
             $request->validate([
                 'content_type' => 'required|string|in:image/jpeg,image/png,image/webp,image/gif',
-                'purpose' => 'required|string|in:tattoo,profile,studio,message',
+                'purpose' => ['required', 'string', Rule::in(UploadPurpose::values())],
             ]);
 
             $contentType = $request->input('content_type');
@@ -165,7 +167,7 @@ class ImageController extends Controller
             $request->validate([
                 'files' => 'required|array|min:1|max:10',
                 'files.*.content_type' => 'required|string|in:image/jpeg,image/png,image/webp,image/gif',
-                'purpose' => 'required|string|in:tattoo,profile,studio,message',
+                'purpose' => ['required', 'string', Rule::in(UploadPurpose::values())],
             ]);
 
             $files = $request->input('files');
@@ -230,6 +232,11 @@ class ImageController extends Controller
     /**
      * Confirm that images were uploaded successfully and create Image records.
      * Called after direct S3 upload completes.
+     *
+     * A filename is only accepted from the account it was issued to. The name
+     * is the only thing tying a direct upload back to a user, and it travels
+     * in the public URL of every image on the platform, so without this check
+     * anyone could claim a row pointing at somebody else's file.
      */
     public function confirmUploads(Request $request): JsonResponse
     {
@@ -241,34 +248,16 @@ class ImageController extends Controller
                 'filenames.*' => 'required|string',
             ]);
 
-            $filenames = $request->input('filenames');
-            $disk = Storage::disk('s3');
-            $images = [];
+            $confirmed = $this->imageService->confirmUploads(
+                (int) $user->id,
+                $request->input('filenames')
+            );
 
-            foreach ($filenames as $filename) {
-                // Verify the file exists in S3
-                if (!$disk->exists($filename)) {
-                    \Log::warning('Uploaded file not found in S3', [
-                        'filename' => $filename,
-                        'user_id' => $user->id,
-                    ]);
-                    continue;
-                }
-
-                // Create Image record
-                $image = new Image([
-                    'filename' => $filename,
-                    'is_primary' => 0,
-                ]);
-                $image->setUriAttribute($filename);
-                $image->save();
-
-                $images[] = [
-                    'id' => $image->id,
-                    'filename' => $image->filename,
-                    'uri' => $image->uri,
-                ];
-            }
+            $images = array_map(fn (Image $image) => [
+                'id' => $image->id,
+                'filename' => $image->filename,
+                'uri' => $image->uri,
+            ], $confirmed);
 
             if (empty($images)) {
                 return $this->returnErrorResponse('No valid images found', 'None of the uploaded files could be confirmed');
